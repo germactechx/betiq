@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BetIQ - Match Prediction</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <div id="header"></div>
+
+<div class="app-body">
+<main class="main">
+  <div class="content">
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">⚽</span> Match Prediction</div>
+        <div class="panel-sub">Poisson Model · Recent Results</div>
+      </div>
+      <div class="panel-body">
+
+        <p style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.65">
+          Enter each team's last 10 results. Format: <strong style="color:var(--text)">GF-GA</strong>
+          (e.g. <strong style="color:var(--text)">2-1</strong> = scored 2, conceded 1).
+          Select whether each game was played at Home or Away. At least 3 results per team are required.
+        </p>
+
+        <div class="grid2" style="margin-bottom:20px">
+          <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
+            <div class="slabel" style="margin-bottom:12px">
+              <span class="panel-dot dot-home"></span> Home team — Recent results
+            </div>
+            <div id="homeRows"></div>
+          </div>
+          <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
+            <div class="slabel" style="margin-bottom:12px">
+              <span class="panel-dot dot-away"></span> Away team — Recent results
+            </div>
+            <div id="awayRows"></div>
+          </div>
+        </div>
+
+        <div class="err-box" id="errorBanner"></div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="predict()">🔮 Analyse Match</button>
+          <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
+          <button class="btn btn-secondary" onclick="loadExample()" style="border-color:var(--border2);color:var(--muted2)">📋 Load Example</button>
+        </div>
+
+        <!-- ===== RESULTS ===== -->
+        <div id="results" style="display:none">
+          <div style="height:1px;background:var(--border);margin:28px 0 24px"></div>
+
+          <div class="slabel">1×2 Outcome Probabilities</div>
+          <div class="metric-grid" id="metricsRow"></div>
+
+          <div class="grid2">
+            <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
+              <div class="slabel">Markets</div>
+              <ul class="info-list" id="marketsList"></ul>
+            </div>
+            <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
+              <div class="slabel">Expected Goals (xG)</div>
+              <div id="xgSection"></div>
+              <div class="slabel" style="margin-top:18px">Top Scorelines (Home-Away)</div>
+              <div class="scores-row" id="scoreChips"></div>
+            </div>
+          </div>
+
+          <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px">
+            <div class="slabel">Over / Under Lines</div>
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Line</th>
+                  <th>Over %</th>
+                  <th>Under %</th>
+                  <th>Fair O / U</th>
+                  <th>Signal</th>
+                </tr>
+              </thead>
+              <tbody id="ouBody"></tbody>
+            </table>
+          </div>
+
+          <div id="ah-container"></div>
+
+          <div class="note" style="margin-top:16px">
+            <strong>Methodology:</strong> Poisson distributions fitted to recent match results using a
+            Dixon-Coles–style attack/defence rating. Venue splits are weighted 70% venue-specific /
+            30% overall form. Home advantage factor applied to home attack rating. O/U probabilities
+            are derived from the same joint score distribution used for 1×2.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+  <div id="footer"></div>
+</div>
+
+<script src="header.js"></script>
+<script src="footer.js"></script>
+<script>
+/* ---- Build input rows ---- */
+function buildRows(containerId, isHome) {
+  const c = document.getElementById(containerId);
+  // Pre-fill: first 5 rows as the team's primary venue, last 5 as away/home
+  const venues = isHome
+    ? ['H','H','H','H','H','A','A','A','A','A']
+    : ['A','A','A','A','A','H','H','H','H','H'];
+
+  for (let i = 0; i < 10; i++) {
+    const d = document.createElement('div');
+    d.className = 'mp-row';
+    d.innerHTML = `
+      <select>
+        <option value="H"${venues[i] === 'H' ? ' selected' : ''}>Home</option>
+        <option value="A"${venues[i] === 'A' ? ' selected' : ''}>Away</option>
+      </select>
+      <input type="text" placeholder="GF-GA e.g. 2-1" maxlength="7">`;
+    c.appendChild(d);
+  }
+}
+buildRows('homeRows', true);
+buildRows('awayRows', false);
+
+function clearAll() {
+  document.querySelectorAll('.mp-row input[type=text]').forEach(inp => { inp.value = ''; inp.classList.remove('err'); });
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('errorBanner').classList.remove('show');
+}
+
+function loadExample() {
+  const homeData = ['2-1','1-0','3-1','1-1','0-0','1-2','2-2','0-1','1-0','2-3'];
+  const awayData = ['0-2','1-3','0-1','2-2','0-0','2-1','3-0','1-0','2-1','1-1'];
+  document.querySelectorAll('#homeRows .mp-row input[type=text]').forEach((inp, i) => { inp.value = homeData[i] || ''; inp.classList.remove('err'); });
+  document.querySelectorAll('#awayRows .mp-row input[type=text]').forEach((inp, i) => { inp.value = awayData[i] || ''; inp.classList.remove('err'); });
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('errorBanner').classList.remove('show');
+}
+
+/* ---- Read + validate rows ---- */
+function getData(containerId) {
+  const rows = document.getElementById(containerId).querySelectorAll('.mp-row');
+  const out = [];
+  rows.forEach(r => {
+    const type = r.querySelector('select').value;  // 'H' or 'A' — venue this game was played at
+    const inp  = r.querySelector('input');
+    const v    = inp.value.trim();
+    inp.classList.remove('err');
+    if (!v) return;                                              // blank row — skip
+    if (!/^\d{1,2}-\d{1,2}$/.test(v)) { inp.classList.add('err'); return; } // invalid format
+    const [gf, ga] = v.split('-').map(Number);                  // gf = goals scored, ga = goals conceded
+    out.push({ gf, ga, type });
+  });
+  return out;
+}
+
+/* ---- Maths helpers ---- */
+function avg(arr) {
+  return arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
+}
+
+// Log-space Poisson to avoid floating-point underflow for large k
+function poisson(lambda, k) {
+  if (lambda <= 0) return k === 0 ? 1 : 0;
+  let logP = -lambda + k * Math.log(lambda);
+  for (let i = 1; i <= k; i++) logP -= Math.log(i);
+  return Math.exp(logP);
+}
+
+function fairOdds(p) { return p > 0.001 ? (1 / p).toFixed(2) : '—'; }
+
+function fp(p) { return (p * 100).toFixed(1) + '%'; }
+
+function calcAHHalf(m, threshold) {
+  let home = 0, away = 0, push = 0;
+  for (let i = 0; i <= 8; i++) for (let j = 0; j <= 8; j++) {
+    const p = m[i][j], diff = i - j;
+    if (diff > threshold) home += p;
+    else if (diff < threshold) away += p;
+    else push += p;
+  }
+  const tw = home + away || 1;
+  return { home: home / tw, away: away / tw, push };
+}
+
+function calcAHCover(m, threshold) {
+  const t = -threshold;
+  const fraction = ((t % 1) + 1) % 1;
+  const isQB = Math.abs(fraction - 0.25) < 0.001 || Math.abs(fraction - 0.75) < 0.001;
+  if (isQB) {
+    const lower = t < 0 ? Math.ceil(t * 2) / 2 : Math.floor(t * 2) / 2;
+    const upper = lower + (t < 0 ? -0.5 : 0.5);
+    const a = calcAHHalf(m, lower);
+    const b = calcAHHalf(m, upper);
+    return { home: (a.home + b.home) / 2, away: (a.away + b.away) / 2, push: 0 };
+  }
+  return calcAHHalf(m, t);
+}
+
+function renderAHTab(mat) {
+  let html = '<div class="card" style="margin-top:16px"><div class="card-title">Asian Handicap Lines <span style="font-size:9px;font-weight:400;color:var(--muted)">· Quarter-ball supported · −N = team gives goals (fav) · +N = team receives goals (underdog)</span></div>';
+  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:520px">';
+  html += '<thead><tr><th style="text-align:left">Home Label</th><th style="text-align:left">Away Label</th><th>H Cover %</th><th>A Cover %</th><th>Push %</th><th>Fair H/A</th><th>Line Type</th><th>Best Side</th></tr></thead><tbody>';
+  [-4.5, -3.5, -2.5, -1.5, -0.5, 0.0, 0.5, 1.5, 2.5, 3.5, 4.5].forEach(threshold => {
+    const c = calcAHCover(mat, threshold);
+    const absT = Math.abs(threshold);
+    const homeLabel = threshold === 0 ? '0' : (threshold < 0 ? '−' : '+') + (absT % 1 === 0 ? absT.toFixed(1) : absT.toFixed(2));
+    const awayLabel = threshold === 0 ? '0' : (threshold < 0 ? '+' : '−') + (absT % 1 === 0 ? absT.toFixed(1) : absT.toFixed(2));
+    const fraction = ((absT % 1) + 1) % 1;
+    const isQB = Math.abs(fraction - 0.25) < 0.001 || Math.abs(fraction - 0.75) < 0.001;
+    const lineType = threshold === 0 ? 'Level' : isQB ? '<span class="sig slight">QTR-BALL</span>' : '<span class="sig fair">HALF</span>';
+    let bestSide = '', bestSideColor = 'color:var(--muted)';
+    if (c.home > c.away + 0.05) { bestSide = 'Home ' + homeLabel; bestSideColor = 'color:var(--green)'; }
+    else if (c.away > c.home + 0.05) { bestSide = 'Away ' + awayLabel; bestSideColor = 'color:var(--red)'; }
+    else { bestSide = 'Even'; bestSideColor = 'color:var(--muted)'; }
+    html += '<tr>';
+    html += '<td style="text-align:left;font-weight:700;color:var(--green)">' + homeLabel + '</td>';
+    html += '<td style="text-align:left;font-weight:700;color:var(--red)">' + awayLabel + '</td>';
+    html += '<td style="color:var(--green)">' + fp(c.home) + '</td>';
+    html += '<td style="color:var(--red)">' + fp(c.away) + '</td>';
+    html += '<td style="color:var(--muted)">' + fp(c.push) + '</td>';
+    html += '<td style="font-size:11px">' + fairOdds(c.home) + ' / ' + fairOdds(c.away) + '</td>';
+    html += '<td>' + lineType + '</td>';
+    html += '<td><span style="font-weight:700;' + bestSideColor + '">' + bestSide + '</span></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="note" style="margin-top:10px"><strong>AH Convention:</strong> Negative handicap (−N) = that team gives N goals — they are the <em>favourite</em> and must win by more than N. Positive (+N) = that team receives N goals — they are the <em>underdog</em> and can draw or lose by up to N and still cover.</div>';
+  html += '</div>';
+  return html;
+}
+
+/* ---- xG rating builder ---- */
+// Returns { att, def } index for a team from a list of { gf, ga } results.
+// att = average goals scored (attack strength)
+// def = average goals conceded (defensive weakness — higher = worse defence)
+function ratings(results) {
+  return {
+    att: avg(results.map(x => x.gf)),
+    def: avg(results.map(x => x.ga))
+  };
+}
+
+/* ---- Main predict ---- */
+function predict() {
+  const banner = document.getElementById('errorBanner');
+  banner.classList.remove('show');
+
+  const home = getData('homeRows');
+  const away = getData('awayRows');
+
+  if (home.length < 3) {
+    banner.textContent = '⚠️ Enter at least 3 valid results for the home team (format: GF-GA, e.g. 2-1).';
+    banner.classList.add('show'); return;
+  }
+  if (away.length < 3) {
+    banner.textContent = '⚠️ Enter at least 3 valid results for the away team (format: GF-GA, e.g. 2-1).';
+    banner.classList.add('show'); return;
+  }
+
+  /* -------------------------------------------------------
+     Venue-split results.
+     hH = home team's results when playing AT HOME
+     hA = home team's results when playing AWAY
+     aH = away team's results when playing AT HOME
+     aA = away team's results when playing AWAY
+     Fall back to all results for that team if <2 venue-specific entries.
+  ------------------------------------------------------- */
+  const hH = home.filter(x => x.type === 'H');
+  const hA = home.filter(x => x.type === 'A');
+  const aH = away.filter(x => x.type === 'H');
+  const aA = away.filter(x => x.type === 'A');
+
+  const useOrAll = (subset, all) => subset.length >= 2 ? subset : all;
+
+  /* -------------------------------------------------------
+     Attack / Defence ratings per venue split + overall.
+
+     For the upcoming match:
+       - Home team plays AT HOME  → use their home-game ratings where available
+       - Away team plays AWAY     → use their away-game ratings where available
+
+     xGH (expected goals HOME team scores):
+       = home team's ATTACK (home games) × away team's DEFENCE (away games)
+       Blended 70% venue-specific, 30% overall form.
+       × 1.06 home advantage multiplier.
+
+     xGA (expected goals AWAY team scores):
+       = away team's ATTACK (away games) × home team's DEFENCE (home games)
+       Blended 70% venue-specific, 30% overall form.
+       No home advantage for the away side.
+
+     Using a multiplicative model (Dixon-Coles style):
+       lambda = att_A × def_B × league_avg
+     We normalise by the league average implied by each team's data so we
+     stay in goals-per-game units without needing a separate league table.
+  ------------------------------------------------------- */
+
+  // Venue-specific ratings
+  const homeVenueRatings = ratings(useOrAll(hH, home));   // home team when AT HOME
+  const awayVenueRatings = ratings(useOrAll(aA, away));   // away team when AWAY
+
+  // Overall (all-venue) ratings
+  const homeAllRatings = ratings(home);
+  const awayAllRatings = ratings(away);
+
+  // Blend weights: 70% venue-specific, 30% overall
+  const W_VENUE = 0.70;
+  const W_ALL   = 0.30;
+
+  // Home team attack in this fixture (blended)
+  const homeAtt = homeVenueRatings.att * W_VENUE + homeAllRatings.att * W_ALL;
+
+  // Away team defensive weakness in this fixture (blended)
+  // Higher value = away team concedes more = easier for home team to score
+  const awayDef = awayVenueRatings.def * W_VENUE + awayAllRatings.def * W_ALL;
+
+  // Away team attack in this fixture (blended)
+  const awayAtt = awayVenueRatings.att * W_VENUE + awayAllRatings.att * W_ALL;
+
+  // Home team defensive weakness in this fixture (blended)
+  const homeDef = homeVenueRatings.def * W_VENUE + homeAllRatings.def * W_ALL;
+
+  /*
+     Multiplicative xG:
+       xGH = sqrt(homeAtt × awayDef) × HOME_ADV
+       xGA = sqrt(awayAtt × homeDef)
+
+     Using geometric mean of attack and opponent defence keeps the values
+     in goals-per-game range without needing a separate league average scalar.
+     sqrt() prevents over-inflation when both attack and conceded values are high.
+  */
+  const HOME_ADV = 1.08;  // ~8% home advantage on expected goals
+  const xGH = Math.max(0.15, Math.sqrt(homeAtt * awayDef) * HOME_ADV);
+  const xGA = Math.max(0.10, Math.sqrt(awayAtt * homeDef));
+
+  /* -------------------------------------------------------
+     Build full joint score probability matrix up to MAX goals each.
+     All downstream probabilities (1x2, BTTS, O/U) are derived from
+     this single matrix — ensures internal consistency.
+  ------------------------------------------------------- */
+  const MAX = 8;
+  let p1 = 0, pX = 0, p2 = 0, pBTTS = 0;
+  let pOver05 = 0, pOver15 = 0, pOver25 = 0, pOver35 = 0, pOver45 = 0, pOver55 = 0, pOver65 = 0;
+  const scoreMap = [];
+  const mat = [];
+
+  for (let i = 0; i <= MAX; i++) {
+    mat[i] = [];
+    const pH = poisson(xGH, i);
+    for (let j = 0; j <= MAX; j++) {
+      const p = pH * poisson(xGA, j);
+      mat[i][j] = p;
+      scoreMap.push({ s: `${i}-${j}`, p, h: i, a: j });
+
+      // 1×2
+      if (i > j)      p1 += p;
+      else if (i < j) p2 += p;
+      else            pX += p;
+
+      // BTTS: both teams must have scored at least 1
+      if (i > 0 && j > 0) pBTTS += p;
+
+      // O/U — all derived from joint matrix (no separate Poisson call)
+      const total = i + j;
+      if (total > 0.5) pOver05 += p;
+      if (total > 1.5) pOver15 += p;
+      if (total > 2.5) pOver25 += p;
+      if (total > 3.5) pOver35 += p;
+      if (total > 4.5) pOver45 += p;
+      if (total > 5.5) pOver55 += p;
+      if (total > 6.5) pOver65 += p;
+    }
+  }
+
+  scoreMap.sort((a, b) => b.p - a.p);
+  const totalLambda = xGH + xGA;
+
+  /* -------------------------------------------------------
+     1×2 metrics
+  ------------------------------------------------------- */
+  const maxP = Math.max(p1, pX, p2);
+  document.getElementById('metricsRow').innerHTML = `
+    <div class="metric">
+      <div class="mlabel">Home Win</div>
+      <div class="mval" style="color:${p1 === maxP ? 'var(--win)' : 'var(--text)'}">${(p1*100).toFixed(1)}%</div>
+      <div class="msub">Odds ${fairOdds(p1)}</div>
+    </div>
+    <div class="metric">
+      <div class="mlabel">Draw</div>
+      <div class="mval" style="color:${pX === maxP ? 'var(--draw)' : 'var(--text)'}">${(pX*100).toFixed(1)}%</div>
+      <div class="msub">Odds ${fairOdds(pX)}</div>
+    </div>
+    <div class="metric">
+      <div class="mlabel">Away Win</div>
+      <div class="mval" style="color:${p2 === maxP ? 'var(--lose)' : 'var(--text)'}">${(p2*100).toFixed(1)}%</div>
+      <div class="msub">Odds ${fairOdds(p2)}</div>
+    </div>
+  `;
+
+  /* -------------------------------------------------------
+     Markets panel
+  ------------------------------------------------------- */
+  const markets = [
+    { l: 'BTTS — Yes',  v: pBTTS },
+    { l: 'BTTS — No',   v: 1 - pBTTS },
+    { l: 'Over 1.5',    v: pOver15 },
+    { l: 'Over 2.5',    v: pOver25 },
+    { l: 'Over 3.5',    v: pOver35 },
+    { l: 'DC — 1X',     v: p1 + pX },
+    { l: 'DC — X2',     v: p2 + pX },
+    { l: 'DC — 12',     v: p1 + p2 },
+  ];
+  document.getElementById('marketsList').innerHTML = markets.map(m => {
+    const cls = m.v >= 0.65 ? 'value' : m.v >= 0.50 ? 'fair' : 'over';
+    const sig = m.v >= 0.65 ? 'Value'    : m.v >= 0.50 ? 'Possible' : 'Low';
+    return `<li class="info-item">
+      <span class="info-key">${m.l}</span>
+      <span class="info-val">
+        <span style="color:var(--muted);font-family:'JetBrains Mono',monospace">${(m.v*100).toFixed(1)}%</span>
+        <span class="badge ${cls}">${sig}</span>
+      </span>
+    </li>`;
+  }).join('');
+
+  /* -------------------------------------------------------
+     xG bars
+  ------------------------------------------------------- */
+  const maxXG = Math.max(xGH, xGA, 1.0);
+  document.getElementById('xgSection').innerHTML = `
+    <div class="xg-row">
+      <div class="xg-team">Home</div>
+      <div class="xg-track"><div class="xg-fill" style="width:${Math.min(xGH/maxXG*100,100).toFixed(1)}%;background:var(--accent)"></div></div>
+      <div class="xg-num">${xGH.toFixed(2)}</div>
+    </div>
+    <div class="xg-row">
+      <div class="xg-team">Away</div>
+      <div class="xg-track"><div class="xg-fill" style="width:${Math.min(xGA/maxXG*100,100).toFixed(1)}%;background:var(--accent4)"></div></div>
+      <div class="xg-num">${xGA.toFixed(2)}</div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace">
+      Total xG: ${totalLambda.toFixed(2)}
+    </div>
+  `;
+
+  /* -------------------------------------------------------
+     Top scorelines — format is Home goals - Away goals
+  ------------------------------------------------------- */
+  document.getElementById('scoreChips').innerHTML = scoreMap.slice(0, 12).map((s, i) =>
+    `<div class="score-chip ${i===0?'top-1':i<3?'top-2':''}">${s.s} <span style="opacity:.65">${(s.p*100).toFixed(1)}%</span></div>`
+  ).join('');
+
+  /* -------------------------------------------------------
+     O/U table — all probabilities from the joint score matrix
+     (same source as 1×2 and BTTS — fully consistent)
+  ------------------------------------------------------- */
+  const ouLines = [
+    { line: 0.5, over: pOver05 },
+    { line: 1.5, over: pOver15 },
+    { line: 2.5, over: pOver25 },
+    { line: 3.5, over: pOver35 },
+    { line: 4.5, over: pOver45 },
+    { line: 5.5, over: pOver55 },
+    { line: 6.5, over: pOver65 },
+  ];
+
+  document.getElementById('ouBody').innerHTML = ouLines.map(({ line, over }) => {
+    const under = 1 - over;
+    const sig = over >= 0.65 ? 'Over' : under >= 0.65 ? 'Under' : 'Even';
+    const cls = sig === 'Over' ? 'value' : sig === 'Under' ? 'over' : 'fair';
+    return `<tr>
+      <td class="ou-line">${line}</td>
+      <td>${(over*100).toFixed(1)}%</td>
+      <td>${(under*100).toFixed(1)}%</td>
+      <td style="font-family:'JetBrains Mono',monospace">${fairOdds(over)} / ${fairOdds(under)}</td>
+      <td><span class="badge ${cls}">${sig}</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('ah-container').innerHTML = renderAHTab(mat);
+
+  /* Show results */
+  const res = document.getElementById('results');
+  res.style.display = 'block';
+  setTimeout(() => res.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+}
+</script>
+<script src="back-to-top.js"></script>
+</body>
+</html>

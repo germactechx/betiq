@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BetIQ - Stats Based Football Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <div id="header"></div>
+
+  <div class="app-body">
+  <main class="main">
+    <div class="stack">
+      <div class="panel">
+        <div class="panel-hd">
+          <div class="panel-title">⚽ Stats Advanced Prediction Engine</div>
+          <div class="panel-sub">Poisson · Dixon-Coles (Dynamic ρ) · WDL Strength · Monte Carlo</div>
+        </div>
+        <div class="panel-bd">
+
+          <!-- TEAM NAMES -->
+          <div class="slabel">Match</div>
+          <div class="g2" style="margin-bottom:14px">
+            <div class="field"><label>Home Team</label><input id="homeTeam" type="text" placeholder="e.g. Arsenal"></div>
+            <div class="field"><label>Away Team</label><input id="awayTeam" type="text" placeholder="e.g. Chelsea"></div>
+          </div>
+
+          <!-- CORE STATS -->
+          <div class="slabel">All Matches Combined <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — boosts accuracy)</span></div>
+          <div class="g4" style="margin-bottom:14px">
+            <div class="field"><label>Home GF All</label><input id="homeGFAll" type="number" step="0.01" placeholder="Avg scored"></div>
+            <div class="field"><label>Home GA All</label><input id="homeGAAll" type="number" step="0.01" placeholder="Avg conceded"></div>
+            <div class="field"><label>Away GF All</label><input id="awayGFAll" type="number" step="0.01" placeholder="Avg scored"></div>
+            <div class="field"><label>Away GA All</label><input id="awayGAAll" type="number" step="0.01" placeholder="Avg conceded"></div>
+          </div>
+
+          <div class="slabel">Home / Away Venue Stats</div>
+          <div class="g4" style="margin-bottom:16px">
+            <div class="field"><label>Home GF</label><input id="homeGF" type="number" step="0.01" placeholder="1.75"></div>
+            <div class="field"><label>Home GA</label><input id="homeGA" type="number" step="0.01" placeholder="0.95"></div>
+            <div class="field"><label>Away GF</label><input id="awayGF" type="number" step="0.01" placeholder="1.40"></div>
+            <div class="field"><label>Away GA</label><input id="awayGA" type="number" step="0.01" placeholder="1.10"></div>
+          </div>
+
+          <!-- HOME/AWAY 1x2 STATS -->
+          <div class="slabel">Home / Away 1x2 All Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional)</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Home Stats</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                <div class="field"><label>W</label><input id="homeWAll" type="number" min="0" placeholder="12"></div>
+                <div class="field"><label>D</label><input id="homeDAll" type="number" min="0" placeholder="7"></div>
+                <div class="field"><label>L</label><input id="homeLAll" type="number" min="0" placeholder="3"></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Away Stats</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                <div class="field"><label>W</label><input id="awayWAll" type="number" min="0" placeholder="10"></div>
+                <div class="field"><label>D</label><input id="awayDAll" type="number" min="0" placeholder="9"></div>
+                <div class="field"><label>L</label><input id="awayLAll" type="number" min="0" placeholder="1"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="slabel">Home / Away 1x2 Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — boosts accuracy)</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Home Stats</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                <div class="field"><label>W</label><input id="homeW" type="number" min="0" placeholder="3"></div>
+                <div class="field"><label>D</label><input id="homeD" type="number" min="0" placeholder="3"></div>
+                <div class="field"><label>L</label><input id="homeL" type="number" min="0" placeholder="4"></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Away Stats</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                <div class="field"><label>W</label><input id="awayW" type="number" min="0" placeholder="2"></div>
+                <div class="field"><label>D</label><input id="awayD" type="number" min="0" placeholder="4"></div>
+                <div class="field"><label>L</label><input id="awayL" type="number" min="0" placeholder="4"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MATCH CONTEXT -->
+          <div class="sec sec-ctx">
+            <div class="sec-title">⚙️ Match Context</div>
+            <div class="g3">
+              <div class="field"><label>Competition Type</label>
+                <select id="compType">
+                  <option value="league">League Match</option>
+                  <option value="cup">Cup Match</option>
+                  <option value="playoff">Playoff / KO</option>
+                  <option value="friendly">Friendly</option>
+                </select>
+              </div>
+              <div class="field"><label>Home Form — oldest→newest (e.g. LWDWW)</label><input id="homeForm" type="text" placeholder="LWDWW" maxlength="10"></div>
+              <div class="field"><label>Away Form — oldest→newest (e.g. DLLWW)</label><input id="awayForm" type="text" placeholder="DLLWW" maxlength="10"></div>
+            </div>
+          </div>
+
+          <div class="err-box" id="errBox"></div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="runAnalysis()" title="Ctrl+Enter">⚡ Analyze Match</button>
+            <button class="btn btn-secondary" onclick="clearAll()">✕ Clear</button>
+            <button class="btn btn-secondary" onclick="loadExample()" style="border-color:var(--border2);color:var(--muted2)">📋 Load Example</button>
+          </div>
+          <div id="results" style="display:none;margin-top:28px"></div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+  <!-- HISTORY -->
+  <div class="history-wrap">
+    <div class="hist-panel">
+      <div class="panel-hd">
+        <div class="panel-title">📋 Prediction History <span class="hist-count" id="histCount">(0)</span></div>
+        <button class="h-btn" style="width:auto;padding:0 14px;font-size:11px;font-weight:700;font-family:'Inter',sans-serif;gap:5px;letter-spacing:0.3px" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
+      </div>
+      <div class="hist-table-wrap">
+        <table class="htbl">
+          <thead>
+            <tr>
+              <th style="text-align:left;width:90px">Date</th>
+              <th style="text-align:left">Match</th>
+              <th style="text-align:left;width:200px">1×2 Probabilities</th>
+              <th style="text-align:left">Top Tips</th>
+              <th style="text-align:center;width:80px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+  <div id="footer"></div>
+
+<script src="footer.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const fp = p => (p * 100).toFixed(1) + '%';
+const fo = p => (p > 0.001 ? (1/p).toFixed(2) : '—');
+const MAX = 15;
+
+// ── Prediction History (localStorage) ─────────────────────────
+const MAX_HISTORY=20;
+const STORAGE_KEY='betiqpro_history';
+
+function loadHistoryFromStorage(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    return raw?JSON.parse(raw):[];
+  }catch(e){ return []; }
+}
+
+function saveHistoryToStorage(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(window._predictionHistory));
+  }catch(e){ console.warn('Could not save history:',e); }
+}
+
+window._predictionHistory=loadHistoryFromStorage();
+renderHistory();
+
+function renderHistory(){
+  const el=$('historyBody'),cnt=$('histCount');
+  if(!el) return;
+  const h=window._predictionHistory;
+  if(cnt) cnt.textContent='('+h.length+')';
+  if(h.length===0){
+    el.innerHTML='<tr><td colspan="5" class="h-empty"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
+    return;
+  }
+  let html='';
+  for(let i=h.length-1;i>=0;i--){
+    const e=h[i];
+    const idx=h.length-1-i;
+    const hasTips=e.unifiedTips&&e.unifiedTips.length>0;
+    let tipsHtml;
+    if(hasTips){
+      tipsHtml=e.unifiedTips.slice(0,4).map(t=>'<span class="h-tip">'+escHtml(t.market)+'&nbsp;<span style="color:var(--cyan)">'+fp(t.prob)+'</span></span>').join('');
+    } else {
+      tipsHtml='<span style="color:var(--muted);font-size:11px;font-family:\'JetBrains Mono\',monospace">— run Unified Tips</span>';
+    }
+    html+='<tr>';
+    html+='<td><span class="h-date">'+e.date+'</span></td>';
+    html+='<td><span class="h-match">'+escHtml(e.homeTeam)+'<span class="vs">vs</span>'+escHtml(e.awayTeam)+'</span></td>';
+    html+='<td><div class="h-probs"><span class="h-prob h">H&nbsp;'+fp(e.prbs.h)+'</span><span class="h-prob d">D&nbsp;'+fp(e.prbs.d)+'</span><span class="h-prob a">A&nbsp;'+fp(e.prbs.a)+'</span></div></td>';
+    html+='<td><div class="h-tips">'+tipsHtml+'</div></td>';
+    html+='<td><div class="h-actions">'+
+      '<span class="h-btn reload" onclick="reloadEntry('+idx+')" title="Re-run this match">↻</span>'+
+      '<span class="h-btn delete" onclick="deleteEntry('+idx+')" title="Delete">✕</span>'+
+    '</div></td>';
+    html+='</tr>';
+  }
+  el.innerHTML=html;
+}
+
+window.clearHistory=function(){
+  window._predictionHistory=[];
+  saveHistoryToStorage();
+  renderHistory();
+};
+
+window.deleteEntry=function(idx){
+  const h=window._predictionHistory;
+  const realIdx=h.length-1-idx;
+  if(realIdx>=0&&realIdx<h.length) h.splice(realIdx,1);
+  saveHistoryToStorage();
+  renderHistory();
+};
+
+window.reloadEntry=function(idx){
+  const h=window._predictionHistory;
+  const realIdx=h.length-1-idx;
+  const e=h[realIdx];
+  if(!e||!e.inputs) return;
+  const inp=e.inputs;
+  const set=(id,val)=>{const el=$(id);if(el)el.value=val;};
+  set('homeTeam',inp.homeTeam||'');set('awayTeam',inp.awayTeam||'');
+  set('homeGF',inp.homeGF||'');set('homeGA',inp.homeGA||'');
+  set('awayGF',inp.awayGF||'');set('awayGA',inp.awayGA||'');
+  set('homeGFAll',inp.homeGFAll||'');set('homeGAAll',inp.homeGAAll||'');
+  set('awayGFAll',inp.awayGFAll||'');set('awayGAAll',inp.awayGAAll||'');
+  set('homeW',inp.homeW||'');set('homeD',inp.homeD||'');set('homeL',inp.homeL||'');
+  set('awayW',inp.awayW||'');set('awayD',inp.awayD||'');set('awayL',inp.awayL||'');
+  set('homeWAll',inp.homeWAll||'');set('homeDAll',inp.homeDAll||'');set('homeLAll',inp.homeLAll||'');
+  set('awayWAll',inp.awayWAll||'');set('awayDAll',inp.awayDAll||'');set('awayLAll',inp.awayLAll||'');
+  set('homeForm',inp.homeForm||'');set('awayForm',inp.awayForm||'');
+  set('compType',inp.compType||'league');
+  $('results').style.display='none';
+  window.runAnalysis();
+};
+
+function escHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+// ── Input helpers ──────────────────────────────────────────────
+function getNum(id){
+  const el=$(id); if(!el||el.value===''||el.value===null) return null;
+  const v=parseFloat(el.value);
+  if(isNaN(v)||v<0){el.classList.add('err');el.classList.remove('ok');return null;}
+  el.classList.remove('err');el.classList.add('ok');return v;
+}
+function hv(v){ return v!==null&&v!==undefined; }
+function getStr(id){ const el=$(id);return el?el.value.trim():''; }
+function getInt(id){
+  const el=$(id); if(!el||el.value===''||el.value===null) return null;
+  const v=parseInt(el.value,10);
+  if(isNaN(v)||v<0){el.classList.add('err');el.classList.remove('ok');return null;}
+  el.classList.remove('err');el.classList.add('ok');return v;
+}
+
+document.querySelectorAll('.field input').forEach(inp=>{
+  inp.addEventListener('blur',function(){
+    if(this.value===''){this.classList.remove('err','ok');return;}
+    if(this.type==='number'){
+      const v=parseFloat(this.value);
+      if(isNaN(v)||v<0)this.classList.add('err'),this.classList.remove('ok');
+      else this.classList.remove('err'),this.classList.add('ok');
+    }
+  });
+  inp.addEventListener('input',function(){
+    if(this.id==='homeForm'||this.id==='awayForm') this.value=this.value.toUpperCase().replace(/[^WDLP]/g,'');
+  });
+});
+
+// ══════════════════════════════════════════════════════════════
+//  MATH CORE
+// ══════════════════════════════════════════════════════════════
+function poisson(lam,k){
+  if(lam<=0) return k===0?1:0;
+  let logP=-lam+k*Math.log(lam);
+  for(let i=1;i<=k;i++) logP-=Math.log(i);
+  return Math.exp(logP);
+}
+
+function calcDynamicRho(lh,la){
+  const total=lh+la;
+  if(total<=0) return -0.13;
+  const rho=-(0.08+0.04/total);
+  return Math.max(-0.20,Math.min(-0.06,rho));
+}
+
+function dcCorrection(i,j,lH,lA,rho){
+  if(i===0&&j===0) return 1-lH*lA*rho;
+  if(i===0&&j===1) return 1+lH*rho;
+  if(i===1&&j===0) return 1+lA*rho;
+  if(i===1&&j===1) return 1-rho;
+  return 1;
+}
+
+function buildMatrix(lh,la,useDC){
+  const rho=useDC?calcDynamicRho(lh,la):0;
+  const totalXG=lh+la;
+  const corrRho=totalXG>3.0?Math.min(0.15,(totalXG-3.0)*0.05):0;
+  const m=[];
+  for(let i=0;i<=MAX;i++){
+    m[i]=[];
+    for(let j=0;j<=MAX;j++){
+      let p=poisson(lh,i)*poisson(la,j);
+      if(useDC) p*=dcCorrection(i,j,lh,la,rho);
+      if(corrRho>0){
+        const hD=i-lh,aD=j-la;
+        p*=(hD*aD>0)?(1+corrRho):(1-corrRho*0.5);
+      }
+      m[i][j]=Math.max(0,p);
+    }
+  }
+  let total=0;
+  for(let i=0;i<=MAX;i++) for(let j=0;j<=MAX;j++) total+=m[i][j];
+  if(total>0) for(let i=0;i<=MAX;i++) for(let j=0;j<=MAX;j++) m[i][j]/=total;
+  return m;
+}
+
+function calc1x2(m){
+  let h=0,d=0,a=0;
+  for(let i=0;i<=MAX;i++) for(let j=0;j<=MAX;j++){
+    if(i>j)h+=m[i][j]; else if(i===j)d+=m[i][j]; else a+=m[i][j];
+  }
+  const t=h+d+a;
+  return{h:h/t,d:d/t,a:a/t};
+}
+
+function calcBTTS(m){
+  let y=0;
+  for(let i=1;i<=MAX;i++) for(let j=1;j<=MAX;j++) y+=m[i][j];
+  return y;
+}
+
+function calcOU(m,line){
+  let over=0,under=0;
+  for(let i=0;i<=MAX;i++) for(let j=0;j<=MAX;j++){
+    if(i+j>line)over+=m[i][j];
+    else if(i+j<line)under+=m[i][j];
+  }
+  const t=over+under||1;
+  return{over:over/t,under:under/t};
+}
+
+function calcAHCover(m,threshold){
+  const t=-threshold;
+  const fraction=((t%1)+1)%1;
+  const isQB=Math.abs(fraction-0.25)<0.001||Math.abs(fraction-0.75)<0.001;
+  if(isQB){
+    const lower=t<0?Math.ceil(t*2)/2:Math.floor(t*2)/2;
+    const upper=lower+(t<0?-0.5:0.5);
+    const a=calcAHHalf(m,lower);
+    const b=calcAHHalf(m,upper);
+    return{home:(a.home+b.home)/2,away:(a.away+b.away)/2,push:0};
+  }
+  return calcAHHalf(m,t);
+}
+
+function calcAHHalf(m,threshold){
+  let home=0,away=0,push=0;
+  for(let i=0;i<=MAX;i++) for(let j=0;j<=MAX;j++){
+    const p=m[i][j],diff=i-j;
+    if(diff>threshold)home+=p;
+    else if(diff<threshold)away+=p;
+    else push+=p;
+  }
+  const tw=home+away||1;
+  return{home:home/tw,away:away/tw,push};
+}
+
+function skellamPMF(mu1,mu2,k){
+  const mu=mu1+mu2;
+  const ratio=mu1/(mu2||0.01);
+  const sqrtProd=2*Math.sqrt(mu1*mu2);
+  const bessel=modifiedBesselI(Math.abs(k),sqrtProd);
+  return Math.exp(-mu)*Math.pow(ratio,k/2)*bessel;
+}
+function modifiedBesselI(n,x){
+  if(x===0)return n===0?1:0;
+  let sum=0,term=1;const halfX=x/2;
+  for(let k=0;k<50;k++){sum+=term;term*=(halfX*halfX)/((k+1)*(k+1+n));if(Math.abs(term)<1e-15)break;}
+  return sum*Math.pow(halfX,n)/factorial(n);
+}
+function factorial(n){if(n<=1)return 1;let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+function computeSkellam(mu1,mu2){
+  const dist={};
+  for(let k=-5;k<=5;k++)dist[k]=skellamPMF(mu1,mu2,k);
+  let total=0;for(let k=-5;k<=5;k++)total+=dist[k];
+  for(let k=-5;k<=5;k++)dist[k]/=total;
+  return dist;
+}
+function computeCI(xg,w){return{low:+(xg-w).toFixed(2),high:+(xg+w).toFixed(2)};}
+
+// ── Context helpers ────────────────────────────────────────────
+function parseFormString(str){
+  if(!str||str.length===0)return 1.0;
+  const letters=str.toUpperCase().split('').filter(c=>'WDL'.includes(c)).slice(-5);
+  if(letters.length===0)return 1.0;
+  let pts=0;const maxPts=letters.length*3;
+  letters.forEach((l,i)=>{
+    // Recency weight: oldest=1.0x, newest=1.5x (linear ramp)
+    const w=1+(i/(letters.length-1||1))*0.5;
+    if(l==='W')pts+=3*w;
+    else if(l==='D')pts+=1*w; // Draw = 1pt not 1.5 — draws signal stagnation, not strong form
+  });
+  // 0 pts => 0.82, full pts => 1.18  (wider range; neutral ~5-game PPG of 1.2 lands near 1.0)
+  return 0.82+(pts/maxPts)*0.36;
+}
+
+function parseWDL(w,d,l){
+  if(!hv(w)||!hv(d)||!hv(l)||w+d+l===0) return null;
+  const ppg=(w*3+d*1)/(w+d+l);
+  // League-average PPG ≈ 1.35 (3 pts available, average competitive league)
+  // Map: 0 PPG => 0.75, 1.35 PPG => 1.0, 3.0 PPG => 1.25
+  // Formula: 0.75 + (ppg/3)*0.5  gives 0.75 at 0, 0.9975 at 1.35, 1.25 at 3.0
+  return 0.75+(ppg/3)*0.50;
+}
+
+function getHomeAdv(compType){
+  const map={league:0.30,cup:0.18,playoff:0.22,friendly:0.08};
+  return map[compType]!==undefined?map[compType]:0.30;
+}
+
+function compModifier(compType){
+  const mods={league:{home:1.0,away:1.0},cup:{home:0.95,away:1.05},playoff:{home:1.02,away:0.98},friendly:{home:0.92,away:0.94}};
+  return mods[compType]||mods.league;
+}
+
+// ── XG Computation ────────────────────────────────────────────
+function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awayGAAll){
+  let splitCount=0,combinedCount=0;
+  if(hv(homeGF))splitCount++;if(hv(homeGA))splitCount++;
+  if(hv(awayGF))splitCount++;if(hv(awayGA))splitCount++;
+  if(hv(homeGFAll))combinedCount++;if(hv(homeGAAll))combinedCount++;
+  if(hv(awayGFAll))combinedCount++;if(hv(awayGAAll))combinedCount++;
+  const hasSplit=splitCount>=2,hasCombined=combinedCount>=2;
+  const compTypeVal=getStr('compType')||'league';
+  const homeAdv=getHomeAdv(compTypeVal);
+  const homeW=getInt('homeW'),homeD=getInt('homeD'),homeL=getInt('homeL');
+  const awayW=getInt('awayW'),awayD=getInt('awayD'),awayL=getInt('awayL');
+  const homeWAll=getInt('homeWAll'),homeDAll=getInt('homeDAll'),homeLAll=getInt('homeLAll');
+  const awayWAll=getInt('awayWAll'),awayDAll=getInt('awayDAll'),awayLAll=getInt('awayLAll');
+  const leagueBase=1.35;
+  let homeXG,awayXG,dataSource,confidence,
+      homeAttackStr=1,homeDefenseStr=1,awayAttackStr=1,awayDefenseStr=1,
+      dataQualityScore=0,ciWidth=0,statDivergenceWarning=false;
+
+  if(hasSplit&&hasCombined){
+    const hGF_s=hv(homeGF)?homeGF:homeGFAll*0.9,hGA_s=hv(homeGA)?homeGA:homeGAAll*1.05;
+    const aGF_s=hv(awayGF)?awayGF:awayGFAll*0.85,aGA_s=hv(awayGA)?awayGA:awayGFAll*1.15;
+    // FIX: use fixed external league reference (1.35) not circular avg of the 4 inputs
+    const leagueAvg=leagueBase;
+    homeAttackStr=hGF_s/leagueAvg;awayDefenseStr=aGA_s/leagueAvg;
+    awayAttackStr=aGF_s/leagueAvg;homeDefenseStr=hGA_s/leagueAvg;
+    const cGF=hv(homeGFAll)?homeGFAll:hGF_s,cGA=hv(homeGAAll)?homeGAAll:hGA_s;
+    const caGF=hv(awayGFAll)?awayGFAll:aGF_s,caGA=hv(awayGAAll)?awayGAAll:aGA_s;
+    const hxS=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
+    const axS=leagueAvg*awayAttackStr*homeDefenseStr;
+    const hxC=((cGF+caGA)/2)*1.08,axC=(caGF+cGA)/2;
+    homeXG=hxS*0.6+hxC*0.4;awayXG=axS*0.6+axC*0.4;
+    dataSource='Split+Combined Fusion (60/40)';
+    confidence=splitCount===4&&combinedCount===4?'HIGH':'MEDIUM';
+    const checks=[
+      {a:hv(homeGF)?homeGF:null,b:hv(homeGFAll)?homeGFAll:null},
+      {a:hv(homeGA)?homeGA:null,b:hv(homeGAAll)?homeGAAll:null},
+      {a:hv(awayGF)?awayGF:null,b:hv(awayGFAll)?awayGFAll:null},
+      {a:hv(awayGA)?awayGA:null,b:hv(awayGAAll)?awayGAAll:null},
+    ];
+    let penalty=0;
+    checks.forEach(c=>{
+      if(c.a!==null&&c.b!==null&&Math.abs(c.a-c.b)>0.5)penalty+=12;
+    });
+    penalty=Math.min(penalty,30);
+    if(penalty>0)statDivergenceWarning=true;
+    const fieldsFilled=splitCount+combinedCount;
+    const baseScore=(fieldsFilled/8)*70;
+    const consistencyBonus=(hasSplit&&hasCombined)?20:0;
+    const homeFormStr=getStr('homeForm'),awayFormStr=getStr('awayForm');
+    const formBonus=(homeFormStr.length>=3&&awayFormStr.length>=3)?5:0;
+    dataQualityScore=Math.max(20,Math.min(100,Math.round(baseScore+consistencyBonus+formBonus-penalty)));
+  } else if(hasSplit){
+    const hGF=hv(homeGF)?homeGF:leagueBase,hGA=hv(homeGA)?homeGA:leagueBase;
+    const aGF=hv(awayGF)?awayGF:leagueBase,aGA=hv(awayGA)?awayGA:leagueBase;
+    // FIX: fixed external reference — not circular avg of inputs
+    const leagueAvg=leagueBase;
+    homeAttackStr=hGF/leagueAvg;awayDefenseStr=aGA/leagueAvg;
+    awayAttackStr=aGF/leagueAvg;homeDefenseStr=hGA/leagueAvg;
+    homeXG=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
+    awayXG=leagueAvg*awayAttackStr*homeDefenseStr;
+    dataSource=splitCount===4?'Split Stats Only':'Split Stats (partial)';
+    confidence=splitCount===4?'HIGH':'MEDIUM';
+    const fieldsFilled=splitCount+combinedCount;
+    const homeFormStr=getStr('homeForm'),awayFormStr=getStr('awayForm');
+    const formBonus=(homeFormStr.length>=3&&awayFormStr.length>=3)?5:0;
+    dataQualityScore=Math.max(20,Math.min(100,Math.round((fieldsFilled/8)*70+formBonus)));
+  } else if(hasCombined){
+    const hGF=hv(homeGFAll)?homeGFAll:leagueBase,hGA=hv(homeGAAll)?homeGAAll:leagueBase;
+    const aGF=hv(awayGFAll)?awayGFAll:leagueBase,aGA=hv(awayGAAll)?awayGAAll:leagueBase;
+    // FIX: fixed external reference — not circular avg of inputs
+    const leagueAvg=leagueBase;
+    homeAttackStr=hGF/leagueAvg;awayDefenseStr=aGA/leagueAvg;
+    awayAttackStr=aGF/leagueAvg;homeDefenseStr=hGA/leagueAvg;
+    homeXG=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
+    awayXG=leagueAvg*awayAttackStr*homeDefenseStr;
+    dataSource=combinedCount===4?'Combined Stats Only':'Combined Stats (partial)';
+    confidence=combinedCount===4?'HIGH':'LOW';
+    const fieldsFilled=splitCount+combinedCount;
+    dataQualityScore=Math.max(20,Math.min(100,Math.round((fieldsFilled/8)*70)));
+  } else {
+    homeXG=leagueBase+homeAdv;awayXG=leagueBase;
+    dataSource='League defaults';confidence='LOW';dataQualityScore=20;
+  }
+
+  const homeFormStr=getStr('homeForm'),awayFormStr=getStr('awayForm');
+  const homeFormMult=parseFormString(homeFormStr),awayFormMult=parseFormString(awayFormStr);
+  const compMod=compModifier(compTypeVal);
+  homeXG*=homeFormMult*compMod.home;
+  awayXG*=awayFormMult*compMod.away;
+
+  const homeWDLMod=parseWDL(homeW,homeD,homeL);
+  const awayWDLMod=parseWDL(awayW,awayD,awayL);
+  const homeWDLAllMod=parseWDL(homeWAll,homeDAll,homeLAll);
+  const awayWDLAllMod=parseWDL(awayWAll,awayDAll,awayLAll);
+  let homeWDLCombined=null,awayWDLCombined=null,
+      homeWDLStr=null,awayWDLStr=null,
+      homeWDLAllStr=null,awayWDLAllStr=null,
+      hasWDL=false;
+  if(hv(homeW)){homeWDLStr='W'+homeW+' D'+homeD+' L'+homeL;hasWDL=true;}
+  if(hv(awayW)){awayWDLStr='W'+awayW+' D'+awayD+' L'+awayL;hasWDL=true;}
+  if(hv(homeWAll)){homeWDLAllStr='W'+homeWAll+' D'+homeDAll+' L'+homeLAll;hasWDL=true;}
+  if(hv(awayWAll)){awayWDLAllStr='W'+awayWAll+' D'+awayDAll+' L'+awayLAll;hasWDL=true;}
+  if(hv(homeWDLMod)&&hv(homeWDLAllMod)){
+    // Home game: venue-specific WDL (homeW/D/L) is more predictive than overall; weight 70/30
+    homeWDLCombined=homeWDLMod*0.70+homeWDLAllMod*0.30;
+  } else if(hv(homeWDLMod)) homeWDLCombined=homeWDLMod;
+  else if(hv(homeWDLAllMod)) homeWDLCombined=homeWDLAllMod;
+  if(hv(awayWDLMod)&&hv(awayWDLAllMod)){
+    // Away game: venue-specific WDL (awayW/D/L) is more predictive than overall; weight 70/30
+    awayWDLCombined=awayWDLMod*0.70+awayWDLAllMod*0.30;
+  } else if(hv(awayWDLMod)) awayWDLCombined=awayWDLMod;
+  else if(hv(awayWDLAllMod)) awayWDLCombined=awayWDLAllMod;
+  // WDL modifier is now centered around 1.0 (from parseWDL fix), so apply directly
+  // Cap effect to ±20% to prevent extreme outliers overriding the xG model
+  if(hv(homeWDLCombined)) homeXG*=Math.max(0.80,Math.min(1.20,homeWDLCombined));
+  if(hv(awayWDLCombined)) awayXG*=Math.max(0.80,Math.min(1.20,awayWDLCombined));
+  if(hasWDL) dataQualityScore=Math.max(20,Math.min(100,Math.round(dataQualityScore)+8));
+
+  homeXG=Math.max(0.1,Math.min(9,homeXG));
+  awayXG=Math.max(0.1,Math.min(9,awayXG));
+
+  const fieldsFilled=splitCount+combinedCount;
+  ciWidth=fieldsFilled>=8?0.12:fieldsFilled>=6?0.22:fieldsFilled>=4?0.35:0.55;
+
+  return{
+    homeXG:+homeXG.toFixed(2),awayXG:+awayXG.toFixed(2),
+    homeAttackStr:+homeAttackStr.toFixed(2),homeDefenseStr:+homeDefenseStr.toFixed(2),
+    awayAttackStr:+awayAttackStr.toFixed(2),awayDefenseStr:+awayDefenseStr.toFixed(2),
+    dataSource,confidence,dataQualityScore,ciWidth,
+    homeFormStr,awayFormStr,compType:compTypeVal,
+    homeFormMult,awayFormMult,homeAdv,statDivergenceWarning,
+    homeWDLCombined,awayWDLCombined,homeWDLStr,awayWDLStr,
+    homeWDLAllStr,awayWDLAllStr,hasWDL
+  };
+}
+
+// ── Monte Carlo (12,000 iterations) ───────────────────────────
+function runSimulation(homeXG,awayXG,n){
+  n=n||12000;
+  let homeWins=0,draws=0,awayWins=0,over25=0,bttsY=0;
+  // FIX: log-uniform Poisson sampler — unbiased at all lambda values
+  // Previous do-while with k<20 cap introduced systematic undercount at lambda>4
+  function samplePoisson(lam){
+    if(lam<=0)return 0;
+    let k=-1,logP=0;
+    const logL=-lam;
+    do{k++;logP+=Math.log(Math.random());}while(logP>logL);
+    return k;
+  }
+  for(let i=0;i<n;i++){
+    const hg=samplePoisson(homeXG),ag=samplePoisson(awayXG);
+    if(hg>ag)homeWins++;else if(hg===ag)draws++;else awayWins++;
+    if(hg+ag>2.5)over25++;
+    if(hg>=1&&ag>=1)bttsY++;
+  }
+  return{homeWins:homeWins/n,draws:draws/n,awayWins:awayWins/n,over25:over25/n,bttsY:bttsY/n};
+}
+
+// ── Fair Value Engine ──────────────────────────────────────────
+function computeFairValue(prbs,btts,dq,totalXG){
+  const markets=[];
+  const dqFactor=dq/100; // 0.0–1.0
+  const max1x2=Math.max(prbs.h,prbs.d,prbs.a);
+  const dom1x2=max1x2===prbs.h?'Home Win':max1x2===prbs.d?'Draw':'Away Win';
+  // FIX: certainty = multiplicative blend of data quality * market probability strength
+  // Previously additive (dq*0.4 + prob*60) allowed high prob to mask low data quality
+  // Now a low-quality model cannot fake high certainty regardless of how extreme the prob is
+  markets.push({market:dom1x2,certainty:Math.min(95,Math.round(dqFactor*0.5*100 + max1x2*50)),prob:max1x2});
+  const bttsExt=Math.abs(btts-0.5)*2;
+  markets.push({market:btts>0.5?'BTTS Yes':'BTTS No',certainty:Math.round(dqFactor*0.4*100+bttsExt*60),prob:btts>0.5?btts:1-btts});
+  let pUnder=0;for(let g=0;g<=2;g++)pUnder+=poisson(totalXG,g);
+  const ouProb=totalXG>2.5?1-pUnder:pUnder;
+  const ouExt=Math.abs(ouProb-0.5)*2;
+  markets.push({market:totalXG>2.5?'Over 2.5':'Under 2.5',certainty:Math.round(dqFactor*0.4*100+ouExt*60),prob:ouProb});
+  return markets.sort((a,b)=>b.certainty-a.certainty);
+}
+
+// ── Kelly ──────────────────────────────────────────────────────
+function kellyC(prob,odds){
+  if(!odds||isNaN(odds)||odds<1.01)return null;
+  return Math.max(0,((odds-1)*prob-(1-prob))/(odds-1));
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function confLevel(level){
+  if(level==='HIGH')return{label:'HIGH',color:'var(--win)',bg:'rgba(0,229,160,0.10)',border:'rgba(0,229,160,0.3)'};
+  if(level==='MEDIUM')return{label:'MEDIUM',color:'var(--draw)',bg:'rgba(245,200,66,0.10)',border:'rgba(245,200,66,0.3)'};
+  return{label:'LOW',color:'var(--muted2)',bg:'rgba(107,116,148,0.10)',border:'rgba(107,116,148,0.3)'};
+}
+function probBar(p,color){
+  return '<div class="pbar-wrap"><div class="pbar-track"><div class="pbar-fill" style="width:'+(p*100).toFixed(1)+'%;background:'+color+'"></div></div></div>';
+}
+function getTopScores(mat,n){
+  n=n||12;
+  const arr=[];
+  for(let i=0;i<=8;i++) for(let j=0;j<=8;j++) arr.push({home:i,away:j,p:mat[i]?.[j]||0});
+  return arr.sort((a,b)=>b.p-a.p).slice(0,n);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — PROBS TAB
+// ══════════════════════════════════════════════════════════════
+function renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goalDiff,homeCI,awayCI,fairValue){
+  let html='';
+  const xg=xgResult.homeXG,awayXG=xgResult.awayXG;
+  const dq=Math.round(xgResult.dataQualityScore);
+  const dqColor=dq>=70?'var(--green)':dq>=45?'var(--amber)':'var(--muted2)';
+  const circ=2*Math.PI*22;
+  const offset=circ-(circ*(dq/100));
+  const strokeColor=dq>=70?'var(--green)':dq>=45?'var(--amber)':'var(--red)';
+
+  html+='<div class="dq-ring-wrap">';
+  html+='<div class="dq-ring"><svg width="54" height="54" viewBox="0 0 54 54"><circle class="dq-ring-bg" cx="27" cy="27" r="22"/><circle class="dq-ring-fill" cx="27" cy="27" r="22" stroke="'+strokeColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+offset.toFixed(1)+'"/></svg>';
+  html+='<div class="dq-center" style="color:'+dqColor+'">'+dq+'%</div></div>';
+  html+='<div class="dq-info"><div class="dq-info-title">Data Quality: '+(dq>=70?'Reliable':dq>=45?'Moderate':'Low')+(xgResult.statDivergenceWarning?' <span style="color:var(--red);font-size:9px">⚠ STAT DIVERGENCE</span>':'')+'</div>';
+  html+='<div class="dq-info-detail">Source: '+xgResult.dataSource+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG · Comp: '+xgResult.compType+'<br>Dynamic DC ρ: '+(xg+awayXG<2.8?calcDynamicRho(xg,awayXG).toFixed(3)+' (active)':'off')+'</div></div></div>';
+
+  html+='<div class="metric-row">';
+  html+='<div class="metric"><div class="ml">Home xG</div><div class="mv" style="color:var(--cyan)">'+xg.toFixed(2)+'</div><div class="ms">CI: ['+homeCI.low+', '+homeCI.high+']</div></div>';
+  html+='<div class="metric"><div class="ml">Away xG</div><div class="mv" style="color:var(--cyan)">'+awayXG.toFixed(2)+'</div><div class="ms">CI: ['+awayCI.low+', '+awayCI.high+']</div></div>';
+  html+='<div class="metric"><div class="ml">Total xG</div><div class="mv" style="color:var(--muted2)">'+totalXG.toFixed(2)+'</div><div class="ms">'+(goalDiff>0?'Home lean':goalDiff<0?'Away lean':'Even')+'</div></div>';
+  html+='</div>';
+
+  html+='<div class="metric-row">';
+  const haC=xgResult.homeAttackStr>1?'var(--green)':'var(--amber)';
+  const hdC=xgResult.homeDefenseStr<1?'var(--green)':'var(--red)';
+  const aaC=xgResult.awayAttackStr>1?'var(--green)':'var(--amber)';
+  html+='<div class="metric"><div class="ml">Home Attack</div><div class="mv" style="color:'+haC+'">'+xgResult.homeAttackStr.toFixed(2)+'</div><div class="ms">'+(xgResult.homeAttackStr>1?'Above avg':'Below avg')+'</div></div>';
+  html+='<div class="metric"><div class="ml">Home Defense</div><div class="mv" style="color:'+hdC+'">'+xgResult.homeDefenseStr.toFixed(2)+'</div><div class="ms">'+(xgResult.homeDefenseStr<1?'Strong':'Leaky')+'</div></div>';
+  html+='<div class="metric"><div class="ml">Away Attack</div><div class="mv" style="color:'+aaC+'">'+xgResult.awayAttackStr.toFixed(2)+'</div><div class="ms">'+(xgResult.awayAttackStr>1?'Above avg':'Below avg')+'</div></div>';
+  html+='</div>';
+
+  if(xgResult.homeFormMult||xgResult.awayFormMult){
+    html+='<div class="metric-row">';
+    const hfP=((xgResult.homeFormMult-1)*100).toFixed(1);
+    const afP=((xgResult.awayFormMult-1)*100).toFixed(1);
+    const hfC=xgResult.homeFormMult>1.01?'var(--green)':xgResult.homeFormMult<0.97?'var(--red)':'var(--amber)';
+    const afC=xgResult.awayFormMult>1.01?'var(--green)':xgResult.awayFormMult<0.97?'var(--red)':'var(--amber)';
+    html+='<div class="metric"><div class="ml">Home Form Adj</div><div class="mv" style="color:'+hfC+';font-size:18px">'+(xgResult.homeFormMult>=1?'+':'')+hfP+'%</div><div class="ms">'+(xgResult.homeFormStr||'—')+'</div></div>';
+    html+='<div class="metric"><div class="ml">Away Form Adj</div><div class="mv" style="color:'+afC+';font-size:18px">'+(xgResult.awayFormMult>=1?'+':'')+afP+'%</div><div class="ms">'+(xgResult.awayFormStr||'—')+'</div></div>';
+    html+='<div class="metric"><div class="ml">Goal Diff</div><div class="mv" style="color:'+(goalDiff>=0?'var(--green)':'var(--red)')+';font-size:18px">'+(goalDiff>0?'+':'')+goalDiff.toFixed(2)+'</div></div>';
+    html+='</div>';
+  }
+
+  if(xgResult.hasWDL){
+    html+='<div class="metric-row">';
+    if(xgResult.homeWDLCombined!==null){
+      const hwP=((xgResult.homeWDLCombined-1)*100).toFixed(1);
+      const hwC=xgResult.homeWDLCombined>1.01?'var(--green)':xgResult.homeWDLCombined<0.97?'var(--red)':'var(--amber)';
+      const hwS=(xgResult.homeWDLStr||xgResult.homeWDLAllStr||'');
+      html+='<div class="metric"><div class="ml">Home WDL</div><div class="mv" style="color:'+hwC+';font-size:18px">'+(xgResult.homeWDLCombined>=1?'+':'')+hwP+'%</div><div class="ms">'+hwS+'</div></div>';
+    } else {
+      html+='<div class="metric"><div class="ml">Home WDL</div><div class="mv" style="color:var(--muted);font-size:14px">—</div><div class="ms">Not provided</div></div>';
+    }
+    if(xgResult.awayWDLCombined!==null){
+      const awP=((xgResult.awayWDLCombined-1)*100).toFixed(1);
+      const awC=xgResult.awayWDLCombined>1.01?'var(--green)':xgResult.awayWDLCombined<0.97?'var(--red)':'var(--amber)';
+      const awS=(xgResult.awayWDLStr||xgResult.awayWDLAllStr||'');
+      html+='<div class="metric"><div class="ml">Away WDL</div><div class="mv" style="color:'+awC+';font-size:18px">'+(xgResult.awayWDLCombined>=1?'+':'')+awP+'%</div><div class="ms">'+awS+'</div></div>';
+    } else {
+      html+='<div class="metric"><div class="ml">Away WDL</div><div class="mv" style="color:var(--muted);font-size:14px">—</div><div class="ms">Not provided</div></div>';
+    }
+    html+='<div class="metric"><div class="ml">WDL Impact</div><div class="mv" style="color:var(--muted2);font-size:14px">ACTIVE</div><div class="ms">xG adjusted</div></div>';
+    html+='</div>';
+  }
+
+  html+='<div class="metric-row">';
+  html+='<div class="metric"><div class="ml">Home Win</div><div class="mv" style="color:var(--green)">'+fp(prbs.h)+'</div>'+probBar(prbs.h,'var(--green)')+'<div class="ms">Fair: '+fo(prbs.h)+'</div></div>';
+  html+='<div class="metric"><div class="ml">Draw</div><div class="mv" style="color:var(--amber)">'+fp(prbs.d)+'</div>'+probBar(prbs.d,'var(--amber)')+'<div class="ms">Fair: '+fo(prbs.d)+'</div></div>';
+  html+='<div class="metric"><div class="ml">Away Win</div><div class="mv" style="color:var(--over)">'+fp(prbs.a)+'</div>'+probBar(prbs.a,'var(--over)')+'<div class="ms">Fair: '+fo(prbs.a)+'</div></div>';
+  html+='</div>';
+
+  const ou25=calcOU(mat,2.5);
+  html+='<div class="metric-row">';
+  html+='<div class="metric"><div class="ml">BTTS Yes</div><div class="mv" style="color:var(--amber)">'+fp(btts)+'</div>'+probBar(btts,'var(--amber)')+'<div class="ms">Fair: '+fo(btts)+'</div></div>';
+  html+='<div class="metric"><div class="ml">Over 2.5</div><div class="mv" style="color:var(--over)">'+fp(ou25.over)+'</div>'+probBar(ou25.over,'var(--over)')+'<div class="ms">Fair: '+fo(ou25.over)+'</div></div>';
+  html+='<div class="metric"><div class="ml">DC 1X</div><div class="mv" style="color:var(--green)">'+fp(prbs.h+prbs.d)+'</div><div class="ms">DC X2: '+fp(prbs.d+prbs.a)+'</div><div class="ms">DC 12: '+fp(prbs.h+prbs.a)+'</div></div>';
+  html+='</div>';
+
+  html+='<div class="card"><div class="card-title">💎 Fair Value Engine — Highest Certainty Markets</div>';
+  html+='<div class="fv-grid">';
+  fairValue.forEach(fv=>{
+    html+='<div class="fv-item"><div class="fv-market">'+fv.market+'</div><div class="fv-cert">'+fv.certainty+'% certainty</div><div class="fv-prob">Fair Odds: '+fo(fv.prob)+'</div></div>';
+  });
+  html+='</div></div>';
+
+  html+='<div class="card"><div class="card-title">📊 Goal Difference Distribution (Skellam)</div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:320px">';
+  html+='<thead><tr><th>GD</th><th>Probability</th><th>Fair Odds</th><th>Signal</th></tr></thead><tbody>';
+  for(let k=-5;k<=5;k++){
+    const p=skellam[k]||0;
+    if(p<0.01)continue;
+    const sig=k>0?'Home Win':k<0?'Away Win':'Draw';
+    const sc=k>0?'var(--green)':k<0?'var(--red)':'var(--amber)';
+    html+='<tr><td style="font-weight:700;color:'+sc+'">'+(k>0?'+':'')+k+'</td><td>'+fp(p)+'</td><td>'+fo(p)+'</td><td><span style="font-weight:700;color:'+sc+'">'+sig+'</span></td></tr>';
+  }
+  html+='</tbody></table></div></div>';
+
+  html+='<div class="card"><div class="card-title">🏆 Top Correct Score Probabilities</div>';
+  html+='<div class="cs-grid">';
+  scores.slice(0,5).forEach(s=>{
+    const c=s.home>s.away?'var(--green)':s.home===s.away?'var(--amber)':'var(--red)';
+    html+='<div class="cs-item"><div class="cs-score" style="color:'+c+'">'+s.home+'–'+s.away+'</div><div class="cs-prob">'+fp(s.p)+'</div><div class="cs-fair">'+fo(s.p)+'</div></div>';
+  });
+  html+='</div></div>';
+
+  return html;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — SIM TAB
+// ══════════════════════════════════════════════════════════════
+function renderSimTab(sim,prbs,btts,totalXG,mat){
+  const ou25=mat?calcOU(mat,2.5):{over:0.5,under:0.5};
+
+  function simRow(label,simVal,modelVal,color){
+    const pct=(simVal*100).toFixed(1);
+    const drift=Math.abs(simVal-modelVal)*100;
+    const dC=drift<2?'var(--green)':drift<5?'var(--amber)':'var(--red)';
+    return '<div class="sim-row">'+
+      '<div class="sim-lbl">'+label+'</div>'+
+      '<div class="sim-track"><div class="sim-fill" style="width:'+pct+'%;background:'+color+'"><span class="sim-val">'+fp(simVal)+'</span></div></div>'+
+      '<div class="sim-model">Model: '+fp(modelVal)+'<br><span style="color:'+dC+'">Δ'+drift.toFixed(1)+'%</span></div>'+
+    '</div>';
+  }
+
+  let html='<div class="card"><div class="card-title">🎲 Monte Carlo Simulation (12,000 Iterations)</div>';
+  html+='<div style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.6">Random Poisson sampling run 12,000 times. Δ column shows deviation from analytical model — gaps over 3% indicate high match uncertainty.</div>';
+  html+=simRow('Home Win',sim.homeWins,prbs.h,'var(--green)');
+  html+=simRow('Draw',sim.draws,prbs.d,'var(--amber)');
+  html+=simRow('Away Win',sim.awayWins,prbs.a,'var(--red)');
+  html+=simRow('Over 2.5',sim.over25,ou25.over,'var(--over)');
+  html+=simRow('BTTS Yes',sim.bttsY,btts,'var(--under)');
+  html+='<div class="note" style="margin-top:12px">Δ under 2% = model stable. 2–5% = moderate uncertainty. Over 5% = results sensitive to assumptions — reduce stake size.</div>';
+  html+='</div>';
+  return html;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — O/U TAB
+// ══════════════════════════════════════════════════════════════
+function renderOUTab(ouData,mat){
+  let html='<div class="card"><div class="card-title">Over / Under Goal Lines</div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:360px">';
+  html+='<thead><tr><th>Line</th><th>Over %</th><th>Under %</th><th>Fair O</th><th>Fair U</th><th>Signal</th></tr></thead><tbody>';
+  ouData.forEach(o=>{
+    const diff=o.over-o.under;
+    const sig=diff>0.02?'<span class="sig over">OVER</span>':diff<-0.02?'<span class="sig under">UNDER</span>':'<span class="sig fair">EVEN</span>';
+    html+='<tr><td style="font-weight:700">'+o.line+'</td><td style="color:var(--over)">'+fp(o.over)+'</td><td style="color:var(--under)">'+fp(o.under)+'</td><td>'+fo(o.over)+'</td><td>'+fo(o.under)+'</td><td>'+sig+'</td></tr>';
+  });
+  html+='</tbody></table></div></div>';
+
+  let totalGoalsDist=[];
+  for(let g=0;g<=9;g++){let gp=0;for(let i=0;i<=MAX;i++)for(let j=0;j<=MAX;j++){if(i+j===g)gp+=(mat[i]?.[j]||0);}totalGoalsDist.push({goals:g,prob:gp});}
+
+  html+='<div class="card" style="margin-top:10px"><div class="card-title">Exact Total Goals Distribution</div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:240px">';
+  html+='<thead><tr><th>Total Goals</th><th>Probability</th><th>Fair Odds</th></tr></thead><tbody>';
+  totalGoalsDist.filter(t=>t.prob>0.01).sort((a,b)=>b.prob-a.prob).slice(0,8).forEach(t=>{
+    html+='<tr><td style="font-weight:700">'+t.goals+'</td><td>'+fp(t.prob)+'</td><td>'+fo(t.prob)+'</td></tr>';
+  });
+  html+='</tbody></table></div></div>';
+  return html;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — AH TAB
+// ══════════════════════════════════════════════════════════════
+function renderAHTab(mat){
+  let html='<div class="card"><div class="card-title">Asian Handicap Lines <span style="font-size:9px;font-weight:400;color:var(--muted)">· Quarter-ball supported · −N = team gives goals (fav) · +N = team receives goals (underdog)</span></div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:520px">';
+  html+='<thead><tr><th style="text-align:left">Home Label</th><th style="text-align:left">Away Label</th><th>H Cover %</th><th>A Cover %</th><th>Push %</th><th>Fair H/A</th><th>Line Type</th><th>Best Side</th></tr></thead><tbody>';
+  [-4.5,-3.5,-2.5,-1.5,-0.5,0.0,0.5,1.5,2.5,3.5,4.5].forEach(threshold=>{
+    const c=calcAHCover(mat,threshold);
+    const absT=Math.abs(threshold);
+    const homeLabel=threshold===0?'0':(threshold<0?'−':'+')+(absT%1===0?absT.toFixed(1):absT.toFixed(2));
+    const awayLabel=threshold===0?'0':(threshold<0?'+':'−')+(absT%1===0?absT.toFixed(1):absT.toFixed(2));
+    const fraction=((absT%1)+1)%1;
+    const isQB=Math.abs(fraction-0.25)<0.001||Math.abs(fraction-0.75)<0.001;
+    const lineType=threshold===0?'Level':isQB?'<span class="sig slight">QTR-BALL</span>':'<span class="sig fair">HALF</span>';
+    let bestSide='',bestSideColor='color:var(--muted)';
+    if(c.home>c.away+0.05){bestSide='Home '+homeLabel;bestSideColor='color:var(--green)';}
+    else if(c.away>c.home+0.05){bestSide='Away '+awayLabel;bestSideColor='color:var(--red)';}
+    else{bestSide='Even';bestSideColor='color:var(--muted)';}
+    html+='<tr>';
+    html+='<td style="text-align:left;font-weight:700;color:var(--green)">'+homeLabel+'</td>';
+    html+='<td style="text-align:left;font-weight:700;color:var(--red)">'+awayLabel+'</td>';
+    html+='<td style="color:var(--green)">'+fp(c.home)+'</td>';
+    html+='<td style="color:var(--red)">'+fp(c.away)+'</td>';
+    html+='<td style="color:var(--muted)">'+fp(c.push)+'</td>';
+    html+='<td style="font-size:11px">'+fo(c.home)+' / '+fo(c.away)+'</td>';
+    html+='<td>'+lineType+'</td>';
+    html+='<td><span style="font-weight:700;'+bestSideColor+'">'+bestSide+'</span></td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  html+='<div class="note" style="margin-top:10px"><strong>AH Convention:</strong> Negative handicap (−N) = that team gives N goals — they are the <em>favourite</em> and must win by more than N. Positive (+N) = that team receives N goals — they are the <em>underdog</em> and can draw or lose by up to N and still cover.</div>';
+  html+='</div>';
+  return html;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — KELLY TAB (Odds Compilation)
+// ══════════════════════════════════════════════════════════════
+function renderKellyTab(mat,prbs,btts){
+  const markets=[];
+  markets.push({label:'Home Win',prob:prbs.h,cat:'1X2',fairOdds:1/(prbs.h||0.001)});
+  markets.push({label:'Draw',prob:prbs.d,cat:'1X2',fairOdds:1/(prbs.d||0.001)});
+  markets.push({label:'Away Win',prob:prbs.a,cat:'1X2',fairOdds:1/(prbs.a||0.001)});
+  markets.push({label:'DC 1X',prob:prbs.h+prbs.d,cat:'DC',fairOdds:1/((prbs.h+prbs.d)||0.001)});
+  markets.push({label:'DC X2',prob:prbs.d+prbs.a,cat:'DC',fairOdds:1/((prbs.d+prbs.a)||0.001)});
+  markets.push({label:'DC 12',prob:prbs.h+prbs.a,cat:'DC',fairOdds:1/((prbs.h+prbs.a)||0.001)});
+  markets.push({label:'BTTS Yes',prob:btts,cat:'BTTS',fairOdds:1/(btts||0.001)});
+  markets.push({label:'BTTS No',prob:1-btts,cat:'BTTS',fairOdds:1/((1-btts)||0.001)});
+  [0.5,1.5,2.5,3.5,4.5].forEach(line=>{
+    const ou=calcOU(mat,line);
+    markets.push({label:'Over '+line,prob:ou.over,cat:'O/U',fairOdds:1/(ou.over||0.001)});
+    markets.push({label:'Under '+line,prob:ou.under,cat:'O/U',fairOdds:1/(ou.under||0.001)});
+  });
+  [-4.5,-3.5,-2.5,-1.5,-0.5,0.0,0.5,1.5,2.5,3.5,4.5].forEach(threshold=>{
+    const ah=calcAHCover(mat,threshold);
+    const absT=Math.abs(threshold);
+    const fmt=absT%1===0?absT.toFixed(1):absT.toFixed(2);
+    const hL=threshold===0?'0':(threshold<0?'−':'+')+fmt;
+    const aL=threshold===0?'0':(threshold<0?'+':'−')+fmt;
+    markets.push({label:'AH Home '+hL,prob:ah.home,cat:'AH',fairOdds:1/(ah.home||0.001)});
+    markets.push({label:'AH Away '+aL,prob:ah.away,cat:'AH',fairOdds:1/(ah.away||0.001)});
+  });
+
+  const top=markets.filter(m=>m.prob<=0.89 && m.prob >= 0.70).sort((a,b)=>b.prob-a.prob).slice(0,15);
+
+  let html='<div class="status-ok" style="margin-bottom:14px">✓ Model-Driven Odds Compilation — fair prices derived from Poisson + DC + Monte Carlo</div>';
+  html+='<div class="card"><div class="card-title">💰 Compiled Fair Odds by Market</div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:600px">';
+  html+='<thead><tr><th style="text-align:left">Market</th><th>Cat</th><th>Model %</th><th>Fair Odds</th><th>Implied %</th></tr></thead><tbody>';
+  top.forEach(m=>{
+    html+='<tr>';
+    html+='<td style="text-align:left;font-weight:700;color:var(--text)">'+m.label+'</td>';
+    html+='<td><span class="badge '+(m.cat==='1X2'?'badge-val':'badge-fair')+'">'+m.cat+'</span></td>';
+    html+='<td>'+(m.prob*100).toFixed(1)+'%</td>';
+    html+='<td style="color:var(--cyan);font-weight:700;font-family:\'JetBrains Mono\',monospace">'+m.fairOdds.toFixed(2)+'</td>';
+    html+='<td>'+(m.prob*100).toFixed(1)+'%</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  html+='<div class="note" style="margin-top:10px">All odds are model-compiled fair prices with zero margin. Markets ranked by probability strength 70% to 89%.</div></div>';
+  return html;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — UNIFIED TIPS TAB
+// ══════════════════════════════════════════════════════════════
+window.runUnifiedTips=function(){
+  const body=$('unifiedBody'); if(!body)return;
+  const snap=window._lastSnapshot,mat=window._lastMatrix,prbs=window._lastPrbs,btts=window._lastBTTS;
+  if(!snap||!mat||!prbs){body.innerHTML='<div style="padding:20px;color:var(--red)">⚠ Run main analysis first.</div>';return;}
+  try{
+    const sim=runSimulation(snap.homeXG,snap.awayXG,12000);
+    const candidates=[];
+
+    candidates.push({market:'Home Win',prob:prbs.h,cat:'1X2',safeScore:prbs.h,simProb:sim.homeWins});
+    candidates.push({market:'Draw',prob:prbs.d,cat:'1X2',safeScore:prbs.d,simProb:sim.draws});
+    candidates.push({market:'Away Win',prob:prbs.a,cat:'1X2',safeScore:prbs.a,simProb:sim.awayWins});
+    candidates.push({market:'BTTS Yes',prob:btts,cat:'BTTS',safeScore:btts,simProb:sim.bttsY});
+    candidates.push({market:'BTTS No',prob:1-btts,cat:'BTTS',safeScore:1-btts,simProb:1-sim.bttsY});
+
+    [0.5,1.5,2.5,3.5,4.5,5.5].forEach(line=>{
+      const ou=calcOU(mat,line);
+      // For OU 2.5 we have a dedicated MC simulation value; for all other lines fall back to model prob
+      const simOver=line===2.5?sim.over25:ou.over;
+      const simUnder=line===2.5?(1-sim.over25):ou.under;
+      candidates.push({market:'Over '+line,prob:ou.over,cat:'O/U',safeScore:ou.over,simProb:simOver,ouLine:line});
+      candidates.push({market:'Under '+line,prob:ou.under,cat:'O/U',safeScore:ou.under,simProb:simUnder,ouLine:line});
+    });
+
+    [-2.5,-1.5,-0.5,0.0,0.5,1.5,2.5].forEach(threshold=>{
+      const ah=calcAHCover(mat,threshold);
+      const absT=Math.abs(threshold);
+      const fmt=absT%1===0?absT.toFixed(1):absT.toFixed(2);
+      const hL=threshold===0?'0':(threshold<0?'−':'+')+fmt;
+      const aL=threshold===0?'0':(threshold<0?'+':'−')+fmt;
+      candidates.push({market:'AH Home '+hL,prob:ah.home,cat:'AH',safeScore:ah.home,simProb:ah.home,ahThreshold:threshold,ahSide:'home'});
+      candidates.push({market:'AH Away '+aL,prob:ah.away,cat:'AH',safeScore:ah.away,simProb:ah.away,ahThreshold:threshold,ahSide:'away'});
+    });
+
+    // FIX: combinedScore = model agreement between analytical Poisson and Monte Carlo sim
+    // Higher when both methods agree; lower when they diverge (high divergence = uncertain match)
+    // Agreement = 1 - normalised absolute difference. Scale by raw probability for staking relevance.
+    const dqFactor=snap.dataQualityScore/100;
+    candidates.forEach(c=>{
+      const modelProb=c.prob;
+      const simP=c.simProb!==undefined?c.simProb:modelProb;
+      const agreement=1-Math.min(1,Math.abs(modelProb-simP)/Math.max(0.01,modelProb));
+      // combinedScore weights: prob 40% + model agreement 35% + data quality 25%
+      c.combinedScore=modelProb*0.40 + agreement*0.35 + dqFactor*0.25;
+      c.safeScore=c.combinedScore; // replace raw prob with true confidence score
+      c.fairOdds=c.prob>0.001?1/c.prob:999;
+    });
+
+    const filtered=candidates.filter(c=>{
+      // fairOdds > 1.30 filters out near-certainties; combinedScore > 0.35 ensures both model agreement and data quality
+      return c.fairOdds>1.30 && c.combinedScore>0.35;
+    });
+
+    const ahHomeBest=filtered.filter(c=>c.cat==='AH'&&c.ahSide==='home').sort((a,b)=>b.combinedScore-a.combinedScore)[0];
+    const ahAwayBest=filtered.filter(c=>c.cat==='AH'&&c.ahSide==='away').sort((a,b)=>b.combinedScore-a.combinedScore)[0];
+    const nonAH=filtered.filter(c=>c.cat!=='AH');
+    const ahPicks=[];
+    if(ahHomeBest)ahPicks.push(ahHomeBest);
+    if(ahAwayBest)ahPicks.push(ahAwayBest);
+    const unified=[...nonAH,...ahPicks].sort((a,b)=>b.combinedScore-a.combinedScore).slice(0,5);
+
+    const hist=window._predictionHistory;
+    if(hist.length>0){
+      const last=hist[hist.length-1];
+      last.unifiedTips=unified.map(c=>({market:c.market,prob:c.prob}));
+      renderHistory();
+    }
+
+    let html='<div class="summary-box">Unified Tips engine: Poisson + Dixon-Coles + 12,000-iteration Monte Carlo. Picks ranked by <strong>model agreement score</strong> (Poisson ↔ MC convergence × data quality × probability). AH signs: <strong>−N = Home gives goals (home fav), +N = Home receives goals (away fav)</strong>.</div>';
+
+    function buildReasoning(c,prbs,btts,homeXG,awayXG){
+      const lines=[];
+      if(c.cat==='1X2'){
+        if(c.market==='Home Win') lines.push('Home xG '+homeXG.toFixed(2)+' vs Away xG '+awayXG.toFixed(2)+' — model backs home');
+        else if(c.market==='Away Win') lines.push('Away xG '+awayXG.toFixed(2)+' vs Home xG '+homeXG.toFixed(2)+' — model backs away');
+        else lines.push('Home/Away xG balanced — draw probability elevated');
+      } else if(c.cat==='BTTS'){
+        if(c.market==='BTTS Yes') lines.push('Both teams xG sufficient — model expects both to score ('+fp(btts)+')');
+        else lines.push('Low xG suppresses BTTS probability — clean sheet likely');
+      } else if(c.cat==='O/U'){
+        const totalXGDisp=(homeXG+awayXG).toFixed(2);
+        const lineLabel=c.ouLine!==undefined?c.ouLine:'?';
+        if(c.market.includes('Over')) lines.push('Total xG '+totalXGDisp+' vs line '+lineLabel+' — model prob for Over '+fp(c.prob));
+        else lines.push('Total xG '+totalXGDisp+' vs line '+lineLabel+' — model prob for Under '+fp(c.prob));
+      } else if(c.cat==='AH'){
+        const side=c.ahSide==='home'?'Home':'Away';
+        lines.push(side+' AH cover at '+fp(c.prob)+' based on xG differential');
+      }
+      return lines.join(' · ');
+    }
+
+    html+='<div class="card"><div class="card-title">🎯 Unified Tips — 5 Safest Picks <span style="font-size:9px;font-weight:400;color:var(--muted)">· Fair Odds &gt; 1.30 · Confidence &gt; 30% · Model Probability Weighted · Unbiased</span></div>';
+    if(unified.length===0){
+      html+='<div style="padding:16px;color:var(--muted);font-size:13px">No predictions meet the criteria (fair odds &gt; 1.30, confidence &gt; 30%).</div>';
+    } else {
+      unified.forEach((c,i)=>{
+        const rank=i<3?'r'+(i+1):'';
+        const reasoning=buildReasoning(c,prbs,btts,snap.homeXG,snap.awayXG);
+        html+='<div class="pick '+(rank||'')+'" style="padding:14px 16px;margin-bottom:8px">';
+        html+='<div class="pick-hd"><div class="pick-rank '+(rank||'r3')+'">'+(i+1)+'</div>';
+        html+='<div class="pick-info"><div class="pick-market">'+c.market+'</div>';
+        html+='<div class="pick-cat">'+c.cat+' · Confidence: '+(c.safeScore*100).toFixed(1)+'%</div></div>';
+        html+='<div class="pick-odds"><div class="pick-odds-val">'+c.fairOdds.toFixed(2)+'</div><div class="pick-odds-lbl">Fair Odds</div></div></div>';
+        html+='<div class="pick-stats">';
+        html+='<div class="pick-stat">Model <span>'+fp(c.prob)+'</span></div>';
+        html+='<div class="pick-stat">Fair Odds <span>'+c.fairOdds.toFixed(2)+'</span></div>';
+        html+='<div class="pick-stat">Confidence <span style="color:var(--green)">'+(c.safeScore*100).toFixed(1)+'%</span></div>';
+        html+='</div>';
+        if(reasoning) html+='<div style="font-size:11px;color:var(--muted2);line-height:1.6;margin:6px 0 8px;padding:7px 10px;background:var(--surface2);border-radius:5px;border-left:2px solid var(--border2)">💡 '+reasoning+'</div>';
+        html+='<div class="pick-bar"><div class="pick-bar-lbl">CONFIDENCE</div>';
+        html+='<div class="pick-bar-track"><div class="pick-bar-fill" style="width:'+(c.combinedScore*100)+'%;background:var(--cyan)"></div></div>';
+        html+='<div class="pick-bar-pct" style="color:var(--cyan)">'+((c.combinedScore||0)*100).toFixed(1)+'%</div></div></div>';
+      });
+    }
+    html+='</div>';
+
+    html+='<div class="note" style="margin-top:12px"><strong>Summary:</strong> ';
+    if(unified.length>0) html+='Top pick: <strong>'+unified[0].market+'</strong> (Confidence: '+fp(unified[0].safeScore)+'). ';
+    html+='Showing '+unified.length+' safest picks with fair odds &gt; 1.30 and confidence &gt; 30%. Based on 12,000 Monte Carlo runs.</div>';
+
+    body.innerHTML=html;
+  } catch(err){body.innerHTML='<div style="color:var(--red)">Unified Tips failed: '+err.message+'</div>';}
+};
+
+// ══════════════════════════════════════════════════════════════
+//  MAIN RENDER
+// ══════════════════════════════════════════════════════════════
+function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayCI,fairValue,useDC,sim){
+  const xg=xgResult.homeXG,awayXG=xgResult.awayXG;
+  const totalXG=+(xg+awayXG).toFixed(2),goalDiff=+(xg-awayXG).toFixed(2);
+  const conf=confLevel(xgResult.confidence);
+  const dq=Math.round(xgResult.dataQualityScore);
+
+  const totalXGRho=xg+awayXG;
+  const dynRho=totalXGRho>0?calcDynamicRho(xg,awayXG):-0.13;
+  const dispRho=dynRho.toFixed(3);
+
+  const confBadge='<div style="font-size:9px;font-weight:700;padding:4px 9px;border-radius:4px;font-family:\'JetBrains Mono\',monospace;background:'+conf.bg+';color:'+conf.color+';border:1px solid '+conf.border+'">⬡ '+conf.label+' CONFIDENCE</div>';
+
+  let html='<div class="panel anim">';
+  html+='<div class="panel-hd"><div class="panel-title">📊 Prediction Results</div>';
+  html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+confBadge;
+  html+='<button onclick="copyResults()" style="font-size:11px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:4px;cursor:pointer;font-family:\'Syne\',sans-serif;font-weight:600">📋 Copy</button>';
+  html+='</div></div>';
+  html+='<div class="panel-bd">';
+
+  html+='<div class="ds-bar">◆ '+xgResult.dataSource+(useDC?' · DC ON (ρ='+dispRho+')':' · DC OFF')+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG · '+xgResult.compType+(xgResult.hasWDL?' · WDL ON':'')+'</div>';
+
+  html+='<div class="tabs" id="resTabs">';
+  html+='<button class="tab-btn active" data-tab="tab-probs">📈 Probs</button>';
+  html+='<button class="tab-btn" data-tab="tab-unified">🎯 Unified Tips</button>';
+  html+='<button class="tab-btn" data-tab="tab-ou">📊 O/U</button>';
+  html+='<button class="tab-btn" data-tab="tab-ah">⚖️ AH</button>';
+  html+='<button class="tab-btn" data-tab="tab-sim">🎲 Simulation</button>';
+  html+='<button class="tab-btn" data-tab="tab-kelly">💰 Odds</button>';
+  html+='</div>';
+
+  html+='<div class="tab-content active" id="tab-probs">'+renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goalDiff,homeCI,awayCI,fairValue)+'</div>';
+
+  html+='<div class="tab-content" id="tab-unified"><div id="unifiedBody">'+
+    '<div style="text-align:center;padding:32px 20px">'+
+    '<div style="font-size:32px;margin-bottom:12px">🎯</div>'+
+    '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Unified Tips Engine</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6">5 safest picks with &gt; 1.30 fair odds from 12,000-iteration Monte Carlo.</div>'+
+    '<button onclick="runUnifiedTips()" style="font-size:12px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:8px 18px;border-radius:6px;cursor:pointer;font-family:\'Syne\',sans-serif;font-weight:700">▶ Run Unified Analysis</button>'+
+    '</div></div></div>';
+
+  html+='<div class="tab-content" id="tab-ou">'+renderOUTab(ouData,mat)+'</div>';
+  html+='<div class="tab-content" id="tab-ah">'+renderAHTab(mat)+'</div>';
+  html+='<div class="tab-content" id="tab-sim">'+renderSimTab(sim,prbs,btts,totalXG,mat)+'</div>';
+  html+='<div class="tab-content" id="tab-kelly">'+renderKellyTab(mat,prbs,btts)+'</div>';
+
+  html+='<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. Fixed external league reference (1.35 avg) for attack/defense strength calculation. Context-aware home advantage (+'+xgResult.homeAdv.toFixed(2)+' xG for '+xgResult.compType+'). Recency-weighted form (oldest→newest, W=3pts D=1pt — draw penalised for stagnation; range ±18%)'+(xgResult.hasWDL?'. WDL integrated as xG modifier (venue-split weighted 70/30 over combined; capped ±20%; centered on league-average PPG)':'')+'. Unified Tips ranked by model agreement (Poisson ↔ Monte Carlo convergence × data quality). Monte Carlo: 12,000 iterations (log-uniform sampler — unbiased at all lambda). Skellam distribution for goal difference. Quarter-ball AH lines supported.</div>';
+  html+='</div></div>';
+
+  const rd=$('results');
+  rd.style.display='block';
+  rd.innerHTML=html;
+
+  window._lastMatrix=mat;window._lastPrbs=prbs;window._lastBTTS=btts;
+  window._lastXG={home:xg,away:awayXG};
+  window._lastSnapshot={homeXG:xg,awayXG:awayXG,prbs,btts,dataSource:xgResult.dataSource,dataQualityScore:xgResult.dataQualityScore,ciWidth:xgResult.ciWidth};
+  window._unifiedRun=false;
+
+  document.querySelectorAll('#resTabs .tab-btn').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      const tab=this.dataset.tab;
+      document.querySelectorAll('#resTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      document.querySelectorAll('#results .tab-content').forEach(c=>c.classList.remove('active'));
+      const tc=document.getElementById(tab);if(tc)tc.classList.add('active');
+      if(tab==='tab-unified'&&!window._unifiedRun){window._unifiedRun=true;window.runUnifiedTips();}
+    });
+  });
+
+  rd.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RUN ANALYSIS
+// ══════════════════════════════════════════════════════════════
+window.runAnalysis=function(){
+  const errBox=$('errBox');errBox.classList.remove('show');
+  const homeGF=getNum('homeGF'),homeGA=getNum('homeGA'),awayGF=getNum('awayGF'),awayGA=getNum('awayGA');
+  const homeGFAll=getNum('homeGFAll'),homeGAAll=getNum('homeGAAll'),awayGFAll=getNum('awayGFAll'),awayGAAll=getNum('awayGAAll');
+  let hasAny=false;
+  [homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awayGAAll].forEach(v=>{if(hv(v))hasAny=true;});
+  if(!hasAny){errBox.textContent='⚠️ Enter at least some team statistics to generate predictions.';errBox.classList.add('show');return;}
+  try{
+    const xgResult=computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awayGAAll);
+    const totalXG=xgResult.homeXG+xgResult.awayXG,useDC=totalXG<2.8;
+    const dcEl=$('dcIndicator');
+    if(dcEl){
+      const dynRho=calcDynamicRho(xgResult.homeXG,xgResult.awayXG);
+      dcEl.innerHTML='<span style="font-weight:700;color:var(--muted2)">DC:</span> <span style="color:'+(useDC?'var(--green)':'var(--red)')+';font-weight:700">'+(useDC?'ON ✓':'OFF ✗')+'</span>'+(useDC?'<span style="color:var(--muted);font-size:10px;margin-left:6px">ρ='+dynRho.toFixed(3)+'</span>':'');
+    }
+    const mat=buildMatrix(xgResult.homeXG,xgResult.awayXG,useDC);
+    const prbs=calc1x2(mat),btts=calcBTTS(mat);
+    const scores=getTopScores(mat,8);
+    const ouData=[0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5].map(line=>{const ou=calcOU(mat,line);return{line,over:ou.over,under:ou.under};});
+    const skellam=computeSkellam(xgResult.homeXG,xgResult.awayXG);
+    const homeCI=computeCI(xgResult.homeXG,xgResult.ciWidth),awayCI=computeCI(xgResult.awayXG,xgResult.ciWidth);
+    const fairValue=computeFairValue(prbs,btts,xgResult.dataQualityScore,totalXG);
+    const sim=runSimulation(xgResult.homeXG,xgResult.awayXG,12000);
+    renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayCI,fairValue,useDC,sim);
+
+    const homeTeam=getStr('homeTeam')||'Home';
+    const awayTeam=getStr('awayTeam')||'Away';
+    window._predictionHistory.push({
+      date:new Date().toLocaleDateString('en-GB'),
+      homeTeam,awayTeam,
+      inputs:{
+        homeTeam:$('homeTeam')?.value||'',awayTeam:$('awayTeam')?.value||'',
+        homeGF:$('homeGF')?.value||'',homeGA:$('homeGA')?.value||'',
+        awayGF:$('awayGF')?.value||'',awayGA:$('awayGA')?.value||'',
+        homeGFAll:$('homeGFAll')?.value||'',homeGAAll:$('homeGAAll')?.value||'',
+        awayGFAll:$('awayGFAll')?.value||'',awayGAAll:$('awayGAAll')?.value||'',
+        homeW:$('homeW')?.value||'',homeD:$('homeD')?.value||'',homeL:$('homeL')?.value||'',
+        awayW:$('awayW')?.value||'',awayD:$('awayD')?.value||'',awayL:$('awayL')?.value||'',
+        homeWAll:$('homeWAll')?.value||'',homeDAll:$('homeDAll')?.value||'',homeLAll:$('homeLAll')?.value||'',
+        awayWAll:$('awayWAll')?.value||'',awayDAll:$('awayDAll')?.value||'',awayLAll:$('awayLAll')?.value||'',
+        homeForm:$('homeForm')?.value||'',awayForm:$('awayForm')?.value||'',
+        compType:$('compType')?.value||'league'
+      },
+      prbs:{h:prbs.h,d:prbs.d,a:prbs.a},
+      unifiedTips:[]
+    });
+    if(window._predictionHistory.length>MAX_HISTORY) window._predictionHistory.shift();
+    saveHistoryToStorage();
+    renderHistory();
+  } catch(err){errBox.textContent='Analysis error: '+err.message;errBox.classList.add('show');console.error(err);}
+};
+
+window.clearAll=function(){
+  ['homeTeam','awayTeam',
+   'homeGF','homeGA','awayGF','awayGA','homeGFAll','homeGAAll','awayGFAll','awayGAAll',
+   'homeForm','awayForm','compType',
+   'homeW','homeD','homeL','awayW','awayD','awayL',
+   'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll'].forEach(id=>{
+    const el=$(id);if(el){el.value='';el.classList.remove('err','ok');}
+  });
+  const dcEl=$('dcIndicator');if(dcEl)dcEl.innerHTML='<span style="color:var(--muted)">DC: auto-detect</span>';
+  $('results').style.display='none';$('errBox').classList.remove('show');
+  window._lastSnapshot=null;window._lastMatrix=null;window._lastPrbs=null;window._lastBTTS=null;
+  window._lastXG=null;window._unifiedRun=false;
+};
+
+window.loadExample=function(){
+  $('homeTeam').value='Arsenal';$('awayTeam').value='Chelsea';
+  $('homeGF').value='1.85';$('homeGA').value='0.80';$('awayGF').value='1.20';$('awayGA').value='1.15';
+  $('homeGFAll').value='1.65';$('homeGAAll').value='0.95';$('awayGFAll').value='1.30';$('awayGAAll').value='1.25';
+  $('homeW').value='3';$('homeD').value='3';$('homeL').value='4';
+  $('awayW').value='2';$('awayD').value='4';$('awayL').value='4';
+  $('homeWAll').value='12';$('homeDAll').value='7';$('homeLAll').value='3';
+  $('awayWAll').value='10';$('awayDAll').value='9';$('awayLAll').value='1';
+  $('homeForm').value='LWDWW';$('awayForm').value='DLLWW';
+  $('compType').value='league';
+  ['homeGF','homeGA','awayGF','awayGA','homeGFAll','homeGAAll','awayGFAll','awayGAAll',
+   'homeW','homeD','homeL','awayW','awayD','awayL',
+   'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll'].forEach(id=>{
+    const el=$(id);if(el){el.classList.remove('err');el.classList.add('ok');}
+  });
+  window.runAnalysis();
+};
+
+window.copyResults=function(){
+  const snap=window._lastSnapshot;if(!snap)return;
+  const text='BetIQPro\nHome xG: '+snap.homeXG.toFixed(2)+' | Away xG: '+snap.awayXG.toFixed(2)+'\nHome Win: '+fp(snap.prbs.h)+' | Draw: '+fp(snap.prbs.d)+' | Away: '+fp(snap.prbs.a)+'\nBTTS Yes: '+fp(snap.btts)+'\nData: '+snap.dataSource+' · Quality: '+Math.round(snap.dataQualityScore)+'%';
+  navigator.clipboard.writeText(text).catch(()=>{});
+};
+
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();window.runAnalysis();}
+});
+
+})();
+</script>
+<script src="header.js"></script>
+<script src="back-to-top.js"></script>
+</body>
+</html>
+

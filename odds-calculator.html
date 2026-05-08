@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BetIQ - Odds Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <div id="header"></div>
+
+<div class="app-body">
+<main class="main">
+  <div class="content">
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><span class="icon">🧮</span> Odds Calculator</div>
+        <div class="panel-sub">Enter 1×2 odds → Margin-stripped probabilities, O/U, AH, Value Bets & Kelly Staking</div>
+      </div>
+      <div class="panel-body">
+
+        <p class="predictor-desc">Enter the bookmaker's 1×2 (Home / Draw / Away) decimal odds. The model strips the overround, infers expected goals via grid-search Poisson fit, and generates full market probabilities.</p>
+
+        <div class="grid3" style="margin-bottom:20px">
+          <div class="field">
+            <label>Home Win (1)</label>
+            <input type="number" id="h" step="0.01" min="1.01" placeholder="e.g. 2.10">
+          </div>
+          <div class="field">
+            <label>Draw (X)</label>
+            <input type="number" id="d" step="0.01" min="1.01" placeholder="e.g. 3.40">
+          </div>
+          <div class="field">
+            <label>Away Win (2)</label>
+            <input type="number" id="a" step="0.01" min="1.01" placeholder="e.g. 3.20">
+          </div>
+        </div>
+
+        <div class="err-box" id="errBox"></div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="run()">🔮 Analyze Odds</button>
+          <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
+          <button class="btn btn-secondary" onclick="loadExample()" style="border-color:var(--border2);color:var(--muted2)">📋 Load Example</button>
+        </div>
+
+        <!-- ===== RESULTS ===== -->
+        <div id="results" style="display:none;margin-top:28px">
+
+          <div class="divider-short"></div>
+
+          <div class="slabel">1×2 Probabilities (margin-removed)</div>
+          <div class="metric-grid grid-mb">
+            <div class="metric">
+              <div class="mlabel">Home Win</div>
+              <div class="mval mwin" id="r-h">-</div>
+              <div class="msub">Fair: <span id="fo-h">-</span></div>
+            </div>
+            <div class="metric">
+              <div class="mlabel">Draw</div>
+              <div class="mval mdraw" id="r-d">-</div>
+              <div class="msub">Fair: <span id="fo-d">-</span></div>
+            </div>
+            <div class="metric">
+              <div class="mlabel">Away Win</div>
+              <div class="mval mlose" id="r-a">-</div>
+              <div class="msub">Fair: <span id="fo-a">-</span></div>
+            </div>
+          </div>
+
+          <div class="grid2 grid-mb">
+            <div class="metric">
+              <div class="mlabel">Home xG (λ)</div>
+              <div class="mval" id="xg-h">-</div>
+              <div class="msub">expected goals</div>
+            </div>
+            <div class="metric">
+              <div class="mlabel">Away xG (λ)</div>
+              <div class="mval" id="xg-a">-</div>
+              <div class="msub">expected goals</div>
+            </div>
+          </div>
+
+          <div class="overround-bar grid-mb">
+            <div class="overround-label">📉 Bookmaker Margin (Vig)</div>
+            <div class="overround-val" id="margin">-</div>
+          </div>
+
+          <div class="slabel">Both Teams to Score (BTTS)</div>
+          <div class="grid2 grid-mb">
+            <div class="btts-panel">
+              <div class="slabel">BTTS — Yes</div>
+              <div class="mval mwin" id="by-pct">-</div>
+              <div class="bar-track bar-track-mt"><div class="bar-fill home" id="by-bar" style="width:0%"></div></div>
+              <div class="msub msub-mt">Fair: <span id="by-odds">-</span></div>
+            </div>
+            <div class="btts-panel">
+              <div class="slabel">BTTS — No</div>
+              <div class="mval mlose" id="bn-pct">-</div>
+              <div class="bar-track bar-track-mt"><div class="bar-fill away" id="bn-bar" style="width:0%"></div></div>
+              <div class="msub msub-mt">Fair: <span id="bn-odds">-</span></div>
+            </div>
+          </div>
+
+          <div class="tabs" id="resTabs">
+            <button class="tab-btn active" data-tab="tab-ou">📊 O/U Lines</button>
+            <button class="tab-btn" data-tab="tab-ah">⚖️ Asian Handicap</button>
+            <button class="tab-btn" data-tab="tab-value">💎 Value Bets</button>
+            <button class="tab-btn" data-tab="tab-kelly">💰 Kelly Stakes</button>
+            <button class="tab-btn" data-tab="tab-scores">🏆 Score Matrix</button>
+          </div>
+
+          <div class="tab-content active" id="tab-ou"></div>
+          <div class="tab-content" id="tab-ah"></div>
+          <div class="tab-content" id="tab-value"></div>
+          <div class="tab-content" id="tab-kelly"></div>
+          <div class="tab-content" id="tab-scores"></div>
+
+          <div class="note">
+            <strong>Methodology:</strong> The bookmaker margin is removed proportionally to yield true implied probabilities.
+            A grid-search bivariate Poisson model (step 0.05, λ ∈ [0.3, 3.5]) estimates each team's expected goals from the win/draw/loss likelihoods.
+            The full score matrix drives all output markets. Edge = model probability minus book-implied probability.
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+  </main>
+</div>
+
+  <div id="footer"></div>
+</div>
+
+<script src="header.js"></script>
+<script src="footer.js"></script>
+<script src="back-to-top.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fp = p => (p * 100).toFixed(1) + '%';
+const fo = p => p > 0.001 ? (1 / p).toFixed(2) : '—';
+const BANKROLL = 1000;
+
+function stripMargin(hO, dO, aO) {
+  const r = { h: 1 / hO, d: 1 / dO, a: 1 / aO };
+  const s = r.h + r.d + r.a;
+  return { ph: r.h / s, pd: r.d / s, pa: r.a / s, margin: (s - 1) * 100 };
+}
+
+function poisson(lam, k) {
+  if (lam <= 0) return k === 0 ? 1 : 0;
+  let logP = -lam + k * Math.log(lam);
+  for (let i = 1; i <= k; i++) logP -= Math.log(i);
+  return Math.exp(logP);
+}
+
+function buildMatrix(lh, la, max) {
+  max = max || 15;
+  const m = [];
+  for (let i = 0; i <= max; i++) {
+    m[i] = [];
+    for (let j = 0; j <= max; j++) m[i][j] = poisson(lh, i) * poisson(la, j);
+  }
+  let total = 0;
+  for (let i = 0; i <= max; i++) for (let j = 0; j <= max; j++) total += m[i][j];
+  if (total > 0) for (let i = 0; i <= max; i++) for (let j = 0; j <= max; j++) m[i][j] /= total;
+  return m;
+}
+
+function calc1x2(m) {
+  let h = 0, d = 0, a = 0;
+  for (let i = 0; i <= 15; i++) for (let j = 0; j <= 15; j++) {
+    if (i > j) h += m[i][j]; else if (i === j) d += m[i][j]; else a += m[i][j];
+  }
+  return { h, d, a };
+}
+
+function calcOU(m, line) {
+  let over = 0, under = 0;
+  for (let i = 0; i <= 15; i++) for (let j = 0; j <= 15; j++) {
+    if (i + j > line) over += m[i][j]; else under += m[i][j];
+  }
+  const t = over + under || 1;
+  return { over: over / t, under: under / t };
+}
+
+function calcAHHalf(m, threshold) {
+  let home = 0, away = 0, push = 0;
+  for (let i = 0; i <= 15; i++) for (let j = 0; j <= 15; j++) {
+    const p = m[i][j], diff = i - j;
+    if (diff > threshold) home += p;
+    else if (diff < threshold) away += p;
+    else push += p;
+  }
+  const tw = home + away || 1;
+  return { home: home / tw, away: away / tw, push };
+}
+
+function calcAHCover(m, threshold) {
+  const t = -threshold;
+  const fraction = ((t % 1) + 1) % 1;
+  const isQB = Math.abs(fraction - 0.25) < 0.001 || Math.abs(fraction - 0.75) < 0.001;
+  if (isQB) {
+    const lower = t < 0 ? Math.ceil(t * 2) / 2 : Math.floor(t * 2) / 2;
+    const upper = lower + (t < 0 ? -0.5 : 0.5);
+    const a = calcAHHalf(m, lower);
+    const b = calcAHHalf(m, upper);
+    return { home: (a.home + b.home) / 2, away: (a.away + b.away) / 2, push: 0 };
+  }
+  return calcAHHalf(m, t);
+}
+
+function renderAHTab(mat) {
+  let html = '<div class="card"><div class="card-title">Asian Handicap Lines <span style="font-size:9px;font-weight:400;color:var(--muted)">· Quarter-ball supported · −N = team gives goals (fav) · +N = team receives goals (underdog)</span></div>';
+  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:520px">';
+  html += '<thead><tr><th style="text-align:left">Home Label</th><th style="text-align:left">Away Label</th><th>H Cover %</th><th>A Cover %</th><th>Push %</th><th>Fair H/A</th><th>Line Type</th><th>Best Side</th></tr></thead><tbody>';
+  [-4.5, -3.5, -2.5, -1.5, -0.5, 0.0, 0.5, 1.5, 2.5, 3.5, 4.5].forEach(threshold => {
+    const c = calcAHCover(mat, threshold);
+    const absT = Math.abs(threshold);
+    const homeLabel = threshold === 0 ? '0' : (threshold < 0 ? '−' : '+') + (absT % 1 === 0 ? absT.toFixed(1) : absT.toFixed(2));
+    const awayLabel = threshold === 0 ? '0' : (threshold < 0 ? '+' : '−') + (absT % 1 === 0 ? absT.toFixed(1) : absT.toFixed(2));
+    const fraction = ((absT % 1) + 1) % 1;
+    const isQB = Math.abs(fraction - 0.25) < 0.001 || Math.abs(fraction - 0.75) < 0.001;
+    const lineType = threshold === 0 ? 'Level' : isQB ? '<span class="sig slight">QTR-BALL</span>' : '<span class="sig fair">HALF</span>';
+    let bestSide = '', bestSideColor = 'color:var(--muted)';
+    if (c.home > c.away + 0.05) { bestSide = 'Home ' + homeLabel; bestSideColor = 'color:var(--green)'; }
+    else if (c.away > c.home + 0.05) { bestSide = 'Away ' + awayLabel; bestSideColor = 'color:var(--red)'; }
+    else { bestSide = 'Even'; bestSideColor = 'color:var(--muted)'; }
+    html += '<tr>';
+    html += '<td style="text-align:left;font-weight:700;color:var(--green)">' + homeLabel + '</td>';
+    html += '<td style="text-align:left;font-weight:700;color:var(--red)">' + awayLabel + '</td>';
+    html += '<td style="color:var(--green)">' + fp(c.home) + '</td>';
+    html += '<td style="color:var(--red)">' + fp(c.away) + '</td>';
+    html += '<td style="color:var(--muted)">' + fp(c.push) + '</td>';
+    html += '<td style="font-size:11px">' + fo(c.home) + ' / ' + fo(c.away) + '</td>';
+    html += '<td>' + lineType + '</td>';
+    html += '<td><span style="font-weight:700;' + bestSideColor + '">' + bestSide + '</span></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="note" style="margin-top:10px"><strong>AH Convention:</strong> Negative handicap (−N) = that team gives N goals — they are the <em>favourite</em> and must win by more than N. Positive (+N) = that team receives N goals — they are the <em>underdog</em> and can draw or lose by up to N and still cover.</div>';
+  html += '</div>';
+  return html;
+}
+
+function fitXG(hO, dO, aO) {
+  const st = stripMargin(hO, dO, aO);
+  let best = { lH: 1.4, lA: 1.1 }, bestErr = Infinity;
+  for (let lH = 0.1; lH <= 4.0; lH += 0.05) {
+    for (let lA = 0.1; lA <= 4.0; lA += 0.05) {
+      const m = buildMatrix(lH, lA);
+      const x = calc1x2(m);
+      const e = (x.h - st.ph) ** 2 + (x.d - st.pd) ** 2 + (x.a - st.pa) ** 2;
+      if (e < bestErr) { bestErr = e; best = { lH, lA }; }
+    }
+  }
+  return { lH: best.lH, lA: best.lA, margin: st.margin };
+}
+
+function run() {
+  const errBox = $('errBox');
+  errBox.classList.remove('show');
+  const h = parseFloat($('h').value), d = parseFloat($('d').value), a = parseFloat($('a').value);
+  if (isNaN(h) || isNaN(d) || isNaN(a) || h < 1.01 || d < 1.01 || a < 1.01) {
+    errBox.textContent = '⚠️ Please enter valid 1×2 odds for Home, Draw, and Away.';
+    errBox.classList.add('show'); return;
+  }
+  const fit = fitXG(h, d, a);
+  const mat = buildMatrix(fit.lH, fit.lA);
+  const prbs = calc1x2(mat);
+
+  $('r-h').textContent = fp(prbs.h);
+  $('r-d').textContent = fp(prbs.d);
+  $('r-a').textContent = fp(prbs.a);
+  $('fo-h').textContent = fo(prbs.h);
+  $('fo-d').textContent = fo(prbs.d);
+  $('fo-a').textContent = fo(prbs.a);
+  $('xg-h').textContent = fit.lH.toFixed(2);
+  $('xg-a').textContent = fit.lA.toFixed(2);
+  $('margin').textContent = fit.margin.toFixed(2) + '%';
+
+  // BTTS
+  let bttsYes = 0;
+  for (let i = 1; i <= 15; i++) for (let j = 1; j <= 15; j++) bttsYes += mat[i][j];
+  $('by-pct').textContent = fp(bttsYes);
+  $('bn-pct').textContent = fp(1 - bttsYes);
+  $('by-odds').textContent = fo(bttsYes);
+  $('bn-odds').textContent = fo(1 - bttsYes);
+  $('by-bar').style.width = (bttsYes * 100).toFixed(1) + '%';
+  $('bn-bar').style.width = ((1 - bttsYes) * 100).toFixed(1) + '%';
+
+  // O/U tab
+  const ouLines = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5];
+  $('tab-ou').innerHTML = '<div class="rcard"><div class="rcard-title">Over / Under Lines</div>' +
+    '<table class="markets-table"><thead><tr><th>Line</th><th>Over</th><th>Under</th><th>Fair O/U</th></tr></thead><tbody>' +
+    ouLines.map(l => {
+      const ou = calcOU(mat, l);
+      return `<tr><td>${l}</td><td>${fp(ou.over)}</td><td>${fp(ou.under)}</td><td>${fo(ou.over)} / ${fo(ou.under)}</td></tr>`;
+    }).join('') + '</tbody></table></div>';
+
+  // AH tab
+  $('tab-ah').innerHTML = renderAHTab(mat);
+
+  // Score matrix tab
+  const scores = [];
+  for (let i = 0; i <= 15; i++) for (let j = 0; j <= 15; j++) scores.push({ home: i, away: j, p: mat[i][j] });
+  scores.sort((a, b) => b.p - a.p);
+  const topScores = scores.slice(0, 8);
+  $('tab-scores').innerHTML = '<div class="rcard"><div class="rcard-title">Score Probability Matrix (top 8)</div>' +
+    '<div class="cs-grid">' + topScores.map(s =>
+      `<div class="cs-item"><div class="cs-score">${s.home}–${s.away}</div><div class="cs-prob">${fp(s.p)}</div><div class="cs-fair">${fo(s.p)}</div></div>`
+    ).join('') + '</div></div>';
+
+  // Value Bets tab — show bookmaker odds vs model fair odds comparison
+  const st = stripMargin(h, d, a);
+  const edgeRows = [
+    { market: 'Home Win', prob: prbs.h, odds: h, implied: st.ph },
+    { market: 'Draw', prob: prbs.d, odds: d, implied: st.pd },
+    { market: 'Away Win', prob: prbs.a, odds: a, implied: st.pa },
+  ];
+  $('tab-value').innerHTML = '<div class="rcard"><div class="rcard-title">💎 Bookmaker Odds vs Model Fair Odds</div>' +
+    '<table class="markets-table"><thead><tr><th>Market</th><th>Book Odds</th><th>Book Implied (de-juiced)</th><th>Model %</th><th>Fair Odds</th><th>EV vs Book</th></tr></thead><tbody>' +
+    edgeRows.map(r => {
+      const ev = r.prob / r.implied - 1;
+      const isVal = ev > 0;
+      return '<tr>' +
+        '<td style="font-weight:700;text-align:left">' + r.market + '</td>' +
+        '<td>' + r.odds.toFixed(2) + '</td>' +
+        '<td>' + fp(r.implied) + '</td>' +
+        '<td>' + fp(r.prob) + '</td>' +
+        '<td>' + fo(r.prob) + '</td>' +
+        '<td style="color:' + (isVal ? 'var(--win)' : 'var(--lose)') + ';font-weight:700">' + (ev >= 0 ? '+' : '') + (ev * 100).toFixed(2) + '%</td>' +
+        '</tr>';
+    }).join('') + '</tbody></table></div>';
+
+  // Kelly Stakes tab
+  const kellyTableHTML = renderKellyTable(prbs, mat, h, d, a);
+  $('tab-kelly').innerHTML = kellyTableHTML;
+
+  $('results').style.display = 'block';
+}
+
+function kellyCriterion(prob, odds) {
+  if (!odds || isNaN(odds) || odds < 1.01) return null;
+  const b = odds - 1, q = 1 - prob;
+  return Math.max(0, (b * prob - q) / b);
+}
+
+function renderKellyTable(prbs, mat, h, d, a) {
+  const rows = [
+    { market: 'Home Win', prob: prbs.h, odds: h, fairOdds: 1 / (prbs.h || 0.001) },
+    { market: 'Draw', prob: prbs.d, odds: d, fairOdds: 1 / (prbs.d || 0.001) },
+    { market: 'Away Win', prob: prbs.a, odds: a, fairOdds: 1 / (prbs.a || 0.001) },
+  ];
+  // Only 1X2 markets have bookmaker odds for meaningful Kelly calculation
+
+  const top = rows.filter(r => r.prob <= 0.89 && r.prob >= 0.20).sort((a, b) => b.prob - a.prob).slice(0, 12);
+  return '<div class="rcard"><div class="rcard-title">💰 Kelly Staking vs Bookmaker Odds (Bankroll: $1,000)</div>' +
+    '<table class="kelly-table"><thead><tr><th>Market</th><th>Model %</th><th>Book Odds</th><th>Fair Odds</th><th>Full Kelly</th><th>½ Kelly</th><th>¼ Kelly</th><th>½K Stake ($)</th></tr></thead><tbody>' +
+    top.map(r => {
+      const k = kellyCriterion(r.prob, r.odds);
+      const ev = (r.prob * r.odds - 1) * 100;
+      return '<tr><td style="font-weight:700;text-align:left">' + r.market + '</td><td>' + fp(r.prob) + '</td><td>' + r.odds.toFixed(2) + '</td><td>' + r.fairOdds.toFixed(2) + '</td>' +
+        '<td style="color:' + (k > 0 ? 'var(--win)' : 'var(--muted)') + '">' + (k > 0 ? (k * 100).toFixed(1) + '%' : '—') + '</td>' +
+        '<td style="color:' + (k > 0 ? 'var(--draw)' : 'var(--muted)') + '">' + (k > 0 ? (k * 50).toFixed(1) + '%' : '—') + '</td>' +
+        '<td style="color:' + (k > 0 ? 'var(--muted2)' : 'var(--muted)') + '">' + (k > 0 ? (k * 25).toFixed(1) + '%' : '—') + '</td>' +
+        '<td style="color:var(--accent);font-weight:700">' + (k > 0 ? '$' + (k * 0.5 * BANKROLL).toFixed(0) : '—') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+
+window.clearAll = function() {
+  ['h', 'd', 'a'].forEach(id => { const el = $(id); if (el) { el.value = ''; el.classList.remove('err'); } });
+  $('results').style.display = 'none';
+  $('errBox').classList.remove('show');
+};
+
+window.loadExample = function() {
+  $('h').value = '2.10'; $('d').value = '3.40'; $('a').value = '3.20';
+  $('errBox').classList.remove('show');
+  run();
+};
+
+document.querySelectorAll('#resTabs .tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const tab = this.dataset.tab;
+    document.querySelectorAll('#resTabs .tab-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('#results .tab-content').forEach(c => c.classList.remove('active'));
+    const tc = document.getElementById(tab);
+    if (tc) tc.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
