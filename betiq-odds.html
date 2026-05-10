@@ -113,7 +113,7 @@
                     <div class="btn-group">
                         <button class="btn btn-primary" id="predictBtn" onclick="runUltra()">🔮 Analyze</button>
                         <button class="btn btn-secondary" id="clearBtn" onclick="clearAll()">🗑️ Clear All</button>
-                        <button class="btn btn-secondary" onclick="loadExample()" style="border-color:var(--border2);color:var(--muted2)">📋 Load Example</button>
+                        <button class="btn btn-secondary btn-outline" onclick="loadExample()">📋 Load Example</button>
                     </div>
                     <div style="margin-top:8px">
                         <span class="kbd-hint"><kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">Enter</kbd> to Analyze</span>
@@ -121,10 +121,34 @@
                     <div id="results" style="display:none;margin-top:28px"></div>
                 </div>
             </div>
-        </div>
-    </main>
-    </div>
-    <div id="footer"></div>
+         </div>
+
+     </main>
+
+         <div class="history-wrap">
+            <div class="hist-panel">
+                 <div class="panel-hd">
+                     <div class="panel-title">📋 Prediction History <span class="hist-count" id="histCount">(0)</span></div>
+                     <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
+                 </div>
+                 <div class="hist-table-wrap">
+                     <table class="htbl">
+                         <thead>
+                             <tr>
+                                 <th style="text-align:left;width:90px">Date</th>
+                                 <th style="text-align:left">Match</th>
+                                 <th style="text-align:left;width:200px">1×2 Probabilities</th>
+                                 <th style="text-align:left">Top Tips</th>
+                                 <th style="text-align:center;width:80px">Actions</th>
+                             </tr>
+                         </thead>
+                         <tbody id="historyBody"></tbody>
+                     </table>
+                 </div>
+            </div>
+         </div>
+     </div>
+     <div id="footer"></div>
 </div>
 
 <script src="footer.js"></script>
@@ -148,6 +172,105 @@
         const arrow = el.querySelector('.expandable-header div:last-child');
         if (arrow) arrow.textContent = el.classList.contains('active') ? '▴' : '▾';
     };
+
+    // =====================================================================
+    // PREDICTION HISTORY (localStorage)
+    // =====================================================================
+    const MAX_HISTORY = 20;
+    const STORAGE_KEY = 'betiqpro_history';
+
+    function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    function loadHistoryFromStorage() {
+        try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+        catch(e) { return []; }
+    }
+
+    function saveHistoryToStorage() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window._predictionHistory)); }
+        catch(e) { console.warn('Could not save history:', e); }
+    }
+
+    function renderHistory() {
+        const el = $('historyBody'), cnt = $('histCount');
+        if (!el) return;
+        const h = window._predictionHistory;
+        if (cnt) cnt.textContent = '(' + h.length + ')';
+        if (h.length === 0) {
+            el.innerHTML = '<tr><td colspan="5" class="h-empty"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
+            return;
+        }
+        let html = '';
+        for (let i = h.length - 1; i >= 0; i--) {
+            const e = h[i];
+            const idx = h.length - 1 - i;
+            const hasTips = e.unifiedTips && e.unifiedTips.length > 0;
+            let tipsHtml;
+            if (hasTips) {
+                tipsHtml = e.unifiedTips.slice(0, 4).map(t => '<span class="h-tip">' + escHtml(t.market) + '&nbsp;<span style="color:var(--cyan)">' + fmtPct(t.prob) + '</span></span>').join('');
+            } else {
+                tipsHtml = '<span style="color:var(--muted);font-size:11px;font-family:\'JetBrains Mono\',monospace">— odds-based prediction</span>';
+            }
+            html += '<tr>';
+            html += '<td><span class="h-date">' + e.date + '</span></td>';
+            html += '<td><span class="h-match">' + escHtml(e.homeTeam) + '<span class="vs">vs</span>' + escHtml(e.awayTeam) + '</span></td>';
+            html += '<td><div class="h-probs"><span class="h-prob h">H&nbsp;' + fmtPct(e.prbs.h) + '</span><span class="h-prob d">D&nbsp;' + fmtPct(e.prbs.d) + '</span><span class="h-prob a">A&nbsp;' + fmtPct(e.prbs.a) + '</span></div></td>';
+            html += '<td><div class="h-tips">' + tipsHtml + '</div></td>';
+            html += '<td><div class="h-actions">' +
+                '<span class="h-btn reload" onclick="reloadEntry(' + idx + ')" title="Re-load these odds">↻</span>' +
+                '<span class="h-btn delete" onclick="deleteEntry(' + idx + ')" title="Delete">✕</span>' +
+            '</div></td>';
+            html += '</tr>';
+        }
+        el.innerHTML = html;
+    }
+
+    window.clearHistory = function() {
+        window._predictionHistory = [];
+        saveHistoryToStorage();
+        renderHistory();
+    };
+
+    window.deleteEntry = function(idx) {
+        const h = window._predictionHistory;
+        const realIdx = h.length - 1 - idx;
+        if (realIdx >= 0 && realIdx < h.length) h.splice(realIdx, 1);
+        saveHistoryToStorage();
+        renderHistory();
+    };
+
+    window.reloadEntry = function(idx) {
+        const h = window._predictionHistory;
+        const realIdx = h.length - 1 - idx;
+        const e = h[realIdx];
+        if (!e || !e.inputs) return;
+        const inp = e.inputs;
+        const set = (id, val) => { const el = $(id); if (el) el.value = val; };
+        set('oddsHome', inp.oddsHome || '');
+        set('oddsDraw', inp.oddsDraw || '');
+        set('oddsAway', inp.oddsAway || '');
+        set('oddsAHHome', inp.oddsAHHome || '');
+        set('oddsAHAway', inp.oddsAHAway || '');
+        set('oddsOver', inp.oddsOver || '');
+        set('oddsUnder', inp.oddsUnder || '');
+        set('ahLine', inp.ahLine !== undefined ? inp.ahLine : '0.0');
+        set('ouLine', inp.ouLine !== undefined ? inp.ouLine : '2.5');
+        set('homeAttack', inp.homeAttack || '');
+        set('homeDefense', inp.homeDefense || '');
+        set('awayAttack', inp.awayAttack || '');
+        set('awayDefense', inp.awayDefense || '');
+        set('homeAdvBoost', inp.homeAdvBoost !== undefined ? inp.homeAdvBoost : '0.30');
+        set('bankroll', inp.bankroll !== undefined ? inp.bankroll : '1000');
+        if (inp.useDixonColes !== undefined) {
+            const el = $('useDixonColes');
+            if (el) el.checked = inp.useDixonColes;
+        }
+        $('results').style.display = 'none';
+        window.runUltra();
+    };
+
+    window._predictionHistory = loadHistoryFromStorage();
+    renderHistory();
 
     // =====================================================================
     // MARGIN STRIP — Shin's method approximation (de-juice probabilities)
@@ -885,6 +1008,35 @@
             });
 
             resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            window._predictionHistory.push({
+                date: new Date().toLocaleDateString('en-GB'),
+                homeTeam: 'Home Team',
+                awayTeam: 'Away Team',
+                inputs: {
+                    oddsHome: $('oddsHome')?.value || '',
+                    oddsDraw: $('oddsDraw')?.value || '',
+                    oddsAway: $('oddsAway')?.value || '',
+                    oddsAHHome: $('oddsAHHome')?.value || '',
+                    oddsAHAway: $('oddsAHAway')?.value || '',
+                    oddsOver: $('oddsOver')?.value || '',
+                    oddsUnder: $('oddsUnder')?.value || '',
+                    ahLine: $('ahLine')?.value || '0.0',
+                    ouLine: $('ouLine')?.value || '2.5',
+                    homeAttack: $('homeAttack')?.value || '',
+                    homeDefense: $('homeDefense')?.value || '',
+                    awayAttack: $('awayAttack')?.value || '',
+                    awayDefense: $('awayDefense')?.value || '',
+                    homeAdvBoost: $('homeAdvBoost')?.value || '0.30',
+                    bankroll: $('bankroll')?.value || '1000',
+                    useDixonColes: $('useDixonColes')?.checked || false
+                },
+                prbs: { h: prbs.h, d: prbs.d, a: prbs.a },
+                unifiedTips: []
+            });
+            if (window._predictionHistory.length > MAX_HISTORY) window._predictionHistory.shift();
+            saveHistoryToStorage();
+            renderHistory();
 
         } catch(err) {
             $('errBox').textContent = '⚠️ Error: ' + err.message;

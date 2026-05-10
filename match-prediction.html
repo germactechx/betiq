@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BetIQ - Stats Based Football Predictor</title>
+<title>BetIQ - Match Input Prediction</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
@@ -207,6 +207,7 @@
               <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">Matches:</span>
               <div class="match-count-toggle">
                 <button class="mct-btn active" data-n="5" onclick="setMatchCount(5)">Last 5</button>
+                <button class="mct-btn" data-n="6" onclick="setMatchCount(6)">Last 6</button>
                 <button class="mct-btn" data-n="10" onclick="setMatchCount(10)">Last 10</button>
               </div>
             </div>
@@ -294,11 +295,14 @@
             </div>
           </details>
 
-          <div class="err-box" id="errBox"></div>
-          <div class="btn-group">
+           <div id="dcIndicator" style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:12px;text-align:center">
+             <span style="color:var(--muted)">DC: auto-detect</span>
+           </div>
+           <div class="err-box" id="errBox"></div>
+           <div class="btn-group">
             <button class="btn btn-primary" onclick="runAnalysis()" title="Ctrl+Enter">⚡ Analyze Match</button>
             <button class="btn btn-secondary" onclick="clearAll()">✕ Clear</button>
-            <button class="btn btn-secondary" onclick="loadExample()" style="border-color:var(--border2);color:var(--muted2)">📋 Load Example</button>
+            <button class="btn btn-secondary btn-outline" onclick="loadExample()">📋 Load Example</button>
           </div>
           <div id="results" style="display:none;margin-top:28px"></div>
 
@@ -312,7 +316,7 @@
     <div class="hist-panel">
       <div class="panel-hd">
         <div class="panel-title">📋 Prediction History <span class="hist-count" id="histCount">(0)</span></div>
-        <button class="h-btn" style="width:auto;padding:0 14px;font-size:11px;font-weight:700;font-family:'Inter',sans-serif;gap:5px;letter-spacing:0.3px" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
+        <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
       </div>
       <div class="hist-table-wrap">
         <table class="htbl">
@@ -381,8 +385,8 @@ function buildTeamRows(side) {
       '<td><input class="match-input venue-input" type="text" maxlength="1" placeholder="H/A" data-side="'+side+'" data-idx="'+i+'" data-field="venue" value="'+venue+'"></td>'+
       '<td><input class="match-input" type="number" min="0" step="1" placeholder="0" data-side="'+side+'" data-idx="'+i+'" data-field="scored" value="'+scored+'"></td>'+
       '<td><input class="match-input" type="number" min="0" step="1" placeholder="0" data-side="'+side+'" data-idx="'+i+'" data-field="conceded" value="'+conceded+'"></td>'+
-      '<td>'+
-        '<select class="result-select '+result.toLowerCase()+'" data-side="'+side+'" data-idx="'+i+'" data-field="result" disabled>'+
+       '<td>'+
+         '<select class="result-select '+result.toLowerCase()+'" data-side="'+side+'" data-idx="'+i+'" data-field="result">'+
           '<option value="">—</option>'+
           '<option value="W"'+(result==='W'?' selected':'')+'>W</option>'+
           '<option value="D"'+(result==='D'?' selected':'')+'>D</option>'+
@@ -1360,9 +1364,14 @@ window.runAnalysis = function() {
   }
   try {
     const xgResult = computeXG();
-    const totalXG = xgResult.homeXG + xgResult.awayXG;
-    const useDC = totalXG < 2.8;
-    const mat = buildMatrix(xgResult.homeXG, xgResult.awayXG, useDC);
+     const totalXG = xgResult.homeXG + xgResult.awayXG;
+     const useDC = totalXG < 2.8;
+     const dcEl = $('dcIndicator');
+     if (dcEl) {
+       const dynRho = calcDynamicRho(xgResult.homeXG, xgResult.awayXG);
+       dcEl.innerHTML = '<span style="font-weight:700;color:var(--muted2)">DC:</span> <span style="color:'+(useDC?'var(--green)':'var(--red)')+';font-weight:700">'+(useDC?'ON ✓':'OFF ✗')+'</span>'+(useDC?'<span style="color:var(--muted);font-size:10px;margin-left:6px">ρ='+dynRho.toFixed(3)+'</span>':'');
+     }
+     const mat = buildMatrix(xgResult.homeXG, xgResult.awayXG, useDC);
     const prbs = calc1x2(mat), btts = calcBTTS(mat);
     const scores = getTopScores(mat, 8);
     const ouData = [0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5].map(line => { const ou=calcOU(mat,line); return{line,over:ou.over,under:ou.under}; });
@@ -1422,14 +1431,15 @@ window.clearAll = function() {
     });
     tbody.querySelectorAll('.result-select').forEach(sel => { sel.value=''; sel.className='result-select'; });
   });
-  updateDerivedBars();
-  $('results').style.display = 'none';
-  $('errBox').classList.remove('show');
-  window._lastSnapshot = null; window._lastMatrix = null; window._lastPrbs = null; window._lastBTTS = null;
-  window._lastXG = null; window._unifiedRun = false;
-};
+   updateDerivedBars();
+   $('results').style.display = 'none';
+   $('errBox').classList.remove('show');
+   const dcEl = $('dcIndicator'); if (dcEl) dcEl.innerHTML = '<span style="color:var(--muted)">DC: auto-detect</span>';
+   window._lastSnapshot = null; window._lastMatrix = null; window._lastPrbs = null; window._lastBTTS = null;
+   window._lastXG = null; window._unifiedRun = false;
+ };
 
-window.loadExample = function() {
+ window.loadExample = function() {
   $('homeTeam').value = 'Arsenal';
   $('awayTeam').value = 'Chelsea';
   updateDerivedBars();

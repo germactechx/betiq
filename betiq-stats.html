@@ -134,11 +134,14 @@
             </div>
           </div>
 
-          <div class="err-box" id="errBox"></div>
-          <div class="btn-group">
+           <div id="dcIndicator" style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:12px;text-align:center">
+             <span style="color:var(--muted)">DC: auto-detect</span>
+           </div>
+           <div class="err-box" id="errBox"></div>
+           <div class="btn-group">
             <button class="btn btn-primary" onclick="runAnalysis()" title="Ctrl+Enter">⚡ Analyze Match</button>
             <button class="btn btn-secondary" onclick="clearAll()">✕ Clear</button>
-            <button class="btn btn-secondary" onclick="loadExample()" style="border-color:var(--border2);color:var(--muted2)">📋 Load Example</button>
+            <button class="btn btn-secondary btn-outline" onclick="loadExample()">📋 Load Example</button>
           </div>
           <div id="results" style="display:none;margin-top:28px"></div>
 
@@ -146,12 +149,13 @@
       </div>
     </div>
   </main>
+  
   <!-- HISTORY -->
   <div class="history-wrap">
     <div class="hist-panel">
       <div class="panel-hd">
         <div class="panel-title">📋 Prediction History <span class="hist-count" id="histCount">(0)</span></div>
-        <button class="h-btn" style="width:auto;padding:0 14px;font-size:11px;font-weight:700;font-family:'Inter',sans-serif;gap:5px;letter-spacing:0.3px" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
+        <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
       </div>
       <div class="hist-table-wrap">
         <table class="htbl">
@@ -169,6 +173,7 @@
       </div>
     </div>
   </div>
+  
   </div>
 </div>
 
@@ -976,23 +981,29 @@ function renderKellyTab(mat,prbs,btts){
     markets.push({label:'AH Away '+aL,prob:ah.away,cat:'AH',fairOdds:1/(ah.away||0.001)});
   });
 
-  const top=markets.filter(m=>m.prob<=0.89 && m.prob >= 0.70).sort((a,b)=>b.prob-a.prob).slice(0,15);
+  const top=markets.filter(m=>m.prob<=0.90 && m.prob >= 0.70).sort((a,b)=>b.prob-a.prob).slice(0,5);
 
   let html='<div class="status-ok" style="margin-bottom:14px">✓ Model-Driven Odds Compilation — fair prices derived from Poisson + DC + Monte Carlo</div>';
-  html+='<div class="card"><div class="card-title">💰 Compiled Fair Odds by Market</div>';
+  html+='<div class="card"><div class="card-title">🏆 Top 5 Tips — Compiled Fair Odds (70%–90%)</div>';
   html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:600px">';
-  html+='<thead><tr><th style="text-align:left">Market</th><th>Cat</th><th>Model %</th><th>Fair Odds</th><th>Implied %</th></tr></thead><tbody>';
-  top.forEach(m=>{
-    html+='<tr>';
+  html+='<thead><tr><th style="text-align:left;width:32px">Rank</th><th style="text-align:left">Market</th><th>Cat</th><th>Model %</th><th>Fair Odds</th><th>Implied %</th></tr></thead><tbody>';
+  top.forEach((m,i)=>{
+    const rankColors=['var(--gold)','var(--silver)','var(--bronze)','var(--green)','var(--cyan)'];
+    const rankColor=rankColors[i]||'var(--muted2)';
+    html+='<tr style="'+(i===0?'background:rgba(245,200,66,0.05)':i===1?'background:rgba(154,165,196,0.05)':i===2?'background:rgba(217,123,74,0.05)':'')+'">';
+    html+='<td style="text-align:center;font-weight:800;font-size:15px;color:'+rankColor+'">'+(i+1)+'</td>';
     html+='<td style="text-align:left;font-weight:700;color:var(--text)">'+m.label+'</td>';
     html+='<td><span class="badge '+(m.cat==='1X2'?'badge-val':'badge-fair')+'">'+m.cat+'</span></td>';
-    html+='<td>'+(m.prob*100).toFixed(1)+'%</td>';
+    html+='<td style="font-weight:700;color:var(--green)">'+(m.prob*100).toFixed(1)+'%</td>';
     html+='<td style="color:var(--cyan);font-weight:700;font-family:\'JetBrains Mono\',monospace">'+m.fairOdds.toFixed(2)+'</td>';
     html+='<td>'+(m.prob*100).toFixed(1)+'%</td>';
     html+='</tr>';
   });
+  if(top.length===0){
+    html+='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">No outcomes found in the 70%–90% probability range.</td></tr>';
+  }
   html+='</tbody></table></div>';
-  html+='<div class="note" style="margin-top:10px">All odds are model-compiled fair prices with zero margin. Markets ranked by probability strength 70% to 89%.</div></div>';
+  html+='<div class="note" style="margin-top:10px">Top 5 outcomes ranked by model probability (70%–90% range). All odds are model-compiled fair prices with zero margin.</div></div>';
   return html;
 }
 
@@ -1047,8 +1058,8 @@ window.runUnifiedTips=function(){
     });
 
     const filtered=candidates.filter(c=>{
-      // fairOdds > 1.30 filters out near-certainties; combinedScore > 0.35 ensures both model agreement and data quality
-      return c.fairOdds>1.30 && c.combinedScore>0.35;
+      // fairOdds > 1.30 filters out near-certainties; combinedScore > 0.35 ensures both model agreement and data quality; prob >= 0.60 ensures model confidence
+      return c.fairOdds>1.30 && c.combinedScore>0.35 && c.prob>=0.60;
     });
 
     const ahHomeBest=filtered.filter(c=>c.cat==='AH'&&c.ahSide==='home').sort((a,b)=>b.combinedScore-a.combinedScore)[0];
@@ -1089,7 +1100,7 @@ window.runUnifiedTips=function(){
       return lines.join(' · ');
     }
 
-    html+='<div class="card"><div class="card-title">🎯 Unified Tips — 5 Safest Picks <span style="font-size:9px;font-weight:400;color:var(--muted)">· Fair Odds &gt; 1.30 · Confidence &gt; 30% · Model Probability Weighted · Unbiased</span></div>';
+    html+='<div class="card"><div class="card-title">🎯 Unified Tips — 5 Safest Picks <span style="font-size:9px;font-weight:400;color:var(--muted)">· Fair Odds &gt; 1.30 · Confidence &gt; 30% · Model Probability ≥ 60% · Model Probability Weighted · Unbiased</span></div>';
     if(unified.length===0){
       html+='<div style="padding:16px;color:var(--muted);font-size:13px">No predictions meet the criteria (fair odds &gt; 1.30, confidence &gt; 30%).</div>';
     } else {
@@ -1140,7 +1151,7 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
   let html='<div class="panel anim">';
   html+='<div class="panel-hd"><div class="panel-title">📊 Prediction Results</div>';
   html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+confBadge;
-  html+='<button onclick="copyResults()" style="font-size:11px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:4px;cursor:pointer;font-family:\'Syne\',sans-serif;font-weight:600">📋 Copy</button>';
+  html+='<button onclick="copyResults()" style="font-size:11px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:4px;cursor:pointer;font-family:\'Inter\',sans-serif;font-weight:600">📋 Copy</button>';
   html+='</div></div>';
   html+='<div class="panel-bd">';
 
@@ -1162,7 +1173,7 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
     '<div style="font-size:32px;margin-bottom:12px">🎯</div>'+
     '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Unified Tips Engine</div>'+
     '<div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6">5 safest picks with &gt; 1.30 fair odds from 12,000-iteration Monte Carlo.</div>'+
-    '<button onclick="runUnifiedTips()" style="font-size:12px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:8px 18px;border-radius:6px;cursor:pointer;font-family:\'Syne\',sans-serif;font-weight:700">▶ Run Unified Analysis</button>'+
+    '<button onclick="runUnifiedTips()" style="font-size:12px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:8px 18px;border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-weight:700">▶ Run Unified Analysis</button>'+
     '</div></div></div>';
 
   html+='<div class="tab-content" id="tab-ou">'+renderOUTab(ouData,mat)+'</div>';

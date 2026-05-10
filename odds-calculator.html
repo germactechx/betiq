@@ -45,7 +45,7 @@
         <div class="btn-group">
           <button class="btn btn-primary" onclick="run()">🔮 Analyze Odds</button>
           <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
-          <button class="btn btn-secondary" onclick="loadExample()" style="border-color:var(--border2);color:var(--muted2)">📋 Load Example</button>
+          <button class="btn btn-secondary btn-outline" onclick="loadExample()">📋 Load Example</button>
         </div>
 
         <!-- ===== RESULTS ===== -->
@@ -130,9 +130,34 @@
       </div>
     </div>
 
-  </div>
-  </main>
-</div>
+   </div>
+
+   </main>
+
+   <div class="history-wrap">
+     <div class="hist-panel">
+       <div class="panel-hd">
+         <div class="panel-title">📋 Prediction History <span class="hist-count" id="histCount">(0)</span></div>
+         <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
+       </div>
+       <div class="hist-table-wrap">
+         <table class="htbl">
+           <thead>
+             <tr>
+               <th style="text-align:left;width:90px">Date</th>
+               <th style="text-align:left">Match</th>
+               <th style="text-align:left;width:200px">1×2 Probabilities</th>
+               <th style="text-align:left">Top Tips</th>
+               <th style="text-align:center;width:80px">Actions</th>
+             </tr>
+           </thead>
+           <tbody id="historyBody"></tbody>
+         </table>
+       </div>
+     </div>
+   </div>
+
+ </div>
 
   <div id="footer"></div>
 </div>
@@ -145,6 +170,85 @@ const $ = id => document.getElementById(id);
 const fp = p => (p * 100).toFixed(1) + '%';
 const fo = p => p > 0.001 ? (1 / p).toFixed(2) : '—';
 const BANKROLL = 1000;
+
+const MAX_HISTORY = 20;
+const STORAGE_KEY = 'betiqpro_history';
+
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function loadHistoryFromStorage() {
+  try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e) { return []; }
+}
+
+function saveHistoryToStorage() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window._predictionHistory)); }
+  catch(e) { console.warn('Could not save history:', e); }
+}
+
+function renderHistory() {
+  const el = $('historyBody'), cnt = $('histCount');
+  if (!el) return;
+  const h = window._predictionHistory;
+  if (cnt) cnt.textContent = '(' + h.length + ')';
+  if (h.length === 0) {
+    el.innerHTML = '<tr><td colspan="5" class="h-empty"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
+    return;
+  }
+  let html = '';
+  for (let i = h.length - 1; i >= 0; i--) {
+    const e = h[i];
+    const idx = h.length - 1 - i;
+    const hasTips = e.unifiedTips && e.unifiedTips.length > 0;
+    let tipsHtml;
+    if (hasTips) {
+      tipsHtml = e.unifiedTips.slice(0, 4).map(t => '<span class="h-tip">' + escHtml(t.market) + '&nbsp;<span style="color:var(--cyan)">' + fp(t.prob) + '</span></span>').join('');
+    } else {
+      tipsHtml = '<span style="color:var(--muted);font-size:11px;font-family:\'JetBrains Mono\',monospace">— odds calculator</span>';
+    }
+    html += '<tr>';
+    html += '<td><span class="h-date">' + e.date + '</span></td>';
+    html += '<td><span class="h-match">' + escHtml(e.homeTeam) + '<span class="vs">vs</span>' + escHtml(e.awayTeam) + '</span></td>';
+    html += '<td><div class="h-probs"><span class="h-prob h">H&nbsp;' + fp(e.prbs.h) + '</span><span class="h-prob d">D&nbsp;' + fp(e.prbs.d) + '</span><span class="h-prob a">A&nbsp;' + fp(e.prbs.a) + '</span></div></td>';
+    html += '<td><div class="h-tips">' + tipsHtml + '</div></td>';
+    html += '<td><div class="h-actions">' +
+      '<span class="h-btn reload" onclick="reloadEntry(' + idx + ')" title="Re-load these odds">↻</span>' +
+      '<span class="h-btn delete" onclick="deleteEntry(' + idx + ')" title="Delete">✕</span>' +
+    '</div></td>';
+    html += '</tr>';
+  }
+  el.innerHTML = html;
+}
+
+window.clearHistory = function() {
+  window._predictionHistory = [];
+  saveHistoryToStorage();
+  renderHistory();
+};
+
+window.deleteEntry = function(idx) {
+  const h = window._predictionHistory;
+  const realIdx = h.length - 1 - idx;
+  if (realIdx >= 0 && realIdx < h.length) h.splice(realIdx, 1);
+  saveHistoryToStorage();
+  renderHistory();
+};
+
+window.reloadEntry = function(idx) {
+  const h = window._predictionHistory;
+  const realIdx = h.length - 1 - idx;
+  const e = h[realIdx];
+  if (!e || !e.inputs) return;
+  const inp = e.inputs;
+  $('h').value = inp.h || '';
+  $('d').value = inp.d || '';
+  $('a').value = inp.a || '';
+  $('results').style.display = 'none';
+  run();
+};
+
+window._predictionHistory = loadHistoryFromStorage();
+renderHistory();
 
 function stripMargin(hO, dO, aO) {
   const r = { h: 1 / hO, d: 1 / dO, a: 1 / aO };
@@ -343,6 +447,18 @@ function run() {
   $('tab-kelly').innerHTML = kellyTableHTML;
 
   $('results').style.display = 'block';
+
+  window._predictionHistory.push({
+    date: new Date().toLocaleDateString('en-GB'),
+    homeTeam: 'Home Team',
+    awayTeam: 'Away Team',
+    inputs: { h: $('h')?.value || '', d: $('d')?.value || '', a: $('a')?.value || '' },
+    prbs: { h: prbs.h, d: prbs.d, a: prbs.a },
+    unifiedTips: []
+  });
+  if (window._predictionHistory.length > MAX_HISTORY) window._predictionHistory.shift();
+  saveHistoryToStorage();
+  renderHistory();
 }
 
 function kellyCriterion(prob, odds) {
