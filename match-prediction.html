@@ -3,196 +3,716 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BetIQ - Match Prediction</title>
+<title>BetIQ - Stats Based Football Predictor</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<style>
+/* ── Last Matches Input Table ───────────────────────── */
+.match-rows-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.match-rows-wrap::-webkit-scrollbar { height: 4px; }
+.match-rows-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.match-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 420px;
+}
+.match-table thead th {
+  background: var(--surface2);
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  white-space: nowrap;
+}
+.match-table thead th:first-child { text-align: center; width: 54px; }
+.match-table tbody td {
+  padding: 5px 5px;
+  border-bottom: 1px solid rgba(28,37,64,0.5);
+  vertical-align: middle;
+  text-align: center;
+}
+.match-table tbody tr:last-child td { border-bottom: none; }
+.match-table tbody tr:hover td { background: rgba(0,212,255,0.02); }
+.match-table td:first-child {
+  text-align: center;
+  padding: 5px 2px;
+  width: 54px;
+}
+
+.match-input {
+  width: 100%;
+  min-width: 52px;
+  height: 34px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0 6px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -moz-appearance: textfield;
+}
+.match-input::-webkit-inner-spin-button,
+.match-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.match-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,212,255,0.08); }
+.match-input.err { border-color: var(--red); }
+.venue-input { min-width: 36px !important; width: 36px !important; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.result-select {
+  width: 100%;
+  min-width: 56px;
+  height: 34px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0 4px;
+  text-align: center;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.15s;
+}
+.result-select:focus { border-color: var(--cyan); }
+.result-select option { background: var(--surface2); color: var(--text); }
+.result-select.w { border-color: rgba(0,229,160,0.5); color: var(--win); }
+.result-select.d { border-color: rgba(245,200,66,0.5); color: var(--draw); }
+.result-select.l { border-color: rgba(255,77,109,0.5); color: var(--lose); }
+
+/* Derived stats preview bar */
+.derived-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0,212,255,0.04);
+  border: 1px solid rgba(0,212,255,0.12);
+  border-radius: 5px;
+  margin-top: 10px;
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--muted2);
+  min-height: 34px;
+}
+.derived-bar .dbk { color: var(--muted); margin-right: 2px; }
+.derived-bar .dbv { color: var(--cyan); font-weight: 700; }
+.derived-bar .dbv.w { color: var(--win); }
+.derived-bar .dbv.d { color: var(--draw); }
+.derived-bar .dbv.l { color: var(--lose); }
+.derived-sep { color: var(--border2); margin: 0 2px; }
+
+/* Match count toggle */
+.match-count-toggle {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px;
+}
+.mct-btn {
+  padding: 4px 12px;
+  border-radius: 3px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.mct-btn.active { background: var(--surface2); color: var(--cyan); border: 1px solid var(--border); }
+.mct-btn:hover:not(.active) { color: var(--text); }
+
+/* Team split layout */
+.teams-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .teams-grid { grid-template-columns: 1fr; }
+}
+
+.team-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.team-block-hd {
+  padding: 9px 12px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.team-block-label {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.team-block-label.home { color: var(--cyan); }
+.team-block-label.away { color: var(--over); }
+.team-block-bd { padding: 10px; }
+</style>
 </head>
 <body>
 <div class="app">
 
   <div id="header"></div>
 
-<div class="app-body">
-<main class="main">
-  <div class="content">
-
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title"><span class="icon">⚽</span> Match Prediction</div>
-        <div class="panel-sub">Poisson Model · Recent Results</div>
-      </div>
-      <div class="panel-body">
-
-        <p style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.65">
-          Enter each team's last 10 results. Format: <strong style="color:var(--text)">GF-GA</strong>
-          (e.g. <strong style="color:var(--text)">2-1</strong> = scored 2, conceded 1).
-          Select whether each game was played at Home or Away. At least 3 results per team are required.
-        </p>
-
-        <div class="grid2" style="margin-bottom:20px">
-          <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-            <div class="slabel" style="margin-bottom:12px">
-              <span class="panel-dot dot-home"></span> Home team — Recent results
-            </div>
-            <div id="homeRows"></div>
-          </div>
-          <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-            <div class="slabel" style="margin-bottom:12px">
-              <span class="panel-dot dot-away"></span> Away team — Recent results
-            </div>
-            <div id="awayRows"></div>
-          </div>
+  <div class="app-body">
+  <main class="main">
+    <div class="stack">
+      <div class="panel">
+        <div class="panel-hd">
+          <div class="panel-title">⚽ Stats Advanced Prediction Engine</div>
+          <div class="panel-sub">Poisson · Dixon-Coles (Dynamic ρ) · WDL Strength · Monte Carlo</div>
         </div>
+        <div class="panel-bd">
 
-        <div class="err-box" id="errorBanner"></div>
+          <!-- TEAM NAMES -->
+          <div class="slabel">Match</div>
+          <div class="g2" style="margin-bottom:18px">
+            <div class="field"><label>Home Team</label><input id="homeTeam" type="text" placeholder="e.g. Arsenal"></div>
+            <div class="field"><label>Away Team</label><input id="awayTeam" type="text" placeholder="e.g. Chelsea"></div>
+          </div>
 
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="predict()">🔮 Analyse Match</button>
-          <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
-          <button class="btn btn-secondary" onclick="loadExample()" style="border-color:var(--border2);color:var(--muted2)">📋 Load Example</button>
-        </div>
-
-        <!-- ===== RESULTS ===== -->
-        <div id="results" style="display:none">
-          <div style="height:1px;background:var(--border);margin:28px 0 24px"></div>
-
-          <div class="slabel">1×2 Outcome Probabilities</div>
-          <div class="metric-grid" id="metricsRow"></div>
-
-          <div class="grid2">
-            <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-              <div class="slabel">Markets</div>
-              <ul class="info-list" id="marketsList"></ul>
-            </div>
-            <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px">
-              <div class="slabel">Expected Goals (xG)</div>
-              <div id="xgSection"></div>
-              <div class="slabel" style="margin-top:18px">Top Scorelines (Home-Away)</div>
-              <div class="scores-row" id="scoreChips"></div>
+          <!-- MATCH COUNT TOGGLE -->
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+            <div class="slabel" style="margin-bottom:0">Last Matches <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(scored · conceded · result)</span></div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">Matches:</span>
+              <div class="match-count-toggle">
+                <button class="mct-btn active" data-n="5" onclick="setMatchCount(5)">Last 5</button>
+                <button class="mct-btn" data-n="10" onclick="setMatchCount(10)">Last 10</button>
+              </div>
             </div>
           </div>
 
-          <div class="panel" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px">
-            <div class="slabel">Over / Under Lines</div>
-            <table class="stats-table">
-              <thead>
-                <tr>
-                  <th>Line</th>
-                  <th>Over %</th>
-                  <th>Under %</th>
-                  <th>Fair O / U</th>
-                  <th>Signal</th>
-                </tr>
-              </thead>
-              <tbody id="ouBody"></tbody>
-            </table>
-          </div>
+          <!-- LAST MATCHES INPUT — TWO TEAM BLOCKS -->
+          <div class="teams-grid" style="margin-bottom:16px">
 
-          <div id="ah-container"></div>
+            <!-- HOME TEAM MATCHES -->
+            <div class="team-block">
+              <div class="team-block-hd">
+                <span class="team-block-label home" id="homeLabelTitle">🏠 Home Team</span>
+                <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">Newest (Top) → Oldest (Bottom)</span>
+              </div>
+              <div class="team-block-bd">
+                <div class="match-rows-wrap">
+                  <table class="match-table" id="homeMatchTable">
+                    <thead>
+                      <tr>
+                        <th>Venue</th>
+                        <th>Scored</th>
+                        <th>Conceded</th>
+                        <th>Result</th>
+                      </tr>
+                    </thead>
+                    <tbody id="homeMatchBody"></tbody>
+                  </table>
+                </div>
+                <div class="derived-bar" id="homeDerivedBar">
+                  <span style="color:var(--muted);font-size:9px">Enter match data above to see derived stats</span>
+                </div>
+              </div>
+            </div>
 
-          <div class="note" style="margin-top:16px">
-            <strong>Methodology:</strong> Poisson distributions fitted to recent match results using a
-            Dixon-Coles–style attack/defence rating. Venue splits are weighted 70% venue-specific /
-            30% overall form. Home advantage factor applied to home attack rating. O/U probabilities
-            are derived from the same joint score distribution used for 1×2.
+            <!-- AWAY TEAM MATCHES -->
+            <div class="team-block">
+              <div class="team-block-hd">
+                <span class="team-block-label away" id="awayLabelTitle">✈️ Away Team</span>
+                <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">Newest (Top) → Oldest (Bottom)</span>
+              </div>
+              <div class="team-block-bd">
+                <div class="match-rows-wrap">
+                  <table class="match-table" id="awayMatchTable">
+                    <thead>
+                      <tr>
+                        <th>Venue</th>
+                        <th>Scored</th>
+                        <th>Conceded</th>
+                        <th>Result</th>
+                      </tr>
+                    </thead>
+                    <tbody id="awayMatchBody"></tbody>
+                  </table>
+                </div>
+                <div class="derived-bar" id="awayDerivedBar">
+                  <span style="color:var(--muted);font-size:9px">Enter match data above to see derived stats</span>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /teams-grid -->
+
+          <!-- VENUE OVERRIDE (optional) -->
+          <details style="margin-bottom:16px">
+            <summary style="font-size:11px;font-weight:700;color:var(--muted2);cursor:pointer;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;list-style:none;display:flex;align-items:center;justify-content:space-between">
+              <span>⚙️ Advanced: Venue-Specific Overrides <span style="font-size:9px;font-weight:400;color:var(--muted)">(optional — use if you have home/away split averages)</span></span>
+              <span style="color:var(--muted);font-size:10px">▼</span>
+            </summary>
+            <div style="padding:14px;background:var(--bg);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px">
+              <div style="font-size:10px;color:var(--muted2);margin-bottom:10px;line-height:1.6">These override the averages derived from match rows above. Leave blank to use auto-computed values.</div>
+              <div class="slabel" style="margin-bottom:8px">Home / Away Venue Stats (Avg Goals)</div>
+              <div class="g4" style="margin-bottom:14px">
+                <div class="field"><label>Home GF</label><input id="homeGF" type="number" step="0.01" placeholder="Auto"></div>
+                <div class="field"><label>Home GA</label><input id="homeGA" type="number" step="0.01" placeholder="Auto"></div>
+                <div class="field"><label>Away GF</label><input id="awayGF" type="number" step="0.01" placeholder="Auto"></div>
+                <div class="field"><label>Away GA</label><input id="awayGA" type="number" step="0.01" placeholder="Auto"></div>
+              </div>
+              <div class="slabel" style="margin-bottom:8px">All-Competition Averages (Avg Goals)</div>
+              <div class="g4">
+                <div class="field"><label>Home GF All</label><input id="homeGFAll" type="number" step="0.01" placeholder="Auto"></div>
+                <div class="field"><label>Home GA All</label><input id="homeGAAll" type="number" step="0.01" placeholder="Auto"></div>
+                <div class="field"><label>Away GF All</label><input id="awayGFAll" type="number" step="0.01" placeholder="Auto"></div>
+                <div class="field"><label>Away GA All</label><input id="awayGAAll" type="number" step="0.01" placeholder="Auto"></div>
+              </div>
+            </div>
+          </details>
+
+          <div class="err-box" id="errBox"></div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="runAnalysis()" title="Ctrl+Enter">⚡ Analyze Match</button>
+            <button class="btn btn-secondary" onclick="clearAll()">✕ Clear</button>
+            <button class="btn btn-secondary" onclick="loadExample()" style="border-color:var(--border2);color:var(--muted2)">📋 Load Example</button>
           </div>
+          <div id="results" style="display:none;margin-top:28px"></div>
+
         </div>
-
       </div>
     </div>
+  </main>
+
+  <!-- HISTORY -->
+  <div class="history-wrap">
+    <div class="hist-panel">
+      <div class="panel-hd">
+        <div class="panel-title">📋 Prediction History <span class="hist-count" id="histCount">(0)</span></div>
+        <button class="h-btn" style="width:auto;padding:0 14px;font-size:11px;font-weight:700;font-family:'Inter',sans-serif;gap:5px;letter-spacing:0.3px" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
+      </div>
+      <div class="hist-table-wrap">
+        <table class="htbl">
+          <thead>
+            <tr>
+              <th style="text-align:left;width:90px">Date</th>
+              <th style="text-align:left">Match</th>
+              <th style="text-align:left;width:200px">1×2 Probabilities</th>
+              <th style="text-align:left">Top Tips</th>
+              <th style="text-align:center;width:80px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   </div>
-</main>
 </div>
 
-  <div id="footer"></div>
-</div>
+<div id="footer"></div>
 
-<script src="header.js"></script>
 <script src="footer.js"></script>
 <script>
-/* ---- Build input rows ---- */
-function buildRows(containerId, isHome) {
-  const c = document.getElementById(containerId);
-  // Pre-fill: first 5 rows as the team's primary venue, last 5 as away/home
-  const venues = isHome
-    ? ['H','H','H','H','H','A','A','A','A','A']
-    : ['A','A','A','A','A','H','H','H','H','H'];
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const fp = p => (p * 100).toFixed(1) + '%';
+const fo = p => (p > 0.001 ? (1/p).toFixed(2) : '—');
+const MAX = 15;
 
-  for (let i = 0; i < 10; i++) {
-    const d = document.createElement('div');
-    d.className = 'mp-row';
-    d.innerHTML = `
-      <select>
-        <option value="H"${venues[i] === 'H' ? ' selected' : ''}>Home</option>
-        <option value="A"${venues[i] === 'A' ? ' selected' : ''}>Away</option>
-      </select>
-      <input type="text" placeholder="GF-GA e.g. 2-1" maxlength="7">`;
-    c.appendChild(d);
+// ══════════════════════════════════════════════════════════════
+//  MATCH ROWS STATE & RENDER
+// ══════════════════════════════════════════════════════════════
+let matchCount = 5; // 5 or 10
+
+window.setMatchCount = function(n) {
+  matchCount = n;
+  document.querySelectorAll('.mct-btn').forEach(b => {
+    b.classList.toggle('active', +b.dataset.n === n);
+  });
+  buildMatchRows();
+};
+
+function buildMatchRows() {
+  buildTeamRows('home');
+  buildTeamRows('away');
+  updateDerivedBars();
+}
+
+function buildTeamRows(side) {
+  const tbody = $(side + 'MatchBody');
+  if (!tbody) return;
+  // Preserve existing values
+  const existing = getMatchRowValues(side);
+  tbody.innerHTML = '';
+  for (let i = matchCount - 1; i >= 0; i--) {
+    const prev = existing[i] || {};
+    const venue = prev.venue || (side === 'home' ? 'H' : 'A');
+    const scored = prev.scored !== undefined ? prev.scored : '';
+    const conceded = prev.conceded !== undefined ? prev.conceded : '';
+    const result = prev.result || '';
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><input class="match-input venue-input" type="text" maxlength="1" placeholder="H/A" data-side="'+side+'" data-idx="'+i+'" data-field="venue" value="'+venue+'"></td>'+
+      '<td><input class="match-input" type="number" min="0" step="1" placeholder="0" data-side="'+side+'" data-idx="'+i+'" data-field="scored" value="'+scored+'"></td>'+
+      '<td><input class="match-input" type="number" min="0" step="1" placeholder="0" data-side="'+side+'" data-idx="'+i+'" data-field="conceded" value="'+conceded+'"></td>'+
+      '<td>'+
+        '<select class="result-select '+result.toLowerCase()+'" data-side="'+side+'" data-idx="'+i+'" data-field="result" disabled>'+
+          '<option value="">—</option>'+
+          '<option value="W"'+(result==='W'?' selected':'')+'>W</option>'+
+          '<option value="D"'+(result==='D'?' selected':'')+'>D</option>'+
+          '<option value="L"'+(result==='L'?' selected':'')+'>L</option>'+
+        '</select>'+
+      '</td>';
+    tbody.appendChild(tr);
+  }
+  // Attach live listeners
+  tbody.querySelectorAll('.match-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      autoFillResult(inp);
+      updateDerivedBars();
+    });
+    inp.addEventListener('change', () => {
+      autoFillResult(inp);
+      updateDerivedBars();
+    });
+  });
+  tbody.querySelectorAll('.result-select').forEach(sel => {
+    sel.addEventListener('change', function() {
+      this.className = 'result-select ' + this.value.toLowerCase();
+      updateDerivedBars();
+    });
+  });
+}
+
+function autoFillResult(inp) {
+  const field = inp.dataset.field;
+  if (field !== 'scored' && field !== 'conceded') return;
+  const tr = inp.closest('tr');
+  if (!tr) return;
+  const scored = tr.querySelector('[data-field="scored"]');
+  const conceded = tr.querySelector('[data-field="conceded"]');
+  const result = tr.querySelector('[data-field="result"]');
+  if (!scored || !conceded || !result) return;
+  const sVal = parseFloat(scored.value);
+  const cVal = parseFloat(conceded.value);
+  if (isNaN(sVal) || isNaN(cVal)) return;
+  let res;
+  if (sVal > cVal) res = 'W';
+  else if (sVal === cVal) res = 'D';
+  else res = 'L';
+  if (result.value !== res) {
+    result.value = res;
+    result.className = 'result-select ' + res.toLowerCase();
   }
 }
-buildRows('homeRows', true);
-buildRows('awayRows', false);
 
-function clearAll() {
-  document.querySelectorAll('.mp-row input[type=text]').forEach(inp => { inp.value = ''; inp.classList.remove('err'); });
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('errorBanner').classList.remove('show');
-}
-
-function loadExample() {
-  const homeData = ['2-1','1-0','3-1','1-1','0-0','1-2','2-2','0-1','1-0','2-3'];
-  const awayData = ['0-2','1-3','0-1','2-2','0-0','2-1','3-0','1-0','2-1','1-1'];
-  document.querySelectorAll('#homeRows .mp-row input[type=text]').forEach((inp, i) => { inp.value = homeData[i] || ''; inp.classList.remove('err'); });
-  document.querySelectorAll('#awayRows .mp-row input[type=text]').forEach((inp, i) => { inp.value = awayData[i] || ''; inp.classList.remove('err'); });
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('errorBanner').classList.remove('show');
-}
-
-/* ---- Read + validate rows ---- */
-function getData(containerId) {
-  const rows = document.getElementById(containerId).querySelectorAll('.mp-row');
-  const out = [];
-  rows.forEach(r => {
-    const type = r.querySelector('select').value;  // 'H' or 'A' — venue this game was played at
-    const inp  = r.querySelector('input');
-    const v    = inp.value.trim();
-    inp.classList.remove('err');
-    if (!v) return;                                              // blank row — skip
-    if (!/^\d{1,2}-\d{1,2}$/.test(v)) { inp.classList.add('err'); return; } // invalid format
-    const [gf, ga] = v.split('-').map(Number);                  // gf = goals scored, ga = goals conceded
-    out.push({ gf, ga, type });
+function getMatchRowValues(side) {
+  const tbody = $(side + 'MatchBody');
+  if (!tbody) return [];
+  const rows = tbody.querySelectorAll('tr');
+  return Array.from(rows).map(row => {
+    const scored = row.querySelector('[data-field="scored"]');
+    const conceded = row.querySelector('[data-field="conceded"]');
+    const result = row.querySelector('[data-field="result"]');
+    const venue = row.querySelector('[data-field="venue"]');
+    return {
+      scored: scored && scored.value !== '' ? parseFloat(scored.value) : undefined,
+      conceded: conceded && conceded.value !== '' ? parseFloat(conceded.value) : undefined,
+      result: result ? result.value : '',
+      venue: venue ? venue.value.toUpperCase() : (side === 'home' ? 'H' : 'A')
+    };
   });
-  return out;
 }
 
-/* ---- Maths helpers ---- */
-function avg(arr) {
-  return arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
+function deriveStatsFromRows(side) {
+  const rows = getMatchRowValues(side);
+  const filled = rows.filter(r => r.scored !== undefined || r.conceded !== undefined || r.result);
+  if (filled.length === 0) return null;
+
+  let totalScored = 0, totalConceded = 0, scoredCount = 0, concededCount = 0;
+  let wins = 0, draws = 0, losses = 0, wdlCount = 0;
+  let formStr = '';
+
+  rows.forEach(r => { // newest→oldest (top→bottom)
+    if (r.scored !== undefined) { totalScored += r.scored; scoredCount++; }
+    if (r.conceded !== undefined) { totalConceded += r.conceded; concededCount++; }
+    if (r.result) {
+      if (r.result === 'W') wins++;
+      else if (r.result === 'D') draws++;
+      else if (r.result === 'L') losses++;
+      wdlCount++;
+      formStr = r.result + formStr; // prepend so formStr stays oldest→newest
+    }
+  });
+
+  const avgGF = scoredCount > 0 ? totalScored / scoredCount : null;
+  const avgGA = concededCount > 0 ? totalConceded / concededCount : null;
+
+  return {
+    avgGF, avgGA, wins, draws, losses, wdlCount, formStr,
+    filledCount: filled.length
+  };
 }
 
-// Log-space Poisson to avoid floating-point underflow for large k
-function poisson(lambda, k) {
-  if (lambda <= 0) return k === 0 ? 1 : 0;
-  let logP = -lambda + k * Math.log(lambda);
+function updateDerivedBars() {
+  ['home', 'away'].forEach(side => {
+    const bar = $(side + 'DerivedBar');
+    if (!bar) return;
+    const stats = deriveStatsFromRows(side);
+    if (!stats || stats.filledCount === 0) {
+      bar.innerHTML = '<span style="color:var(--muted);font-size:9px">Enter match data above to see derived stats</span>';
+      return;
+    }
+    const parts = [];
+    if (stats.avgGF !== null) parts.push('<span class="dbk">GF:</span><span class="dbv">' + stats.avgGF.toFixed(2) + '</span>');
+    if (stats.avgGA !== null) parts.push('<span class="dbk">GA:</span><span class="dbv">' + stats.avgGA.toFixed(2) + '</span>');
+    if (stats.wdlCount > 0) {
+      parts.push('<span class="dbk">W:</span><span class="dbv w">' + stats.wins + '</span>');
+      parts.push('<span class="dbk">D:</span><span class="dbv d">' + stats.draws + '</span>');
+      parts.push('<span class="dbk">L:</span><span class="dbv l">' + stats.losses + '</span>');
+    }
+    if (stats.formStr) {
+      const formColoured = stats.formStr.split('').map(c => {
+        const col = c==='W'?'var(--win)':c==='D'?'var(--draw)':'var(--lose)';
+        return '<span style="color:'+col+';font-weight:700">'+c+'</span>';
+      }).join('');
+      parts.push('<span class="dbk">Form:</span>' + formColoured);
+    }
+    bar.innerHTML = parts.join('<span class="derived-sep">·</span>');
+  });
+
+  // Update team name labels
+  const hn = ($('homeTeam') || {}).value || 'Home Team';
+  const an = ($('awayTeam') || {}).value || 'Away Team';
+  const hl = $('homeLabelTitle'); if(hl) hl.textContent = '🏠 ' + (hn || 'Home Team');
+  const al = $('awayLabelTitle'); if(al) al.textContent = '✈️ ' + (an || 'Away Team');
+}
+
+// Update name labels on team name input
+['homeTeam','awayTeam'].forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener('input', updateDerivedBars);
+});
+
+// Init rows
+buildMatchRows();
+
+// ── Prediction History (localStorage) ─────────────────────────
+const MAX_HISTORY = 20;
+const STORAGE_KEY = 'betiqpro_history';
+
+function loadHistoryFromStorage() {
+  try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e) { return []; }
+}
+function saveHistoryToStorage() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window._predictionHistory)); }
+  catch(e) { console.warn('Could not save history:', e); }
+}
+
+window._predictionHistory = loadHistoryFromStorage();
+renderHistory();
+
+function renderHistory() {
+  const el = $('historyBody'), cnt = $('histCount');
+  if (!el) return;
+  const h = window._predictionHistory;
+  if (cnt) cnt.textContent = '(' + h.length + ')';
+  if (h.length === 0) {
+    el.innerHTML = '<tr><td colspan="5" class="h-empty"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
+    return;
+  }
+  let html = '';
+  for (let i = h.length - 1; i >= 0; i--) {
+    const e = h[i];
+    const idx = h.length - 1 - i;
+    const hasTips = e.unifiedTips && e.unifiedTips.length > 0;
+    let tipsHtml;
+    if (hasTips) {
+      tipsHtml = e.unifiedTips.slice(0,4).map(t => '<span class="h-tip">' + escHtml(t.market) + '&nbsp;<span style="color:var(--cyan)">' + fp(t.prob) + '</span></span>').join('');
+    } else {
+      tipsHtml = '<span style="color:var(--muted);font-size:11px;font-family:\'JetBrains Mono\',monospace">— run Unified Tips</span>';
+    }
+    html += '<tr>';
+    html += '<td><span class="h-date">' + e.date + '</span></td>';
+    html += '<td><span class="h-match">' + escHtml(e.homeTeam) + '<span class="vs">vs</span>' + escHtml(e.awayTeam) + '</span></td>';
+    html += '<td><div class="h-probs"><span class="h-prob h">H&nbsp;' + fp(e.prbs.h) + '</span><span class="h-prob d">D&nbsp;' + fp(e.prbs.d) + '</span><span class="h-prob a">A&nbsp;' + fp(e.prbs.a) + '</span></div></td>';
+    html += '<td><div class="h-tips">' + tipsHtml + '</div></td>';
+    html += '<td><div class="h-actions">' +
+      '<span class="h-btn reload" onclick="reloadEntry(' + idx + ')" title="Re-run this match">↻</span>' +
+      '<span class="h-btn delete" onclick="deleteEntry(' + idx + ')" title="Delete">✕</span>' +
+    '</div></td>';
+    html += '</tr>';
+  }
+  el.innerHTML = html;
+}
+
+window.clearHistory = function() {
+  window._predictionHistory = [];
+  saveHistoryToStorage();
+  renderHistory();
+};
+
+window.deleteEntry = function(idx) {
+  const h = window._predictionHistory;
+  const realIdx = h.length - 1 - idx;
+  if (realIdx >= 0 && realIdx < h.length) h.splice(realIdx, 1);
+  saveHistoryToStorage();
+  renderHistory();
+};
+
+window.reloadEntry = function(idx) {
+  const h = window._predictionHistory;
+  const realIdx = h.length - 1 - idx;
+  const e = h[realIdx];
+  if (!e || !e.inputs) return;
+  const inp = e.inputs;
+  const set = (id, val) => { const el = $(id); if (el) el.value = val; };
+  set('homeTeam', inp.homeTeam || '');
+  set('awayTeam', inp.awayTeam || '');
+  set('homeGF', inp.homeGF || ''); set('homeGA', inp.homeGA || '');
+  set('awayGF', inp.awayGF || ''); set('awayGA', inp.awayGA || '');
+  set('homeGFAll', inp.homeGFAll || ''); set('homeGAAll', inp.homeGAAll || '');
+  set('awayGFAll', inp.awayGFAll || ''); set('awayGAAll', inp.awayGAAll || '');
+  // Restore match rows
+  if (inp.homeMatches) restoreMatchRows('home', inp.homeMatches);
+  if (inp.awayMatches) restoreMatchRows('away', inp.awayMatches);
+  $('results').style.display = 'none';
+  window.runAnalysis();
+};
+
+function restoreMatchRows(side, matches) {
+  if (!matches || !matches.length) return;
+  const cnt = matches.length === 5 ? 5 : 10;
+  if (cnt !== matchCount) {
+    matchCount = cnt;
+    document.querySelectorAll('.mct-btn').forEach(b => b.classList.toggle('active', +b.dataset.n === cnt));
+    buildMatchRows();
+  }
+  const tbody = $(side + 'MatchBody');
+  if (!tbody) return;
+  matches.forEach((m, i) => {
+    const scored = tbody.querySelector('[data-idx="'+i+'"][data-field="scored"]');
+    const conceded = tbody.querySelector('[data-idx="'+i+'"][data-field="conceded"]');
+    const result = tbody.querySelector('[data-idx="'+i+'"][data-field="result"]');
+    const venue = tbody.querySelector('[data-idx="'+i+'"][data-field="venue"]');
+    if (scored) scored.value = m.scored !== undefined ? m.scored : '';
+    if (conceded) conceded.value = m.conceded !== undefined ? m.conceded : '';
+    if (result) { result.value = m.result || ''; result.className = 'result-select ' + (m.result||'').toLowerCase(); }
+    if (venue) venue.value = m.venue || (side === 'home' ? 'H' : 'A');
+  });
+  updateDerivedBars();
+}
+
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+// ── Input helpers ──────────────────────────────────────────────
+function getNum(id) {
+  const el = $(id); if (!el || el.value === '' || el.value === null) return null;
+  const v = parseFloat(el.value);
+  if (isNaN(v) || v < 0) { el.classList.add('err'); el.classList.remove('ok'); return null; }
+  el.classList.remove('err'); el.classList.add('ok'); return v;
+}
+function hv(v) { return v !== null && v !== undefined; }
+function getStr(id) { const el = $(id); return el ? el.value.trim() : ''; }
+
+// ══════════════════════════════════════════════════════════════
+//  MATH CORE
+// ══════════════════════════════════════════════════════════════
+function poisson(lam, k) {
+  if (lam <= 0) return k === 0 ? 1 : 0;
+  let logP = -lam + k * Math.log(lam);
   for (let i = 1; i <= k; i++) logP -= Math.log(i);
   return Math.exp(logP);
 }
 
-function fairOdds(p) { return p > 0.001 ? (1 / p).toFixed(2) : '—'; }
+function calcDynamicRho(lh, la) {
+  const total = lh + la;
+  if (total <= 0) return -0.13;
+  const rho = -(0.08 + 0.04 / total);
+  return Math.max(-0.20, Math.min(-0.06, rho));
+}
 
-function fp(p) { return (p * 100).toFixed(1) + '%'; }
+function dcCorrection(i, j, lH, lA, rho) {
+  if (i===0 && j===0) return 1 - lH*lA*rho;
+  if (i===0 && j===1) return 1 + lH*rho;
+  if (i===1 && j===0) return 1 + lA*rho;
+  if (i===1 && j===1) return 1 - rho;
+  return 1;
+}
 
-function calcAHHalf(m, threshold) {
-  let home = 0, away = 0, push = 0;
-  for (let i = 0; i <= 8; i++) for (let j = 0; j <= 8; j++) {
-    const p = m[i][j], diff = i - j;
-    if (diff > threshold) home += p;
-    else if (diff < threshold) away += p;
-    else push += p;
+function buildMatrix(lh, la, useDC) {
+  const rho = useDC ? calcDynamicRho(lh, la) : 0;
+  const totalXG = lh + la;
+  const corrRho = totalXG > 3.0 ? Math.min(0.15, (totalXG - 3.0) * 0.05) : 0;
+  const m = [];
+  for (let i = 0; i <= MAX; i++) {
+    m[i] = [];
+    for (let j = 0; j <= MAX; j++) {
+      let p = poisson(lh, i) * poisson(la, j);
+      if (useDC) p *= dcCorrection(i, j, lh, la, rho);
+      if (corrRho > 0) {
+        const hD = i - lh, aD = j - la;
+        p *= (hD * aD > 0) ? (1 + corrRho) : (1 - corrRho * 0.5);
+      }
+      m[i][j] = Math.max(0, p);
+    }
   }
-  const tw = home + away || 1;
-  return { home: home / tw, away: away / tw, push };
+  let total = 0;
+  for (let i = 0; i <= MAX; i++) for (let j = 0; j <= MAX; j++) total += m[i][j];
+  if (total > 0) for (let i = 0; i <= MAX; i++) for (let j = 0; j <= MAX; j++) m[i][j] /= total;
+  return m;
+}
+
+function calc1x2(m) {
+  let h = 0, d = 0, a = 0;
+  for (let i = 0; i <= MAX; i++) for (let j = 0; j <= MAX; j++) {
+    if (i > j) h += m[i][j]; else if (i === j) d += m[i][j]; else a += m[i][j];
+  }
+  const t = h + d + a;
+  return { h: h/t, d: d/t, a: a/t };
+}
+
+function calcBTTS(m) {
+  let y = 0;
+  for (let i = 1; i <= MAX; i++) for (let j = 1; j <= MAX; j++) y += m[i][j];
+  return y;
+}
+
+function calcOU(m, line) {
+  let over = 0, under = 0;
+  for (let i = 0; i <= MAX; i++) for (let j = 0; j <= MAX; j++) {
+    if (i + j > line) over += m[i][j];
+    else if (i + j < line) under += m[i][j];
+  }
+  const t = over + under || 1;
+  return { over: over/t, under: under/t };
 }
 
 function calcAHCover(m, threshold) {
@@ -200,41 +720,410 @@ function calcAHCover(m, threshold) {
   const fraction = ((t % 1) + 1) % 1;
   const isQB = Math.abs(fraction - 0.25) < 0.001 || Math.abs(fraction - 0.75) < 0.001;
   if (isQB) {
-    const lower = t < 0 ? Math.ceil(t * 2) / 2 : Math.floor(t * 2) / 2;
+    const lower = t < 0 ? Math.ceil(t*2)/2 : Math.floor(t*2)/2;
     const upper = lower + (t < 0 ? -0.5 : 0.5);
-    const a = calcAHHalf(m, lower);
-    const b = calcAHHalf(m, upper);
-    return { home: (a.home + b.home) / 2, away: (a.away + b.away) / 2, push: 0 };
+    const a = calcAHHalf(m, lower), b = calcAHHalf(m, upper);
+    return { home: (a.home+b.home)/2, away: (a.away+b.away)/2, push: 0 };
   }
   return calcAHHalf(m, t);
 }
+function calcAHHalf(m, threshold) {
+  let home = 0, away = 0, push = 0;
+  for (let i = 0; i <= MAX; i++) for (let j = 0; j <= MAX; j++) {
+    const p = m[i][j], diff = i - j;
+    if (diff > threshold) home += p;
+    else if (diff < threshold) away += p;
+    else push += p;
+  }
+  const tw = home + away || 1;
+  return { home: home/tw, away: away/tw, push };
+}
 
+function skellamPMF(mu1, mu2, k) {
+  const mu = mu1 + mu2;
+  const ratio = mu1 / (mu2 || 0.01);
+  const sqrtProd = 2 * Math.sqrt(mu1 * mu2);
+  const bessel = modifiedBesselI(Math.abs(k), sqrtProd);
+  return Math.exp(-mu) * Math.pow(ratio, k/2) * bessel;
+}
+function modifiedBesselI(n, x) {
+  if (x === 0) return n === 0 ? 1 : 0;
+  let sum = 0, term = 1; const halfX = x/2;
+  for (let k = 0; k < 50; k++) { sum += term; term *= (halfX*halfX) / ((k+1)*(k+1+n)); if (Math.abs(term) < 1e-15) break; }
+  return sum * Math.pow(halfX, n) / factorial(n);
+}
+function factorial(n) { if (n <= 1) return 1; let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; }
+function computeSkellam(mu1, mu2) {
+  const dist = {};
+  for (let k = -5; k <= 5; k++) dist[k] = skellamPMF(mu1, mu2, k);
+  let total = 0; for (let k = -5; k <= 5; k++) total += dist[k];
+  for (let k = -5; k <= 5; k++) dist[k] /= total;
+  return dist;
+}
+function computeCI(xg, w) { return { low: +(xg - w).toFixed(2), high: +(xg + w).toFixed(2) }; }
+
+// ── Form from match rows (recency-weighted) ────────────────────
+function parseFormFromRows(formStr) {
+  if (!formStr || formStr.length === 0) return 1.0;
+  const letters = formStr.toUpperCase().split('').filter(c => 'WDL'.includes(c)).slice(-6);
+  if (letters.length === 0) return 1.0;
+  let pts = 0; const maxPts = letters.length * 3;
+  letters.forEach((l, i) => {
+    const w = 1 + (i / (letters.length - 1 || 1)) * 0.5;
+    if (l === 'W') pts += 3 * w;
+    else if (l === 'D') pts += 1 * w;
+  });
+  return 0.82 + (pts / maxPts) * 0.36;
+}
+
+function parseWDL(w, d, l) {
+  if (!hv(w) || !hv(d) || !hv(l) || w + d + l === 0) return null;
+  const ppg = (w * 3 + d * 1) / (w + d + l);
+  return 0.75 + (ppg / 3) * 0.50;
+}
+
+function getHomeAdv() { return 0.30; }
+
+// ── XG Computation (refactored to use match rows) ─────────────
+function computeXG() {
+  // 1. Derive from match rows
+  const homeStats = deriveStatsFromRows('home');
+  const awayStats = deriveStatsFromRows('away');
+
+  // 2. Override fields (advanced section)
+  const ovHomeGF = getNum('homeGF'), ovHomeGA = getNum('homeGA');
+  const ovAwayGF = getNum('awayGF'), ovAwayGA = getNum('awayGA');
+  const ovHomeGFAll = getNum('homeGFAll'), ovHomeGAAll = getNum('homeGAAll');
+  const ovAwayGFAll = getNum('awayGFAll'), ovAwayGAAll = getNum('awayGAAll');
+
+  // Effective averages: override wins; fall back to match-row derived
+  const homeGF = hv(ovHomeGF) ? ovHomeGF : (homeStats && hv(homeStats.avgGF) ? homeStats.avgGF : null);
+  const homeGA = hv(ovHomeGA) ? ovHomeGA : (homeStats && hv(homeStats.avgGA) ? homeStats.avgGA : null);
+  const awayGF = hv(ovAwayGF) ? ovAwayGF : (awayStats && hv(awayStats.avgGF) ? awayStats.avgGF : null);
+  const awayGA = hv(ovAwayGA) ? ovAwayGA : (awayStats && hv(awayStats.avgGA) ? awayStats.avgGA : null);
+
+  // For "all" stats: use overrides or derived (same rows act as "all" data if no split available)
+  const homeGFAll = hv(ovHomeGFAll) ? ovHomeGFAll : homeGF;
+  const homeGAAll = hv(ovHomeGAAll) ? ovHomeGAAll : homeGA;
+  const awayGFAll = hv(ovAwayGFAll) ? ovAwayGFAll : awayGF;
+  const awayGAAll = hv(ovAwayGAAll) ? ovAwayGAAll : awayGA;
+
+  const leagueBase = 1.35;
+  const homeAdv = getHomeAdv();
+  let homeXG, awayXG, dataSource, confidence;
+  let homeAttackStr = 1, homeDefenseStr = 1, awayAttackStr = 1, awayDefenseStr = 1;
+  let dataQualityScore = 0, ciWidth = 0, statDivergenceWarning = false;
+
+  const hasSplit = hv(homeGF) && hv(homeGA) && hv(awayGF) && hv(awayGA);
+  const hasCombined = hv(homeGFAll) && hv(homeGAAll) && hv(awayGFAll) && hv(awayGAAll);
+
+  if (hasSplit && hasCombined) {
+    homeAttackStr = homeGF / leagueBase; awayDefenseStr = awayGA / leagueBase;
+    awayAttackStr = awayGF / leagueBase; homeDefenseStr = homeGA / leagueBase;
+    const hxS = leagueBase * homeAttackStr * awayDefenseStr + homeAdv;
+    const axS = leagueBase * awayAttackStr * homeDefenseStr;
+    const hxC = ((homeGFAll + awayGAAll) / 2) * 1.08;
+    const axC = (awayGFAll + homeGAAll) / 2;
+    homeXG = hxS * 0.6 + hxC * 0.4;
+    awayXG = axS * 0.6 + axC * 0.4;
+    dataSource = 'Match Rows + Overrides (60/40 Fusion)';
+    confidence = 'HIGH';
+    const checks = [
+      { a: homeGF, b: homeGFAll }, { a: homeGA, b: homeGAAll },
+      { a: awayGF, b: awayGFAll }, { a: awayGA, b: awayGAAll }
+    ];
+    let penalty = 0;
+    checks.forEach(c => { if (hv(c.a) && hv(c.b) && Math.abs(c.a - c.b) > 0.5) penalty += 12; });
+    penalty = Math.min(penalty, 30);
+    if (penalty > 0) statDivergenceWarning = true;
+    dataQualityScore = Math.max(20, Math.min(100, 80 - penalty));
+  } else if (hasSplit) {
+    homeAttackStr = homeGF / leagueBase; awayDefenseStr = awayGA / leagueBase;
+    awayAttackStr = awayGF / leagueBase; homeDefenseStr = homeGA / leagueBase;
+    homeXG = leagueBase * homeAttackStr * awayDefenseStr + homeAdv;
+    awayXG = leagueBase * awayAttackStr * homeDefenseStr;
+    dataSource = 'Match Row Averages';
+    confidence = 'MEDIUM';
+    dataQualityScore = 65;
+  } else {
+    homeXG = leagueBase + homeAdv;
+    awayXG = leagueBase;
+    dataSource = 'League Defaults (no match data)';
+    confidence = 'LOW';
+    dataQualityScore = 20;
+  }
+
+  // Form multiplier from match row result strings
+  const homeFormStr = homeStats ? homeStats.formStr : '';
+  const awayFormStr = awayStats ? awayStats.formStr : '';
+  const homeFormMult = parseFormFromRows(homeFormStr);
+  const awayFormMult = parseFormFromRows(awayFormStr);
+  homeXG *= homeFormMult;
+  awayXG *= awayFormMult;
+  if (homeFormStr.length >= 3 || awayFormStr.length >= 3) dataQualityScore = Math.min(100, dataQualityScore + 5);
+
+  // WDL modifier from match rows
+  const homeW = homeStats ? homeStats.wins : 0;
+  const homeD = homeStats ? homeStats.draws : 0;
+  const homeL = homeStats ? homeStats.losses : 0;
+  const awayW = awayStats ? awayStats.wins : 0;
+  const awayD = awayStats ? awayStats.draws : 0;
+  const awayL = awayStats ? awayStats.losses : 0;
+
+  const homeWDLMod = parseWDL(homeW, homeD, homeL);
+  const awayWDLMod = parseWDL(awayW, awayD, awayL);
+  const hasWDL = hv(homeWDLMod) || hv(awayWDLMod);
+  if (hv(homeWDLMod)) homeXG *= Math.max(0.80, Math.min(1.20, homeWDLMod));
+  if (hv(awayWDLMod)) awayXG *= Math.max(0.80, Math.min(1.20, awayWDLMod));
+  if (hasWDL) dataQualityScore = Math.min(100, Math.round(dataQualityScore) + 8);
+
+  homeXG = Math.max(0.1, Math.min(9, homeXG));
+  awayXG = Math.max(0.1, Math.min(9, awayXG));
+
+  const filledMatches = (homeStats ? homeStats.filledCount : 0) + (awayStats ? awayStats.filledCount : 0);
+  ciWidth = filledMatches >= 10 ? 0.12 : filledMatches >= 8 ? 0.22 : filledMatches >= 6 ? 0.35 : 0.55;
+
+  return {
+    homeXG: +homeXG.toFixed(2), awayXG: +awayXG.toFixed(2),
+    homeAttackStr: +homeAttackStr.toFixed(2), homeDefenseStr: +homeDefenseStr.toFixed(2),
+    awayAttackStr: +awayAttackStr.toFixed(2), awayDefenseStr: +awayDefenseStr.toFixed(2),
+    dataSource, confidence, dataQualityScore, ciWidth,
+    homeFormStr, awayFormStr, compType: 'league',
+    homeFormMult, awayFormMult, homeAdv, statDivergenceWarning,
+    homeWDLCombined: homeWDLMod, awayWDLCombined: awayWDLMod,
+    homeWDLStr: hv(homeWDLMod) ? 'W'+homeW+' D'+homeD+' L'+homeL : null,
+    awayWDLStr: hv(awayWDLMod) ? 'W'+awayW+' D'+awayD+' L'+awayL : null,
+    hasWDL
+  };
+}
+
+// ── Monte Carlo (12,000 iterations) ───────────────────────────
+function runSimulation(homeXG, awayXG, n) {
+  n = n || 12000;
+  let homeWins = 0, draws = 0, awayWins = 0, over25 = 0, bttsY = 0;
+  function samplePoisson(lam) {
+    if (lam <= 0) return 0;
+    let k = -1, logP = 0;
+    const logL = -lam;
+    do { k++; logP += Math.log(Math.random()); } while (logP > logL);
+    return k;
+  }
+  for (let i = 0; i < n; i++) {
+    const hg = samplePoisson(homeXG), ag = samplePoisson(awayXG);
+    if (hg > ag) homeWins++; else if (hg === ag) draws++; else awayWins++;
+    if (hg + ag > 2.5) over25++;
+    if (hg >= 1 && ag >= 1) bttsY++;
+  }
+  return { homeWins: homeWins/n, draws: draws/n, awayWins: awayWins/n, over25: over25/n, bttsY: bttsY/n };
+}
+
+// ── Fair Value Engine ──────────────────────────────────────────
+function computeFairValue(prbs, btts, dq, totalXG) {
+  const markets = [];
+  const dqFactor = dq / 100;
+  const max1x2 = Math.max(prbs.h, prbs.d, prbs.a);
+  const dom1x2 = max1x2 === prbs.h ? 'Home Win' : max1x2 === prbs.d ? 'Draw' : 'Away Win';
+  markets.push({ market: dom1x2, certainty: Math.min(95, Math.round(dqFactor*0.5*100 + max1x2*50)), prob: max1x2 });
+  const bttsExt = Math.abs(btts - 0.5) * 2;
+  markets.push({ market: btts > 0.5 ? 'BTTS Yes' : 'BTTS No', certainty: Math.round(dqFactor*0.4*100 + bttsExt*60), prob: btts > 0.5 ? btts : 1 - btts });
+  let pUnder = 0; for (let g = 0; g <= 2; g++) pUnder += poisson(totalXG, g);
+  const ouProb = totalXG > 2.5 ? 1 - pUnder : pUnder;
+  const ouExt = Math.abs(ouProb - 0.5) * 2;
+  markets.push({ market: totalXG > 2.5 ? 'Over 2.5' : 'Under 2.5', certainty: Math.round(dqFactor*0.4*100 + ouExt*60), prob: ouProb });
+  return markets.sort((a, b) => b.certainty - a.certainty);
+}
+
+function kellyC(prob, odds) {
+  if (!odds || isNaN(odds) || odds < 1.01) return null;
+  return Math.max(0, ((odds-1)*prob - (1-prob)) / (odds-1));
+}
+
+function confLevel(level) {
+  if (level === 'HIGH') return { label:'HIGH', color:'var(--win)', bg:'rgba(0,229,160,0.10)', border:'rgba(0,229,160,0.3)' };
+  if (level === 'MEDIUM') return { label:'MEDIUM', color:'var(--draw)', bg:'rgba(245,200,66,0.10)', border:'rgba(245,200,66,0.3)' };
+  return { label:'LOW', color:'var(--muted2)', bg:'rgba(107,116,148,0.10)', border:'rgba(107,116,148,0.3)' };
+}
+function probBar(p, color) {
+  return '<div class="pbar-wrap"><div class="pbar-track"><div class="pbar-fill" style="width:' + (p*100).toFixed(1) + '%;background:' + color + '"></div></div></div>';
+}
+function getTopScores(mat, n) {
+  n = n || 12;
+  const arr = [];
+  for (let i = 0; i <= 8; i++) for (let j = 0; j <= 8; j++) arr.push({ home:i, away:j, p: mat[i]?.[j] || 0 });
+  return arr.sort((a, b) => b.p - a.p).slice(0, n);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — PROBS TAB
+// ══════════════════════════════════════════════════════════════
+function renderProbsTab(xgResult, prbs, btts, mat, skellam, scores, ouData, totalXG, goalDiff, homeCI, awayCI, fairValue) {
+  let html = '';
+  const xg = xgResult.homeXG, awayXG = xgResult.awayXG;
+  const dq = Math.round(xgResult.dataQualityScore);
+  const dqColor = dq >= 70 ? 'var(--green)' : dq >= 45 ? 'var(--amber)' : 'var(--muted2)';
+  const circ = 2 * Math.PI * 22;
+  const offset = circ - (circ * (dq/100));
+  const strokeColor = dq >= 70 ? 'var(--green)' : dq >= 45 ? 'var(--amber)' : 'var(--red)';
+
+  html += '<div class="dq-ring-wrap">';
+  html += '<div class="dq-ring"><svg width="54" height="54" viewBox="0 0 54 54"><circle class="dq-ring-bg" cx="27" cy="27" r="22"/><circle class="dq-ring-fill" cx="27" cy="27" r="22" stroke="' + strokeColor + '" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '"/></svg>';
+  html += '<div class="dq-center" style="color:' + dqColor + '">' + dq + '%</div></div>';
+  html += '<div class="dq-info"><div class="dq-info-title">Data Quality: ' + (dq>=70?'Reliable':dq>=45?'Moderate':'Low') + (xgResult.statDivergenceWarning ? ' <span style="color:var(--red);font-size:9px">⚠ STAT DIVERGENCE</span>' : '') + '</div>';
+  html += '<div class="dq-info-detail">Source: ' + xgResult.dataSource + ' · Home Adv: +' + xgResult.homeAdv.toFixed(2) + ' xG<br>Dynamic DC ρ: ' + (xg+awayXG < 2.8 ? calcDynamicRho(xg,awayXG).toFixed(3)+' (active)' : 'off') + '</div></div></div>';
+
+  html += '<div class="metric-row">';
+  html += '<div class="metric"><div class="ml">Home xG</div><div class="mv" style="color:var(--cyan)">' + xg.toFixed(2) + '</div><div class="ms">CI: [' + homeCI.low + ', ' + homeCI.high + ']</div></div>';
+  html += '<div class="metric"><div class="ml">Away xG</div><div class="mv" style="color:var(--cyan)">' + awayXG.toFixed(2) + '</div><div class="ms">CI: [' + awayCI.low + ', ' + awayCI.high + ']</div></div>';
+  html += '<div class="metric"><div class="ml">Total xG</div><div class="mv" style="color:var(--muted2)">' + totalXG.toFixed(2) + '</div><div class="ms">' + (goalDiff>0?'Home lean':goalDiff<0?'Away lean':'Even') + '</div></div>';
+  html += '</div>';
+
+  html += '<div class="metric-row">';
+  const haC = xgResult.homeAttackStr > 1 ? 'var(--green)' : 'var(--amber)';
+  const hdC = xgResult.homeDefenseStr < 1 ? 'var(--green)' : 'var(--red)';
+  const aaC = xgResult.awayAttackStr > 1 ? 'var(--green)' : 'var(--amber)';
+  html += '<div class="metric"><div class="ml">Home Attack</div><div class="mv" style="color:'+haC+'">' + xgResult.homeAttackStr.toFixed(2) + '</div><div class="ms">' + (xgResult.homeAttackStr>1?'Above avg':'Below avg') + '</div></div>';
+  html += '<div class="metric"><div class="ml">Home Defense</div><div class="mv" style="color:'+hdC+'">' + xgResult.homeDefenseStr.toFixed(2) + '</div><div class="ms">' + (xgResult.homeDefenseStr<1?'Strong':'Leaky') + '</div></div>';
+  html += '<div class="metric"><div class="ml">Away Attack</div><div class="mv" style="color:'+aaC+'">' + xgResult.awayAttackStr.toFixed(2) + '</div><div class="ms">' + (xgResult.awayAttackStr>1?'Above avg':'Below avg') + '</div></div>';
+  html += '</div>';
+
+  if (xgResult.homeFormMult || xgResult.awayFormMult) {
+    html += '<div class="metric-row">';
+    const hfP = ((xgResult.homeFormMult - 1) * 100).toFixed(1);
+    const afP = ((xgResult.awayFormMult - 1) * 100).toFixed(1);
+    const hfC = xgResult.homeFormMult>1.01?'var(--green)':xgResult.homeFormMult<0.97?'var(--red)':'var(--amber)';
+    const afC = xgResult.awayFormMult>1.01?'var(--green)':xgResult.awayFormMult<0.97?'var(--red)':'var(--amber)';
+    html += '<div class="metric"><div class="ml">Home Form Adj</div><div class="mv" style="color:'+hfC+';font-size:18px">' + (xgResult.homeFormMult>=1?'+':'') + hfP + '%</div><div class="ms">' + (xgResult.homeFormStr || '—') + '</div></div>';
+    html += '<div class="metric"><div class="ml">Away Form Adj</div><div class="mv" style="color:'+afC+';font-size:18px">' + (xgResult.awayFormMult>=1?'+':'') + afP + '%</div><div class="ms">' + (xgResult.awayFormStr || '—') + '</div></div>';
+    html += '<div class="metric"><div class="ml">Goal Diff</div><div class="mv" style="color:'+(goalDiff>=0?'var(--green)':'var(--red)')+';font-size:18px">' + (goalDiff>0?'+':'') + goalDiff.toFixed(2) + '</div></div>';
+    html += '</div>';
+  }
+
+  if (xgResult.hasWDL) {
+    html += '<div class="metric-row">';
+    if (xgResult.homeWDLCombined !== null) {
+      const hwP = ((xgResult.homeWDLCombined - 1) * 100).toFixed(1);
+      const hwC = xgResult.homeWDLCombined>1.01?'var(--green)':xgResult.homeWDLCombined<0.97?'var(--red)':'var(--amber)';
+      html += '<div class="metric"><div class="ml">Home WDL</div><div class="mv" style="color:'+hwC+';font-size:18px">' + (xgResult.homeWDLCombined>=1?'+':'') + hwP + '%</div><div class="ms">' + (xgResult.homeWDLStr||'') + '</div></div>';
+    }
+    if (xgResult.awayWDLCombined !== null) {
+      const awP = ((xgResult.awayWDLCombined - 1) * 100).toFixed(1);
+      const awC = xgResult.awayWDLCombined>1.01?'var(--green)':xgResult.awayWDLCombined<0.97?'var(--red)':'var(--amber)';
+      html += '<div class="metric"><div class="ml">Away WDL</div><div class="mv" style="color:'+awC+';font-size:18px">' + (xgResult.awayWDLCombined>=1?'+':'') + awP + '%</div><div class="ms">' + (xgResult.awayWDLStr||'') + '</div></div>';
+    }
+    html += '<div class="metric"><div class="ml">WDL Impact</div><div class="mv" style="color:var(--muted2);font-size:14px">ACTIVE</div><div class="ms">xG adjusted</div></div>';
+    html += '</div>';
+  }
+
+  html += '<div class="metric-row">';
+  html += '<div class="metric"><div class="ml">Home Win</div><div class="mv" style="color:var(--green)">' + fp(prbs.h) + '</div>' + probBar(prbs.h,'var(--green)') + '<div class="ms">Fair: ' + fo(prbs.h) + '</div></div>';
+  html += '<div class="metric"><div class="ml">Draw</div><div class="mv" style="color:var(--amber)">' + fp(prbs.d) + '</div>' + probBar(prbs.d,'var(--amber)') + '<div class="ms">Fair: ' + fo(prbs.d) + '</div></div>';
+  html += '<div class="metric"><div class="ml">Away Win</div><div class="mv" style="color:var(--over)">' + fp(prbs.a) + '</div>' + probBar(prbs.a,'var(--over)') + '<div class="ms">Fair: ' + fo(prbs.a) + '</div></div>';
+  html += '</div>';
+
+  const ou25 = calcOU(mat, 2.5);
+  html += '<div class="metric-row">';
+  html += '<div class="metric"><div class="ml">BTTS Yes</div><div class="mv" style="color:var(--amber)">' + fp(btts) + '</div>' + probBar(btts,'var(--amber)') + '<div class="ms">Fair: ' + fo(btts) + '</div></div>';
+  html += '<div class="metric"><div class="ml">Over 2.5</div><div class="mv" style="color:var(--over)">' + fp(ou25.over) + '</div>' + probBar(ou25.over,'var(--over)') + '<div class="ms">Fair: ' + fo(ou25.over) + '</div></div>';
+  html += '<div class="metric"><div class="ml">DC 1X</div><div class="mv" style="color:var(--green)">' + fp(prbs.h+prbs.d) + '</div><div class="ms">DC X2: ' + fp(prbs.d+prbs.a) + '</div><div class="ms">DC 12: ' + fp(prbs.h+prbs.a) + '</div></div>';
+  html += '</div>';
+
+  html += '<div class="card"><div class="card-title">💎 Fair Value Engine — Highest Certainty Markets</div>';
+  html += '<div class="fv-grid">';
+  fairValue.forEach(fv => {
+    html += '<div class="fv-item"><div class="fv-market">' + fv.market + '</div><div class="fv-cert">' + fv.certainty + '% certainty</div><div class="fv-prob">Fair Odds: ' + fo(fv.prob) + '</div></div>';
+  });
+  html += '</div></div>';
+
+  html += '<div class="card"><div class="card-title">📊 Goal Difference Distribution (Skellam)</div>';
+  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:320px"><thead><tr><th>GD</th><th>Probability</th><th>Fair Odds</th><th>Signal</th></tr></thead><tbody>';
+  for (let k = -5; k <= 5; k++) {
+    const p = skellam[k] || 0;
+    if (p < 0.01) continue;
+    const sig = k > 0 ? 'Home Win' : k < 0 ? 'Away Win' : 'Draw';
+    const sc = k > 0 ? 'var(--green)' : k < 0 ? 'var(--red)' : 'var(--amber)';
+    html += '<tr><td style="font-weight:700;color:'+sc+'">' + (k>0?'+':'') + k + '</td><td>' + fp(p) + '</td><td>' + fo(p) + '</td><td><span style="font-weight:700;color:'+sc+'">' + sig + '</span></td></tr>';
+  }
+  html += '</tbody></table></div></div>';
+
+  html += '<div class="card"><div class="card-title">🏆 Top Correct Score Probabilities</div>';
+  html += '<div class="cs-grid">';
+  scores.slice(0,5).forEach(s => {
+    const c = s.home>s.away?'var(--green)':s.home===s.away?'var(--amber)':'var(--red)';
+    html += '<div class="cs-item"><div class="cs-score" style="color:'+c+'">' + s.home + '–' + s.away + '</div><div class="cs-prob">' + fp(s.p) + '</div><div class="cs-fair">' + fo(s.p) + '</div></div>';
+  });
+  html += '</div></div>';
+
+  return html;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — SIM TAB
+// ══════════════════════════════════════════════════════════════
+function renderSimTab(sim, prbs, btts, totalXG, mat) {
+  const ou25 = mat ? calcOU(mat, 2.5) : { over:0.5, under:0.5 };
+  function simRow(label, simVal, modelVal, color) {
+    const pct = (simVal * 100).toFixed(1);
+    const drift = Math.abs(simVal - modelVal) * 100;
+    const dC = drift < 2 ? 'var(--green)' : drift < 5 ? 'var(--amber)' : 'var(--red)';
+    return '<div class="sim-row"><div class="sim-lbl">' + label + '</div>' +
+      '<div class="sim-track"><div class="sim-fill" style="width:' + pct + '%;background:' + color + '"><span class="sim-val">' + fp(simVal) + '</span></div></div>' +
+      '<div class="sim-model">Model: ' + fp(modelVal) + '<br><span style="color:' + dC + '">Δ' + drift.toFixed(1) + '%</span></div></div>';
+  }
+  let html = '<div class="card"><div class="card-title">🎲 Monte Carlo Simulation (12,000 Iterations)</div>';
+  html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.6">Random Poisson sampling run 12,000 times. Δ column shows deviation from analytical model — gaps over 3% indicate high match uncertainty.</div>';
+  html += simRow('Home Win', sim.homeWins, prbs.h, 'var(--green)');
+  html += simRow('Draw', sim.draws, prbs.d, 'var(--amber)');
+  html += simRow('Away Win', sim.awayWins, prbs.a, 'var(--red)');
+  html += simRow('Over 2.5', sim.over25, ou25.over, 'var(--over)');
+  html += simRow('BTTS Yes', sim.bttsY, btts, 'var(--under)');
+  html += '<div class="note" style="margin-top:12px">Δ under 2% = model stable. 2–5% = moderate uncertainty. Over 5% = results sensitive to assumptions — reduce stake size.</div>';
+  html += '</div>';
+  return html;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — O/U TAB
+// ══════════════════════════════════════════════════════════════
+function renderOUTab(ouData, mat) {
+  let html = '<div class="card"><div class="card-title">Over / Under Goal Lines</div>';
+  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:360px"><thead><tr><th>Line</th><th>Over %</th><th>Under %</th><th>Fair O</th><th>Fair U</th><th>Signal</th></tr></thead><tbody>';
+  ouData.forEach(o => {
+    const diff = o.over - o.under;
+    const sig = diff > 0.02 ? '<span class="sig over">OVER</span>' : diff < -0.02 ? '<span class="sig under">UNDER</span>' : '<span class="sig fair">EVEN</span>';
+    html += '<tr><td style="font-weight:700">' + o.line + '</td><td style="color:var(--over)">' + fp(o.over) + '</td><td style="color:var(--under)">' + fp(o.under) + '</td><td>' + fo(o.over) + '</td><td>' + fo(o.under) + '</td><td>' + sig + '</td></tr>';
+  });
+  html += '</tbody></table></div></div>';
+
+  let totalGoalsDist = [];
+  for (let g = 0; g <= 9; g++) { let gp = 0; for (let i = 0; i <= MAX; i++) for (let j = 0; j <= MAX; j++) { if (i+j===g) gp += (mat[i]?.[j]||0); } totalGoalsDist.push({ goals:g, prob:gp }); }
+  html += '<div class="card" style="margin-top:10px"><div class="card-title">Exact Total Goals Distribution</div>';
+  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:240px"><thead><tr><th>Total Goals</th><th>Probability</th><th>Fair Odds</th></tr></thead><tbody>';
+  totalGoalsDist.filter(t => t.prob > 0.01).sort((a,b) => b.prob-a.prob).slice(0,8).forEach(t => {
+    html += '<tr><td style="font-weight:700">' + t.goals + '</td><td>' + fp(t.prob) + '</td><td>' + fo(t.prob) + '</td></tr>';
+  });
+  html += '</tbody></table></div></div>';
+  return html;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — AH TAB
+// ══════════════════════════════════════════════════════════════
 function renderAHTab(mat) {
-  let html = '<div class="card" style="margin-top:16px"><div class="card-title">Asian Handicap Lines <span style="font-size:9px;font-weight:400;color:var(--muted)">· Quarter-ball supported · −N = team gives goals (fav) · +N = team receives goals (underdog)</span></div>';
-  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:520px">';
-  html += '<thead><tr><th style="text-align:left">Home Label</th><th style="text-align:left">Away Label</th><th>H Cover %</th><th>A Cover %</th><th>Push %</th><th>Fair H/A</th><th>Line Type</th><th>Best Side</th></tr></thead><tbody>';
-  [-4.5, -3.5, -2.5, -1.5, -0.5, 0.0, 0.5, 1.5, 2.5, 3.5, 4.5].forEach(threshold => {
+  let html = '<div class="card"><div class="card-title">Asian Handicap Lines <span style="font-size:9px;font-weight:400;color:var(--muted)">· Quarter-ball supported · −N = team gives goals (fav) · +N = team receives goals (underdog)</span></div>';
+  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:520px"><thead><tr><th style="text-align:left">Home Label</th><th style="text-align:left">Away Label</th><th>H Cover %</th><th>A Cover %</th><th>Push %</th><th>Fair H/A</th><th>Line Type</th><th>Best Side</th></tr></thead><tbody>';
+  [-4.5,-3.5,-2.5,-1.5,-0.5,0.0,0.5,1.5,2.5,3.5,4.5].forEach(threshold => {
     const c = calcAHCover(mat, threshold);
     const absT = Math.abs(threshold);
-    const homeLabel = threshold === 0 ? '0' : (threshold < 0 ? '−' : '+') + (absT % 1 === 0 ? absT.toFixed(1) : absT.toFixed(2));
-    const awayLabel = threshold === 0 ? '0' : (threshold < 0 ? '+' : '−') + (absT % 1 === 0 ? absT.toFixed(1) : absT.toFixed(2));
-    const fraction = ((absT % 1) + 1) % 1;
-    const isQB = Math.abs(fraction - 0.25) < 0.001 || Math.abs(fraction - 0.75) < 0.001;
-    const lineType = threshold === 0 ? 'Level' : isQB ? '<span class="sig slight">QTR-BALL</span>' : '<span class="sig fair">HALF</span>';
-    let bestSide = '', bestSideColor = 'color:var(--muted)';
-    if (c.home > c.away + 0.05) { bestSide = 'Home ' + homeLabel; bestSideColor = 'color:var(--green)'; }
-    else if (c.away > c.home + 0.05) { bestSide = 'Away ' + awayLabel; bestSideColor = 'color:var(--red)'; }
-    else { bestSide = 'Even'; bestSideColor = 'color:var(--muted)'; }
-    html += '<tr>';
-    html += '<td style="text-align:left;font-weight:700;color:var(--green)">' + homeLabel + '</td>';
-    html += '<td style="text-align:left;font-weight:700;color:var(--red)">' + awayLabel + '</td>';
-    html += '<td style="color:var(--green)">' + fp(c.home) + '</td>';
-    html += '<td style="color:var(--red)">' + fp(c.away) + '</td>';
-    html += '<td style="color:var(--muted)">' + fp(c.push) + '</td>';
-    html += '<td style="font-size:11px">' + fairOdds(c.home) + ' / ' + fairOdds(c.away) + '</td>';
-    html += '<td>' + lineType + '</td>';
-    html += '<td><span style="font-weight:700;' + bestSideColor + '">' + bestSide + '</span></td>';
-    html += '</tr>';
+    const homeLabel = threshold===0?'0':(threshold<0?'−':'+')+( absT%1===0?absT.toFixed(1):absT.toFixed(2));
+    const awayLabel = threshold===0?'0':(threshold<0?'+':'−')+(absT%1===0?absT.toFixed(1):absT.toFixed(2));
+    const fraction = ((absT%1)+1)%1;
+    const isQB = Math.abs(fraction-0.25)<0.001 || Math.abs(fraction-0.75)<0.001;
+    const lineType = threshold===0?'Level':isQB?'<span class="sig slight">QTR-BALL</span>':'<span class="sig fair">HALF</span>';
+    let bestSide='', bestSideColor='color:var(--muted)';
+    if (c.home > c.away+0.05) { bestSide = 'Home '+homeLabel; bestSideColor='color:var(--green)'; }
+    else if (c.away > c.home+0.05) { bestSide = 'Away '+awayLabel; bestSideColor='color:var(--red)'; }
+    else { bestSide='Even'; }
+    html += '<tr><td style="text-align:left;font-weight:700;color:var(--green)">'+homeLabel+'</td><td style="text-align:left;font-weight:700;color:var(--red)">'+awayLabel+'</td><td style="color:var(--green)">'+fp(c.home)+'</td><td style="color:var(--red)">'+fp(c.away)+'</td><td style="color:var(--muted)">'+fp(c.push)+'</td><td style="font-size:11px">'+fo(c.home)+' / '+fo(c.away)+'</td><td>'+lineType+'</td><td><span style="font-weight:700;'+bestSideColor+'">'+bestSide+'</span></td></tr>';
   });
   html += '</tbody></table></div>';
   html += '<div class="note" style="margin-top:10px"><strong>AH Convention:</strong> Negative handicap (−N) = that team gives N goals — they are the <em>favourite</em> and must win by more than N. Positive (+N) = that team receives N goals — they are the <em>underdog</em> and can draw or lose by up to N and still cover.</div>';
@@ -242,261 +1131,363 @@ function renderAHTab(mat) {
   return html;
 }
 
-/* ---- xG rating builder ---- */
-// Returns { att, def } index for a team from a list of { gf, ga } results.
-// att = average goals scored (attack strength)
-// def = average goals conceded (defensive weakness — higher = worse defence)
-function ratings(results) {
-  return {
-    att: avg(results.map(x => x.gf)),
-    def: avg(results.map(x => x.ga))
-  };
+// ══════════════════════════════════════════════════════════════
+//  RENDER — KELLY / ODDS TAB
+// ══════════════════════════════════════════════════════════════
+function renderKellyTab(mat, prbs, btts) {
+  const markets = [];
+  markets.push({label:'Home Win',prob:prbs.h,cat:'1X2',fairOdds:1/(prbs.h||0.001)});
+  markets.push({label:'Draw',prob:prbs.d,cat:'1X2',fairOdds:1/(prbs.d||0.001)});
+  markets.push({label:'Away Win',prob:prbs.a,cat:'1X2',fairOdds:1/(prbs.a||0.001)});
+  markets.push({label:'DC 1X',prob:prbs.h+prbs.d,cat:'DC',fairOdds:1/((prbs.h+prbs.d)||0.001)});
+  markets.push({label:'DC X2',prob:prbs.d+prbs.a,cat:'DC',fairOdds:1/((prbs.d+prbs.a)||0.001)});
+  markets.push({label:'DC 12',prob:prbs.h+prbs.a,cat:'DC',fairOdds:1/((prbs.h+prbs.a)||0.001)});
+  markets.push({label:'BTTS Yes',prob:btts,cat:'BTTS',fairOdds:1/(btts||0.001)});
+  markets.push({label:'BTTS No',prob:1-btts,cat:'BTTS',fairOdds:1/((1-btts)||0.001)});
+  [0.5,1.5,2.5,3.5,4.5].forEach(line => {
+    const ou = calcOU(mat, line);
+    markets.push({label:'Over '+line,prob:ou.over,cat:'O/U',fairOdds:1/(ou.over||0.001)});
+    markets.push({label:'Under '+line,prob:ou.under,cat:'O/U',fairOdds:1/(ou.under||0.001)});
+  });
+  [-4.5,-3.5,-2.5,-1.5,-0.5,0.0,0.5,1.5,2.5,3.5,4.5].forEach(threshold => {
+    const ah = calcAHCover(mat, threshold);
+    const absT = Math.abs(threshold);
+    const fmt = absT%1===0?absT.toFixed(1):absT.toFixed(2);
+    const hL = threshold===0?'0':(threshold<0?'−':'+')+fmt;
+    const aL = threshold===0?'0':(threshold<0?'+':'−')+fmt;
+    markets.push({label:'AH Home '+hL,prob:ah.home,cat:'AH',fairOdds:1/(ah.home||0.001)});
+    markets.push({label:'AH Away '+aL,prob:ah.away,cat:'AH',fairOdds:1/(ah.away||0.001)});
+  });
+  const top = markets.filter(m => m.prob <= 0.89 && m.prob >= 0.70).sort((a,b) => b.prob-a.prob).slice(0,15);
+  let html = '<div class="status-ok" style="margin-bottom:14px">✓ Model-Driven Odds Compilation — fair prices derived from Poisson + DC + Monte Carlo</div>';
+  html += '<div class="card"><div class="card-title">💰 Compiled Fair Odds by Market</div>';
+  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:600px"><thead><tr><th style="text-align:left">Market</th><th>Cat</th><th>Model %</th><th>Fair Odds</th><th>Implied %</th></tr></thead><tbody>';
+  top.forEach(m => {
+    html += '<tr><td style="text-align:left;font-weight:700;color:var(--text)">'+m.label+'</td><td><span class="badge '+(m.cat==='1X2'?'badge-val':'badge-fair')+'">'+m.cat+'</span></td><td>'+(m.prob*100).toFixed(1)+'%</td><td style="color:var(--cyan);font-weight:700;font-family:\'JetBrains Mono\',monospace">'+m.fairOdds.toFixed(2)+'</td><td>'+(m.prob*100).toFixed(1)+'%</td></tr>';
+  });
+  html += '</tbody></table></div><div class="note" style="margin-top:10px">All odds are model-compiled fair prices with zero margin. Markets ranked by probability strength 70% to 89%.</div></div>';
+  return html;
 }
 
-/* ---- Main predict ---- */
-function predict() {
-  const banner = document.getElementById('errorBanner');
-  banner.classList.remove('show');
+// ══════════════════════════════════════════════════════════════
+//  RENDER — UNIFIED TIPS TAB
+// ══════════════════════════════════════════════════════════════
+window.runUnifiedTips = function() {
+  const body = $('unifiedBody'); if (!body) return;
+  const snap = window._lastSnapshot, mat = window._lastMatrix, prbs = window._lastPrbs, btts = window._lastBTTS;
+  if (!snap || !mat || !prbs) { body.innerHTML = '<div style="padding:20px;color:var(--red)">⚠ Run main analysis first.</div>'; return; }
+  try {
+    const sim = runSimulation(snap.homeXG, snap.awayXG, 12000);
+    const candidates = [];
+    candidates.push({market:'Home Win',prob:prbs.h,cat:'1X2',safeScore:prbs.h,simProb:sim.homeWins});
+    candidates.push({market:'Draw',prob:prbs.d,cat:'1X2',safeScore:prbs.d,simProb:sim.draws});
+    candidates.push({market:'Away Win',prob:prbs.a,cat:'1X2',safeScore:prbs.a,simProb:sim.awayWins});
+    candidates.push({market:'BTTS Yes',prob:btts,cat:'BTTS',safeScore:btts,simProb:sim.bttsY});
+    candidates.push({market:'BTTS No',prob:1-btts,cat:'BTTS',safeScore:1-btts,simProb:1-sim.bttsY});
+    [0.5,1.5,2.5,3.5,4.5,5.5].forEach(line => {
+      const ou = calcOU(mat, line);
+      const simOver = line===2.5?sim.over25:ou.over;
+      const simUnder = line===2.5?(1-sim.over25):ou.under;
+      candidates.push({market:'Over '+line,prob:ou.over,cat:'O/U',safeScore:ou.over,simProb:simOver,ouLine:line});
+      candidates.push({market:'Under '+line,prob:ou.under,cat:'O/U',safeScore:ou.under,simProb:simUnder,ouLine:line});
+    });
+    [-2.5,-1.5,-0.5,0.0,0.5,1.5,2.5].forEach(threshold => {
+      const ah = calcAHCover(mat, threshold);
+      const absT = Math.abs(threshold);
+      const fmt = absT%1===0?absT.toFixed(1):absT.toFixed(2);
+      const hL = threshold===0?'0':(threshold<0?'−':'+')+fmt;
+      const aL = threshold===0?'0':(threshold<0?'+':'−')+fmt;
+      candidates.push({market:'AH Home '+hL,prob:ah.home,cat:'AH',safeScore:ah.home,simProb:ah.home,ahThreshold:threshold,ahSide:'home'});
+      candidates.push({market:'AH Away '+aL,prob:ah.away,cat:'AH',safeScore:ah.away,simProb:ah.away,ahThreshold:threshold,ahSide:'away'});
+    });
+    const dqFactor = snap.dataQualityScore / 100;
+    candidates.forEach(c => {
+      const modelProb = c.prob;
+      const simP = c.simProb !== undefined ? c.simProb : modelProb;
+      const agreement = 1 - Math.min(1, Math.abs(modelProb-simP) / Math.max(0.01, modelProb));
+      c.combinedScore = modelProb*0.40 + agreement*0.35 + dqFactor*0.25;
+      c.safeScore = c.combinedScore;
+      c.fairOdds = c.prob > 0.001 ? 1/c.prob : 999;
+    });
+    const filtered = candidates.filter(c => c.fairOdds > 1.30 && c.combinedScore > 0.35);
+    const ahHomeBest = filtered.filter(c=>c.cat==='AH'&&c.ahSide==='home').sort((a,b)=>b.combinedScore-a.combinedScore)[0];
+    const ahAwayBest = filtered.filter(c=>c.cat==='AH'&&c.ahSide==='away').sort((a,b)=>b.combinedScore-a.combinedScore)[0];
+    const nonAH = filtered.filter(c => c.cat !== 'AH');
+    const ahPicks = []; if(ahHomeBest) ahPicks.push(ahHomeBest); if(ahAwayBest) ahPicks.push(ahAwayBest);
+    const unified = [...nonAH, ...ahPicks].sort((a,b) => b.combinedScore-a.combinedScore).slice(0,5);
 
-  const home = getData('homeRows');
-  const away = getData('awayRows');
-
-  if (home.length < 3) {
-    banner.textContent = '⚠️ Enter at least 3 valid results for the home team (format: GF-GA, e.g. 2-1).';
-    banner.classList.add('show'); return;
-  }
-  if (away.length < 3) {
-    banner.textContent = '⚠️ Enter at least 3 valid results for the away team (format: GF-GA, e.g. 2-1).';
-    banner.classList.add('show'); return;
-  }
-
-  /* -------------------------------------------------------
-     Venue-split results.
-     hH = home team's results when playing AT HOME
-     hA = home team's results when playing AWAY
-     aH = away team's results when playing AT HOME
-     aA = away team's results when playing AWAY
-     Fall back to all results for that team if <2 venue-specific entries.
-  ------------------------------------------------------- */
-  const hH = home.filter(x => x.type === 'H');
-  const hA = home.filter(x => x.type === 'A');
-  const aH = away.filter(x => x.type === 'H');
-  const aA = away.filter(x => x.type === 'A');
-
-  const useOrAll = (subset, all) => subset.length >= 2 ? subset : all;
-
-  /* -------------------------------------------------------
-     Attack / Defence ratings per venue split + overall.
-
-     For the upcoming match:
-       - Home team plays AT HOME  → use their home-game ratings where available
-       - Away team plays AWAY     → use their away-game ratings where available
-
-     xGH (expected goals HOME team scores):
-       = home team's ATTACK (home games) × away team's DEFENCE (away games)
-       Blended 70% venue-specific, 30% overall form.
-       × 1.06 home advantage multiplier.
-
-     xGA (expected goals AWAY team scores):
-       = away team's ATTACK (away games) × home team's DEFENCE (home games)
-       Blended 70% venue-specific, 30% overall form.
-       No home advantage for the away side.
-
-     Using a multiplicative model (Dixon-Coles style):
-       lambda = att_A × def_B × league_avg
-     We normalise by the league average implied by each team's data so we
-     stay in goals-per-game units without needing a separate league table.
-  ------------------------------------------------------- */
-
-  // Venue-specific ratings
-  const homeVenueRatings = ratings(useOrAll(hH, home));   // home team when AT HOME
-  const awayVenueRatings = ratings(useOrAll(aA, away));   // away team when AWAY
-
-  // Overall (all-venue) ratings
-  const homeAllRatings = ratings(home);
-  const awayAllRatings = ratings(away);
-
-  // Blend weights: 70% venue-specific, 30% overall
-  const W_VENUE = 0.70;
-  const W_ALL   = 0.30;
-
-  // Home team attack in this fixture (blended)
-  const homeAtt = homeVenueRatings.att * W_VENUE + homeAllRatings.att * W_ALL;
-
-  // Away team defensive weakness in this fixture (blended)
-  // Higher value = away team concedes more = easier for home team to score
-  const awayDef = awayVenueRatings.def * W_VENUE + awayAllRatings.def * W_ALL;
-
-  // Away team attack in this fixture (blended)
-  const awayAtt = awayVenueRatings.att * W_VENUE + awayAllRatings.att * W_ALL;
-
-  // Home team defensive weakness in this fixture (blended)
-  const homeDef = homeVenueRatings.def * W_VENUE + homeAllRatings.def * W_ALL;
-
-  /*
-     Multiplicative xG:
-       xGH = sqrt(homeAtt × awayDef) × HOME_ADV
-       xGA = sqrt(awayAtt × homeDef)
-
-     Using geometric mean of attack and opponent defence keeps the values
-     in goals-per-game range without needing a separate league average scalar.
-     sqrt() prevents over-inflation when both attack and conceded values are high.
-  */
-  const HOME_ADV = 1.08;  // ~8% home advantage on expected goals
-  const xGH = Math.max(0.15, Math.sqrt(homeAtt * awayDef) * HOME_ADV);
-  const xGA = Math.max(0.10, Math.sqrt(awayAtt * homeDef));
-
-  /* -------------------------------------------------------
-     Build full joint score probability matrix up to MAX goals each.
-     All downstream probabilities (1x2, BTTS, O/U) are derived from
-     this single matrix — ensures internal consistency.
-  ------------------------------------------------------- */
-  const MAX = 8;
-  let p1 = 0, pX = 0, p2 = 0, pBTTS = 0;
-  let pOver05 = 0, pOver15 = 0, pOver25 = 0, pOver35 = 0, pOver45 = 0, pOver55 = 0, pOver65 = 0;
-  const scoreMap = [];
-  const mat = [];
-
-  for (let i = 0; i <= MAX; i++) {
-    mat[i] = [];
-    const pH = poisson(xGH, i);
-    for (let j = 0; j <= MAX; j++) {
-      const p = pH * poisson(xGA, j);
-      mat[i][j] = p;
-      scoreMap.push({ s: `${i}-${j}`, p, h: i, a: j });
-
-      // 1×2
-      if (i > j)      p1 += p;
-      else if (i < j) p2 += p;
-      else            pX += p;
-
-      // BTTS: both teams must have scored at least 1
-      if (i > 0 && j > 0) pBTTS += p;
-
-      // O/U — all derived from joint matrix (no separate Poisson call)
-      const total = i + j;
-      if (total > 0.5) pOver05 += p;
-      if (total > 1.5) pOver15 += p;
-      if (total > 2.5) pOver25 += p;
-      if (total > 3.5) pOver35 += p;
-      if (total > 4.5) pOver45 += p;
-      if (total > 5.5) pOver55 += p;
-      if (total > 6.5) pOver65 += p;
+    const hist = window._predictionHistory;
+    if (hist.length > 0) {
+      const last = hist[hist.length-1];
+      last.unifiedTips = unified.map(c => ({ market:c.market, prob:c.prob }));
+      renderHistory();
     }
-  }
 
-  scoreMap.sort((a, b) => b.p - a.p);
-  const totalLambda = xGH + xGA;
+    function buildReasoning(c, prbs, btts, homeXG, awayXG) {
+      const lines = [];
+      if (c.cat==='1X2') {
+        if (c.market==='Home Win') lines.push('Home xG '+homeXG.toFixed(2)+' vs Away xG '+awayXG.toFixed(2)+' — model backs home');
+        else if (c.market==='Away Win') lines.push('Away xG '+awayXG.toFixed(2)+' vs Home xG '+homeXG.toFixed(2)+' — model backs away');
+        else lines.push('Home/Away xG balanced — draw probability elevated');
+      } else if (c.cat==='BTTS') {
+        if (c.market==='BTTS Yes') lines.push('Both teams xG sufficient — model expects both to score ('+fp(btts)+')');
+        else lines.push('Low xG suppresses BTTS probability — clean sheet likely');
+      } else if (c.cat==='O/U') {
+        const totalXGDisp = (homeXG+awayXG).toFixed(2);
+        const lineLabel = c.ouLine !== undefined ? c.ouLine : '?';
+        if (c.market.includes('Over')) lines.push('Total xG '+totalXGDisp+' vs line '+lineLabel+' — model prob for Over '+fp(c.prob));
+        else lines.push('Total xG '+totalXGDisp+' vs line '+lineLabel+' — model prob for Under '+fp(c.prob));
+      } else if (c.cat==='AH') {
+        const side = c.ahSide==='home'?'Home':'Away';
+        lines.push(side+' AH cover at '+fp(c.prob)+' based on xG differential');
+      }
+      return lines.join(' · ');
+    }
 
-  /* -------------------------------------------------------
-     1×2 metrics
-  ------------------------------------------------------- */
-  const maxP = Math.max(p1, pX, p2);
-  document.getElementById('metricsRow').innerHTML = `
-    <div class="metric">
-      <div class="mlabel">Home Win</div>
-      <div class="mval" style="color:${p1 === maxP ? 'var(--win)' : 'var(--text)'}">${(p1*100).toFixed(1)}%</div>
-      <div class="msub">Odds ${fairOdds(p1)}</div>
-    </div>
-    <div class="metric">
-      <div class="mlabel">Draw</div>
-      <div class="mval" style="color:${pX === maxP ? 'var(--draw)' : 'var(--text)'}">${(pX*100).toFixed(1)}%</div>
-      <div class="msub">Odds ${fairOdds(pX)}</div>
-    </div>
-    <div class="metric">
-      <div class="mlabel">Away Win</div>
-      <div class="mval" style="color:${p2 === maxP ? 'var(--lose)' : 'var(--text)'}">${(p2*100).toFixed(1)}%</div>
-      <div class="msub">Odds ${fairOdds(p2)}</div>
-    </div>
-  `;
+    let html = '<div class="summary-box">Unified Tips engine: Poisson + Dixon-Coles + 12,000-iteration Monte Carlo. Picks ranked by <strong>model agreement score</strong> (Poisson ↔ MC convergence × data quality × probability). AH signs: <strong>−N = Home gives goals (home fav), +N = Home receives goals (away fav)</strong>.</div>';
+    html += '<div class="card"><div class="card-title">🎯 Unified Tips — 5 Safest Picks <span style="font-size:9px;font-weight:400;color:var(--muted)">· Fair Odds &gt; 1.30 · Confidence &gt; 30% · Model Probability Weighted · Unbiased</span></div>';
+    if (unified.length === 0) {
+      html += '<div style="padding:16px;color:var(--muted);font-size:13px">No predictions meet the criteria (fair odds &gt; 1.30, confidence &gt; 30%).</div>';
+    } else {
+      unified.forEach((c, i) => {
+        const rank = i < 3 ? 'r'+(i+1) : '';
+        const reasoning = buildReasoning(c, prbs, btts, snap.homeXG, snap.awayXG);
+        html += '<div class="pick '+(rank||'')+'" style="padding:14px 16px;margin-bottom:8px">';
+        html += '<div class="pick-hd"><div class="pick-rank '+(rank||'r3')+'">'+(i+1)+'</div>';
+        html += '<div class="pick-info"><div class="pick-market">'+c.market+'</div>';
+        html += '<div class="pick-cat">'+c.cat+' · Confidence: '+(c.safeScore*100).toFixed(1)+'%</div></div>';
+        html += '<div class="pick-odds"><div class="pick-odds-val">'+c.fairOdds.toFixed(2)+'</div><div class="pick-odds-lbl">Fair Odds</div></div></div>';
+        html += '<div class="pick-stats">';
+        html += '<div class="pick-stat">Model <span>'+fp(c.prob)+'</span></div>';
+        html += '<div class="pick-stat">Fair Odds <span>'+c.fairOdds.toFixed(2)+'</span></div>';
+        html += '<div class="pick-stat">Confidence <span style="color:var(--green)">'+(c.safeScore*100).toFixed(1)+'%</span></div>';
+        html += '</div>';
+        if (reasoning) html += '<div style="font-size:11px;color:var(--muted2);line-height:1.6;margin:6px 0 8px;padding:7px 10px;background:var(--surface2);border-radius:5px;border-left:2px solid var(--border2)">💡 '+reasoning+'</div>';
+        html += '<div class="pick-bar"><div class="pick-bar-lbl">CONFIDENCE</div>';
+        html += '<div class="pick-bar-track"><div class="pick-bar-fill" style="width:'+(c.combinedScore*100)+'%;background:var(--cyan)"></div></div>';
+        html += '<div class="pick-bar-pct" style="color:var(--cyan)">'+((c.combinedScore||0)*100).toFixed(1)+'%</div></div></div>';
+      });
+    }
+    html += '</div>';
+    html += '<div class="note" style="margin-top:12px"><strong>Summary:</strong> ';
+    if (unified.length > 0) html += 'Top pick: <strong>'+unified[0].market+'</strong> (Confidence: '+fp(unified[0].safeScore)+'). ';
+    html += 'Showing '+unified.length+' safest picks with fair odds &gt; 1.30 and confidence &gt; 30%. Based on 12,000 Monte Carlo runs.</div>';
+    body.innerHTML = html;
+  } catch(err) { body.innerHTML = '<div style="color:var(--red)">Unified Tips failed: '+err.message+'</div>'; }
+};
 
-  /* -------------------------------------------------------
-     Markets panel
-  ------------------------------------------------------- */
-  const markets = [
-    { l: 'BTTS — Yes',  v: pBTTS },
-    { l: 'BTTS — No',   v: 1 - pBTTS },
-    { l: 'Over 1.5',    v: pOver15 },
-    { l: 'Over 2.5',    v: pOver25 },
-    { l: 'Over 3.5',    v: pOver35 },
-    { l: 'DC — 1X',     v: p1 + pX },
-    { l: 'DC — X2',     v: p2 + pX },
-    { l: 'DC — 12',     v: p1 + p2 },
-  ];
-  document.getElementById('marketsList').innerHTML = markets.map(m => {
-    const cls = m.v >= 0.65 ? 'value' : m.v >= 0.50 ? 'fair' : 'over';
-    const sig = m.v >= 0.65 ? 'Value'    : m.v >= 0.50 ? 'Possible' : 'Low';
-    return `<li class="info-item">
-      <span class="info-key">${m.l}</span>
-      <span class="info-val">
-        <span style="color:var(--muted);font-family:'JetBrains Mono',monospace">${(m.v*100).toFixed(1)}%</span>
-        <span class="badge ${cls}">${sig}</span>
-      </span>
-    </li>`;
-  }).join('');
+// ══════════════════════════════════════════════════════════════
+//  MAIN RENDER
+// ══════════════════════════════════════════════════════════════
+function renderResults(xgResult, mat, prbs, btts, scores, ouData, skellam, homeCI, awayCI, fairValue, useDC, sim) {
+  const xg = xgResult.homeXG, awayXG = xgResult.awayXG;
+  const totalXG = +(xg + awayXG).toFixed(2), goalDiff = +(xg - awayXG).toFixed(2);
+  const conf = confLevel(xgResult.confidence);
+  const dynRho = calcDynamicRho(xg, awayXG);
+  const dispRho = dynRho.toFixed(3);
+  const confBadge = '<div style="font-size:9px;font-weight:700;padding:4px 9px;border-radius:4px;font-family:\'JetBrains Mono\',monospace;background:'+conf.bg+';color:'+conf.color+';border:1px solid '+conf.border+'">⬡ '+conf.label+' CONFIDENCE</div>';
 
-  /* -------------------------------------------------------
-     xG bars
-  ------------------------------------------------------- */
-  const maxXG = Math.max(xGH, xGA, 1.0);
-  document.getElementById('xgSection').innerHTML = `
-    <div class="xg-row">
-      <div class="xg-team">Home</div>
-      <div class="xg-track"><div class="xg-fill" style="width:${Math.min(xGH/maxXG*100,100).toFixed(1)}%;background:var(--accent)"></div></div>
-      <div class="xg-num">${xGH.toFixed(2)}</div>
-    </div>
-    <div class="xg-row">
-      <div class="xg-team">Away</div>
-      <div class="xg-track"><div class="xg-fill" style="width:${Math.min(xGA/maxXG*100,100).toFixed(1)}%;background:var(--accent4)"></div></div>
-      <div class="xg-num">${xGA.toFixed(2)}</div>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace">
-      Total xG: ${totalLambda.toFixed(2)}
-    </div>
-  `;
+  let html = '<div class="panel anim">';
+  html += '<div class="panel-hd"><div class="panel-title">📊 Prediction Results</div>';
+  html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+confBadge;
+  html += '<button onclick="copyResults()" style="font-size:11px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:4px;cursor:pointer;font-family:\'Inter\',sans-serif;font-weight:600">📋 Copy</button>';
+  html += '</div></div>';
+  html += '<div class="panel-bd">';
+  html += '<div class="ds-bar">◆ '+xgResult.dataSource+(useDC?' · DC ON (ρ='+dispRho+')':' · DC OFF')+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG'+(xgResult.hasWDL?' · WDL ON':'')+'</div>';
 
-  /* -------------------------------------------------------
-     Top scorelines — format is Home goals - Away goals
-  ------------------------------------------------------- */
-  document.getElementById('scoreChips').innerHTML = scoreMap.slice(0, 12).map((s, i) =>
-    `<div class="score-chip ${i===0?'top-1':i<3?'top-2':''}">${s.s} <span style="opacity:.65">${(s.p*100).toFixed(1)}%</span></div>`
-  ).join('');
+  html += '<div class="tabs" id="resTabs">';
+  html += '<button class="tab-btn active" data-tab="tab-probs">📈 Probs</button>';
+  html += '<button class="tab-btn" data-tab="tab-unified">🎯 Unified Tips</button>';
+  html += '<button class="tab-btn" data-tab="tab-ou">📊 O/U</button>';
+  html += '<button class="tab-btn" data-tab="tab-ah">⚖️ AH</button>';
+  html += '<button class="tab-btn" data-tab="tab-sim">🎲 Simulation</button>';
+  html += '<button class="tab-btn" data-tab="tab-kelly">💰 Odds</button>';
+  html += '</div>';
 
-  /* -------------------------------------------------------
-     O/U table — all probabilities from the joint score matrix
-     (same source as 1×2 and BTTS — fully consistent)
-  ------------------------------------------------------- */
-  const ouLines = [
-    { line: 0.5, over: pOver05 },
-    { line: 1.5, over: pOver15 },
-    { line: 2.5, over: pOver25 },
-    { line: 3.5, over: pOver35 },
-    { line: 4.5, over: pOver45 },
-    { line: 5.5, over: pOver55 },
-    { line: 6.5, over: pOver65 },
-  ];
+  html += '<div class="tab-content active" id="tab-probs">'+renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goalDiff,homeCI,awayCI,fairValue)+'</div>';
+  html += '<div class="tab-content" id="tab-unified"><div id="unifiedBody">'+
+    '<div style="text-align:center;padding:32px 20px">'+
+    '<div style="font-size:32px;margin-bottom:12px">🎯</div>'+
+    '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Unified Tips Engine</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6">5 safest picks with &gt; 1.30 fair odds from 12,000-iteration Monte Carlo.</div>'+
+    '<button onclick="runUnifiedTips()" style="font-size:12px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:8px 18px;border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-weight:700">▶ Run Unified Analysis</button>'+
+    '</div></div></div>';
+  html += '<div class="tab-content" id="tab-ou">'+renderOUTab(ouData,mat)+'</div>';
+  html += '<div class="tab-content" id="tab-ah">'+renderAHTab(mat)+'</div>';
+  html += '<div class="tab-content" id="tab-sim">'+renderSimTab(sim,prbs,btts,totalXG,mat)+'</div>';
+  html += '<div class="tab-content" id="tab-kelly">'+renderKellyTab(mat,prbs,btts)+'</div>';
 
-  document.getElementById('ouBody').innerHTML = ouLines.map(({ line, over }) => {
-    const under = 1 - over;
-    const sig = over >= 0.65 ? 'Over' : under >= 0.65 ? 'Under' : 'Even';
-    const cls = sig === 'Over' ? 'value' : sig === 'Under' ? 'over' : 'fair';
-    return `<tr>
-      <td class="ou-line">${line}</td>
-      <td>${(over*100).toFixed(1)}%</td>
-      <td>${(under*100).toFixed(1)}%</td>
-      <td style="font-family:'JetBrains Mono',monospace">${fairOdds(over)} / ${fairOdds(under)}</td>
-      <td><span class="badge ${cls}">${sig}</span></td>
-    </tr>`;
-  }).join('');
+  html += '<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. Averages auto-derived from last '+matchCount+' match rows (Scored/Conceded/Result). Form weighted recency-first (oldest→newest, W=3pts D=1pt; range ±18%). WDL strength as xG modifier (capped ±20%; centered on league-average PPG)'+(xgResult.hasWDL?' — active':' — no WDL data entered')+'. Unified Tips ranked by model agreement (Poisson ↔ Monte Carlo convergence × data quality). Monte Carlo: 12,000 iterations. Skellam distribution for goal difference. Quarter-ball AH lines supported.</div>';
+  html += '</div></div>';
 
-  document.getElementById('ah-container').innerHTML = renderAHTab(mat);
+  const rd = $('results');
+  rd.style.display = 'block';
+  rd.innerHTML = html;
 
-  /* Show results */
-  const res = document.getElementById('results');
-  res.style.display = 'block';
-  setTimeout(() => res.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  window._lastMatrix = mat; window._lastPrbs = prbs; window._lastBTTS = btts;
+  window._lastXG = { home: xg, away: awayXG };
+  window._lastSnapshot = { homeXG:xg, awayXG:awayXG, prbs, btts, dataSource:xgResult.dataSource, dataQualityScore:xgResult.dataQualityScore, ciWidth:xgResult.ciWidth };
+  window._unifiedRun = false;
+
+  document.querySelectorAll('#resTabs .tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tab = this.dataset.tab;
+      document.querySelectorAll('#resTabs .tab-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      document.querySelectorAll('#results .tab-content').forEach(c => c.classList.remove('active'));
+      const tc = document.getElementById(tab); if (tc) tc.classList.add('active');
+      if (tab === 'tab-unified' && !window._unifiedRun) { window._unifiedRun = true; window.runUnifiedTips(); }
+    });
+  });
+
+  rd.scrollIntoView({ behavior:'smooth', block:'start' });
 }
+
+// ══════════════════════════════════════════════════════════════
+//  RUN ANALYSIS
+// ══════════════════════════════════════════════════════════════
+window.runAnalysis = function() {
+  const errBox = $('errBox'); errBox.classList.remove('show');
+  // Check that at least one match row has some data
+  const homeStats = deriveStatsFromRows('home');
+  const awayStats = deriveStatsFromRows('away');
+  const hasMatchData = (homeStats && homeStats.filledCount > 0) || (awayStats && awayStats.filledCount > 0);
+  const hasOverrides = ['homeGF','homeGA','awayGF','awayGA'].some(id => { const el=$(id); return el && el.value !== ''; });
+  if (!hasMatchData && !hasOverrides) {
+    errBox.textContent = '⚠️ Enter at least one match result (Scored / Conceded / Result) for either team to generate predictions.';
+    errBox.classList.add('show');
+    return;
+  }
+  try {
+    const xgResult = computeXG();
+    const totalXG = xgResult.homeXG + xgResult.awayXG;
+    const useDC = totalXG < 2.8;
+    const mat = buildMatrix(xgResult.homeXG, xgResult.awayXG, useDC);
+    const prbs = calc1x2(mat), btts = calcBTTS(mat);
+    const scores = getTopScores(mat, 8);
+    const ouData = [0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5].map(line => { const ou=calcOU(mat,line); return{line,over:ou.over,under:ou.under}; });
+    const skellam = computeSkellam(xgResult.homeXG, xgResult.awayXG);
+    const homeCI = computeCI(xgResult.homeXG, xgResult.ciWidth);
+    const awayCI = computeCI(xgResult.awayXG, xgResult.ciWidth);
+    const fairValue = computeFairValue(prbs, btts, xgResult.dataQualityScore, totalXG);
+    const sim = runSimulation(xgResult.homeXG, xgResult.awayXG, 12000);
+    renderResults(xgResult, mat, prbs, btts, scores, ouData, skellam, homeCI, awayCI, fairValue, useDC, sim);
+
+    const homeTeam = getStr('homeTeam') || 'Home';
+    const awayTeam = getStr('awayTeam') || 'Away';
+    window._predictionHistory.push({
+      date: new Date().toLocaleDateString('en-GB'),
+      homeTeam, awayTeam,
+      inputs: {
+        homeTeam: ($('homeTeam')||{}).value||'',
+        awayTeam: ($('awayTeam')||{}).value||'',
+        homeGF: ($('homeGF')||{}).value||'', homeGA: ($('homeGA')||{}).value||'',
+        awayGF: ($('awayGF')||{}).value||'', awayGA: ($('awayGA')||{}).value||'',
+        homeGFAll: ($('homeGFAll')||{}).value||'', homeGAAll: ($('homeGAAll')||{}).value||'',
+        awayGFAll: ($('awayGFAll')||{}).value||'', awayGAAll: ($('awayGAAll')||{}).value||'',
+        homeMatches: getMatchRowValues('home'),
+        awayMatches: getMatchRowValues('away')
+      },
+      prbs: { h:prbs.h, d:prbs.d, a:prbs.a },
+      unifiedTips: []
+    });
+    if (window._predictionHistory.length > MAX_HISTORY) window._predictionHistory.shift();
+    saveHistoryToStorage();
+    renderHistory();
+  } catch(err) {
+    errBox.textContent = 'Analysis error: ' + err.message;
+    errBox.classList.add('show');
+    console.error(err);
+  }
+};
+
+window.clearAll = function() {
+  // Clear team names
+  ['homeTeam','awayTeam',
+   'homeGF','homeGA','awayGF','awayGA',
+   'homeGFAll','homeGAAll','awayGFAll','awayGAAll'].forEach(id => {
+    const el = $(id); if (el) { el.value=''; el.classList.remove('err','ok'); }
+  });
+  // Clear match rows
+  ['home','away'].forEach(side => {
+    const tbody = $(side + 'MatchBody');
+    if (!tbody) return;
+    tbody.querySelectorAll('.match-input').forEach(inp => {
+      if (inp.dataset.field === 'venue') {
+        inp.value = side === 'home' ? 'H' : 'A';
+      } else {
+        inp.value = '';
+      }
+      inp.classList.remove('err','ok');
+    });
+    tbody.querySelectorAll('.result-select').forEach(sel => { sel.value=''; sel.className='result-select'; });
+  });
+  updateDerivedBars();
+  $('results').style.display = 'none';
+  $('errBox').classList.remove('show');
+  window._lastSnapshot = null; window._lastMatrix = null; window._lastPrbs = null; window._lastBTTS = null;
+  window._lastXG = null; window._unifiedRun = false;
+};
+
+window.loadExample = function() {
+  $('homeTeam').value = 'Arsenal';
+  $('awayTeam').value = 'Chelsea';
+  updateDerivedBars();
+
+  // Example: Arsenal last 6 (oldest→newest) — home matches
+  const homeExample = [
+    { scored:2, conceded:1, result:'W', venue:'H' },
+    { scored:0, conceded:0, result:'D', venue:'H' },
+    { scored:3, conceded:1, result:'W', venue:'H' },
+    { scored:1, conceded:2, result:'L', venue:'A' },
+    { scored:2, conceded:0, result:'W', venue:'H' },
+    { scored:1, conceded:1, result:'D', venue:'H' }
+  ];
+  // Example: Chelsea last 6 — away matches
+  const awayExample = [
+    { scored:1, conceded:2, result:'L', venue:'A' },
+    { scored:1, conceded:1, result:'D', venue:'A' },
+    { scored:0, conceded:1, result:'L', venue:'H' },
+    { scored:2, conceded:2, result:'D', venue:'A' },
+    { scored:1, conceded:0, result:'W', venue:'A' },
+    { scored:2, conceded:1, result:'W', venue:'A' }
+  ];
+
+  // Ensure 6 match rows
+  if (matchCount !== 6) { matchCount = 6; document.querySelectorAll('.mct-btn').forEach(b => b.classList.toggle('active', +b.dataset.n===6)); buildMatchRows(); }
+
+  ['home','away'].forEach((side, si) => {
+    const examples = si === 0 ? homeExample : awayExample;
+    const tbody = $(side + 'MatchBody');
+    if (!tbody) return;
+    examples.forEach((m, i) => {
+      const scored = tbody.querySelector('[data-idx="'+i+'"][data-field="scored"]');
+      const conceded = tbody.querySelector('[data-idx="'+i+'"][data-field="conceded"]');
+      const result = tbody.querySelector('[data-idx="'+i+'"][data-field="result"]');
+      const venue = tbody.querySelector('[data-idx="'+i+'"][data-field="venue"]');
+      if (scored) { scored.value = m.scored; scored.classList.add('ok'); }
+      if (conceded) { conceded.value = m.conceded; conceded.classList.add('ok'); }
+      if (result) { result.value = m.result; result.className = 'result-select ' + m.result.toLowerCase(); }
+      if (venue) venue.value = m.venue || (side === 'home' ? 'H' : 'A');
+    });
+  });
+  updateDerivedBars();
+  window.runAnalysis();
+};
+
+window.copyResults = function() {
+  const snap = window._lastSnapshot; if (!snap) return;
+  const text = 'BetIQPro\nHome xG: '+snap.homeXG.toFixed(2)+' | Away xG: '+snap.awayXG.toFixed(2)+'\nHome Win: '+fp(snap.prbs.h)+' | Draw: '+fp(snap.prbs.d)+' | Away: '+fp(snap.prbs.a)+'\nBTTS Yes: '+fp(snap.btts)+'\nData: '+snap.dataSource+' · Quality: '+Math.round(snap.dataQualityScore)+'%';
+  navigator.clipboard.writeText(text).catch(() => {});
+};
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); window.runAnalysis(); }
+});
+
+})();
 </script>
+<script src="header.js"></script>
 <script src="back-to-top.js"></script>
 </body>
 </html>

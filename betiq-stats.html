@@ -46,6 +46,15 @@
             <div class="field"><label>Away GA</label><input id="awayGA" type="number" step="0.01" placeholder="1.10"></div>
           </div>
 
+          <!-- HOME/AWAY LAST 6 GF/GA STATS -->
+          <div class="slabel">Home / Away Last 6 Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — recent form boost)</span></div>
+          <div class="g4" style="margin-bottom:16px">
+            <div class="field"><label>Home GF (L6)</label><input id="homeGFL6" type="number" step="0.01" placeholder="1.85"></div>
+            <div class="field"><label>Home GA (L6)</label><input id="homeGAL6" type="number" step="0.01" placeholder="0.70"></div>
+            <div class="field"><label>Away GF (L6)</label><input id="awayGFL6" type="number" step="0.01" placeholder="1.55"></div>
+            <div class="field"><label>Away GA (L6)</label><input id="awayGAL6" type="number" step="0.01" placeholder="1.05"></div>
+          </div>
+
           <!-- HOME/AWAY 1x2 STATS -->
           <div class="slabel">Home / Away 1x2 All Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional)</span></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
@@ -82,7 +91,28 @@
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
                 <div class="field"><label>W</label><input id="awayW" type="number" min="0" placeholder="2"></div>
                 <div class="field"><label>D</label><input id="awayD" type="number" min="0" placeholder="4"></div>
-                <div class="field"><label>L</label><input id="awayL" type="number" min="0" placeholder="4"></div>
+              <div class="field"><label>L</label><input id="awayL" type="number" min="0" placeholder="4"></div>
+            </div>
+          </div>
+          </div>
+
+          <!-- HOME/AWAY LAST 6 1x2 STATS -->
+          <div class="slabel">Home / Away 1x2 Last 6 Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — recent form boost)</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Home Last 6</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                <div class="field"><label>W</label><input id="homeWL6" type="number" min="0" placeholder="3"></div>
+                <div class="field"><label>D</label><input id="homeDL6" type="number" min="0" placeholder="2"></div>
+                <div class="field"><label>L</label><input id="homeLL6" type="number" min="0" placeholder="1"></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Away Last 6</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                <div class="field"><label>W</label><input id="awayWL6" type="number" min="0" placeholder="2"></div>
+                <div class="field"><label>D</label><input id="awayDL6" type="number" min="0" placeholder="3"></div>
+                <div class="field"><label>L</label><input id="awayLL6" type="number" min="0" placeholder="1"></div>
               </div>
             </div>
           </div>
@@ -237,6 +267,10 @@ window.reloadEntry=function(idx){
   set('awayW',inp.awayW||'');set('awayD',inp.awayD||'');set('awayL',inp.awayL||'');
   set('homeWAll',inp.homeWAll||'');set('homeDAll',inp.homeDAll||'');set('homeLAll',inp.homeLAll||'');
   set('awayWAll',inp.awayWAll||'');set('awayDAll',inp.awayDAll||'');set('awayLAll',inp.awayLAll||'');
+  set('homeGFL6',inp.homeGFL6||'');set('homeGAL6',inp.homeGAL6||'');
+  set('awayGFL6',inp.awayGFL6||'');set('awayGAL6',inp.awayGAL6||'');
+  set('homeWL6',inp.homeWL6||'');set('homeDL6',inp.homeDL6||'');set('homeLL6',inp.homeLL6||'');
+  set('awayWL6',inp.awayWL6||'');set('awayDL6',inp.awayDL6||'');set('awayLL6',inp.awayLL6||'');
   set('homeForm',inp.homeForm||'');set('awayForm',inp.awayForm||'');
   set('compType',inp.compType||'league');
   $('results').style.display='none';
@@ -446,15 +480,29 @@ function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awa
   const awayW=getInt('awayW'),awayD=getInt('awayD'),awayL=getInt('awayL');
   const homeWAll=getInt('homeWAll'),homeDAll=getInt('homeDAll'),homeLAll=getInt('homeLAll');
   const awayWAll=getInt('awayWAll'),awayDAll=getInt('awayDAll'),awayLAll=getInt('awayLAll');
+  const homeGFL6=getNum('homeGFL6'),homeGAL6=getNum('homeGAL6');
+  const awayGFL6=getNum('awayGFL6'),awayGAL6=getNum('awayGAL6');
+  const homeWL6=getInt('homeWL6'),homeDL6=getInt('homeDL6'),homeLL6=getInt('homeLL6');
+  const awayWL6=getInt('awayWL6'),awayDL6=getInt('awayDL6'),awayLL6=getInt('awayLL6');
+  const hasL6=hv(homeGFL6)||hv(homeGAL6)||hv(awayGFL6)||hv(awayGAL6);
+  const hasL6WDL=hv(homeWL6)||hv(homeDL6)||hv(homeLL6)||hv(awayWL6)||hv(awayDL6)||hv(awayLL6);
   const leagueBase=1.35;
   let homeXG,awayXG,dataSource,confidence,
       homeAttackStr=1,homeDefenseStr=1,awayAttackStr=1,awayDefenseStr=1,
+      homeAttackStrL6=null,homeDefenseStrL6=null,awayAttackStrL6=null,awayDefenseStrL6=null,
       dataQualityScore=0,ciWidth=0,statDivergenceWarning=false;
+  if(hasL6){
+    const hGF_L6=hv(homeGFL6)?homeGFL6:leagueBase;
+    const hGA_L6=hv(homeGAL6)?homeGAL6:leagueBase;
+    const aGF_L6=hv(awayGFL6)?awayGFL6:leagueBase;
+    const aGA_L6=hv(awayGAL6)?awayGAL6:leagueBase;
+    homeAttackStrL6=hGF_L6/leagueBase;homeDefenseStrL6=hGA_L6/leagueBase;
+    awayAttackStrL6=aGF_L6/leagueBase;awayDefenseStrL6=aGA_L6/leagueBase;
+  }
 
   if(hasSplit&&hasCombined){
     const hGF_s=hv(homeGF)?homeGF:homeGFAll*0.9,hGA_s=hv(homeGA)?homeGA:homeGAAll*1.05;
     const aGF_s=hv(awayGF)?awayGF:awayGFAll*0.85,aGA_s=hv(awayGA)?awayGA:awayGFAll*1.15;
-    // FIX: use fixed external league reference (1.35) not circular avg of the 4 inputs
     const leagueAvg=leagueBase;
     homeAttackStr=hGF_s/leagueAvg;awayDefenseStr=aGA_s/leagueAvg;
     awayAttackStr=aGF_s/leagueAvg;homeDefenseStr=hGA_s/leagueAvg;
@@ -463,58 +511,103 @@ function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awa
     const hxS=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
     const axS=leagueAvg*awayAttackStr*homeDefenseStr;
     const hxC=((cGF+caGA)/2)*1.08,axC=(caGF+cGA)/2;
-    homeXG=hxS*0.6+hxC*0.4;awayXG=axS*0.6+axC*0.4;
-    dataSource='Split+Combined Fusion (60/40)';
+    if(hasL6){
+      const hxL6=leagueAvg*homeAttackStrL6*awayDefenseStrL6+homeAdv;
+      const axL6=leagueAvg*awayAttackStrL6*homeDefenseStrL6;
+      homeXG=hxS*0.35+hxC*0.20+hxL6*0.45;
+      awayXG=axS*0.35+axC*0.20+axL6*0.45;
+      dataSource='Split+Combined+L6 (35/20/45)';
+    } else {
+      homeXG=hxS*0.6+hxC*0.4;
+      awayXG=axS*0.6+axC*0.4;
+      dataSource='Split+Combined Fusion (60/40)';
+    }
     confidence=splitCount===4&&combinedCount===4?'HIGH':'MEDIUM';
     const checks=[
       {a:hv(homeGF)?homeGF:null,b:hv(homeGFAll)?homeGFAll:null},
       {a:hv(homeGA)?homeGA:null,b:hv(homeGAAll)?homeGAAll:null},
       {a:hv(awayGF)?awayGF:null,b:hv(awayGFAll)?awayGFAll:null},
       {a:hv(awayGA)?awayGA:null,b:hv(awayGAAll)?awayGAAll:null},
+      {a:hv(homeGFL6)?homeGFL6:null,b:hv(homeGF)?homeGF:null},
+      {a:hv(homeGAL6)?homeGAL6:null,b:hv(homeGA)?homeGA:null},
+      {a:hv(awayGFL6)?awayGFL6:null,b:hv(awayGF)?awayGF:null},
+      {a:hv(awayGAL6)?awayGAL6:null,b:hv(awayGA)?awayGA:null},
+      {a:hv(homeGFL6)?homeGFL6:null,b:hv(homeGFAll)?homeGFAll:null},
+      {a:hv(homeGAL6)?homeGAL6:null,b:hv(homeGAAll)?homeGAAll:null},
+      {a:hv(awayGFL6)?awayGFL6:null,b:hv(awayGFAll)?awayGFAll:null},
+      {a:hv(awayGAL6)?awayGAL6:null,b:hv(awayGAAll)?awayGAAll:null},
     ];
     let penalty=0;
     checks.forEach(c=>{
-      if(c.a!==null&&c.b!==null&&Math.abs(c.a-c.b)>0.5)penalty+=12;
+      if(c.a!==null&&c.b!==null&&Math.abs(c.a-c.b)>0.5)penalty+=10;
     });
-    penalty=Math.min(penalty,30);
+    penalty=Math.min(penalty,35);
     if(penalty>0)statDivergenceWarning=true;
     const fieldsFilled=splitCount+combinedCount;
     const baseScore=(fieldsFilled/8)*70;
     const consistencyBonus=(hasSplit&&hasCombined)?20:0;
     const homeFormStr=getStr('homeForm'),awayFormStr=getStr('awayForm');
     const formBonus=(homeFormStr.length>=3&&awayFormStr.length>=3)?5:0;
-    dataQualityScore=Math.max(20,Math.min(100,Math.round(baseScore+consistencyBonus+formBonus-penalty)));
+    const l6Bonus=(hasL6?3:0)+(hasL6WDL?3:0);
+    dataQualityScore=Math.max(20,Math.min(100,Math.round(baseScore+consistencyBonus+formBonus+l6Bonus-penalty)));
   } else if(hasSplit){
     const hGF=hv(homeGF)?homeGF:leagueBase,hGA=hv(homeGA)?homeGA:leagueBase;
     const aGF=hv(awayGF)?awayGF:leagueBase,aGA=hv(awayGA)?awayGA:leagueBase;
-    // FIX: fixed external reference — not circular avg of inputs
     const leagueAvg=leagueBase;
     homeAttackStr=hGF/leagueAvg;awayDefenseStr=aGA/leagueAvg;
     awayAttackStr=aGF/leagueAvg;homeDefenseStr=hGA/leagueAvg;
-    homeXG=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
-    awayXG=leagueAvg*awayAttackStr*homeDefenseStr;
-    dataSource=splitCount===4?'Split Stats Only':'Split Stats (partial)';
+    const hxS=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
+    const axS=leagueAvg*awayAttackStr*homeDefenseStr;
+    if(hasL6){
+      const hxL6=leagueAvg*homeAttackStrL6*awayDefenseStrL6+homeAdv;
+      const axL6=leagueAvg*awayAttackStrL6*homeDefenseStrL6;
+      homeXG=hxS*0.55+hxL6*0.45;
+      awayXG=axS*0.55+axL6*0.45;
+      dataSource=splitCount===4?'Split+L6 (55/45)':'Split+L6 partial';
+    } else {
+      homeXG=hxS;
+      awayXG=axS;
+      dataSource=splitCount===4?'Split Stats Only':'Split Stats (partial)';
+    }
     confidence=splitCount===4?'HIGH':'MEDIUM';
     const fieldsFilled=splitCount+combinedCount;
     const homeFormStr=getStr('homeForm'),awayFormStr=getStr('awayForm');
     const formBonus=(homeFormStr.length>=3&&awayFormStr.length>=3)?5:0;
-    dataQualityScore=Math.max(20,Math.min(100,Math.round((fieldsFilled/8)*70+formBonus)));
+    const l6Bonus=(hasL6?5:0)+(hasL6WDL?3:0);
+    dataQualityScore=Math.max(20,Math.min(100,Math.round((fieldsFilled/8)*70+formBonus+l6Bonus)));
   } else if(hasCombined){
     const hGF=hv(homeGFAll)?homeGFAll:leagueBase,hGA=hv(homeGAAll)?homeGAAll:leagueBase;
     const aGF=hv(awayGFAll)?awayGFAll:leagueBase,aGA=hv(awayGAAll)?awayGAAll:leagueBase;
-    // FIX: fixed external reference — not circular avg of inputs
     const leagueAvg=leagueBase;
     homeAttackStr=hGF/leagueAvg;awayDefenseStr=aGA/leagueAvg;
     awayAttackStr=aGF/leagueAvg;homeDefenseStr=hGA/leagueAvg;
-    homeXG=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
-    awayXG=leagueAvg*awayAttackStr*homeDefenseStr;
-    dataSource=combinedCount===4?'Combined Stats Only':'Combined Stats (partial)';
+    const hxC=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
+    const axC=leagueAvg*awayAttackStr*homeDefenseStr;
+    if(hasL6){
+      const hxL6=leagueAvg*homeAttackStrL6*awayDefenseStrL6+homeAdv;
+      const axL6=leagueAvg*awayAttackStrL6*homeDefenseStrL6;
+      homeXG=hxC*0.40+hxL6*0.60;
+      awayXG=axC*0.40+axL6*0.60;
+      dataSource=combinedCount===4?'Combined+L6 (40/60)':'Combined+L6 partial';
+    } else {
+      homeXG=hxC;
+      awayXG=axC;
+      dataSource=combinedCount===4?'Combined Stats Only':'Combined Stats (partial)';
+    }
     confidence=combinedCount===4?'HIGH':'LOW';
     const fieldsFilled=splitCount+combinedCount;
-    dataQualityScore=Math.max(20,Math.min(100,Math.round((fieldsFilled/8)*70)));
+    const l6Bonus=(hasL6?5:0)+(hasL6WDL?3:0);
+    dataQualityScore=Math.max(20,Math.min(100,Math.round((fieldsFilled/8)*70+l6Bonus)));
   } else {
-    homeXG=leagueBase+homeAdv;awayXG=leagueBase;
-    dataSource='League defaults';confidence='LOW';dataQualityScore=20;
+    if(hasL6&&homeAttackStrL6!==null&&awayAttackStrL6!==null){
+      homeXG=leagueBase*homeAttackStrL6*awayDefenseStrL6+homeAdv;
+      awayXG=leagueBase*awayAttackStrL6*homeDefenseStrL6;
+      dataSource='Last 6 Only';confidence='LOW';
+    } else {
+      homeXG=leagueBase+homeAdv;awayXG=leagueBase;
+      dataSource='League defaults';confidence='LOW';
+    }
+    dataQualityScore=20;
   }
 
   const homeFormStr=getStr('homeForm'),awayFormStr=getStr('awayForm');
@@ -527,26 +620,43 @@ function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awa
   const awayWDLMod=parseWDL(awayW,awayD,awayL);
   const homeWDLAllMod=parseWDL(homeWAll,homeDAll,homeLAll);
   const awayWDLAllMod=parseWDL(awayWAll,awayDAll,awayLAll);
+  const homeWDL6Mod=parseWDL(homeWL6,homeDL6,homeLL6);
+  const awayWDL6Mod=parseWDL(awayWL6,awayDL6,awayLL6);
   let homeWDLCombined=null,awayWDLCombined=null,
       homeWDLStr=null,awayWDLStr=null,
       homeWDLAllStr=null,awayWDLAllStr=null,
+      homeWDL6Str=null,awayWDL6Str=null,
       hasWDL=false;
   if(hv(homeW)){homeWDLStr='W'+homeW+' D'+homeD+' L'+homeL;hasWDL=true;}
   if(hv(awayW)){awayWDLStr='W'+awayW+' D'+awayD+' L'+awayL;hasWDL=true;}
   if(hv(homeWAll)){homeWDLAllStr='W'+homeWAll+' D'+homeDAll+' L'+homeLAll;hasWDL=true;}
   if(hv(awayWAll)){awayWDLAllStr='W'+awayWAll+' D'+awayDAll+' L'+awayLAll;hasWDL=true;}
-  if(hv(homeWDLMod)&&hv(homeWDLAllMod)){
-    // Home game: venue-specific WDL (homeW/D/L) is more predictive than overall; weight 70/30
+  if(hv(homeWL6)||hv(homeDL6)||hv(homeLL6)){homeWDL6Str='W'+(homeWL6||0)+' D'+(homeDL6||0)+' L'+(homeLL6||0);hasWDL=true;}
+  if(hv(awayWL6)||hv(awayDL6)||hv(awayLL6)){awayWDL6Str='W'+(awayWL6||0)+' D'+(awayDL6||0)+' L'+(awayLL6||0);hasWDL=true;}
+  // Home WDL three-way blend (venue 30%, all 15%, last6 55%)
+  if(hv(homeWDLMod)&&hv(homeWDLAllMod)&&hv(homeWDL6Mod)){
+    homeWDLCombined=homeWDLMod*0.30+homeWDLAllMod*0.15+homeWDL6Mod*0.55;
+  } else if(hv(homeWDLMod)&&hv(homeWDL6Mod)){
+    homeWDLCombined=homeWDLMod*0.40+homeWDL6Mod*0.60;
+  } else if(hv(homeWDLAllMod)&&hv(homeWDL6Mod)){
+    homeWDLCombined=homeWDLAllMod*0.30+homeWDL6Mod*0.70;
+  } else if(hv(homeWDLMod)&&hv(homeWDLAllMod)){
     homeWDLCombined=homeWDLMod*0.70+homeWDLAllMod*0.30;
   } else if(hv(homeWDLMod)) homeWDLCombined=homeWDLMod;
   else if(hv(homeWDLAllMod)) homeWDLCombined=homeWDLAllMod;
-  if(hv(awayWDLMod)&&hv(awayWDLAllMod)){
-    // Away game: venue-specific WDL (awayW/D/L) is more predictive than overall; weight 70/30
+  else if(hv(homeWDL6Mod)) homeWDLCombined=homeWDL6Mod;
+  // Away WDL three-way blend
+  if(hv(awayWDLMod)&&hv(awayWDLAllMod)&&hv(awayWDL6Mod)){
+    awayWDLCombined=awayWDLMod*0.30+awayWDLAllMod*0.15+awayWDL6Mod*0.55;
+  } else if(hv(awayWDLMod)&&hv(awayWDL6Mod)){
+    awayWDLCombined=awayWDLMod*0.40+awayWDL6Mod*0.60;
+  } else if(hv(awayWDLAllMod)&&hv(awayWDL6Mod)){
+    awayWDLCombined=awayWDLAllMod*0.30+awayWDL6Mod*0.70;
+  } else if(hv(awayWDLMod)&&hv(awayWDLAllMod)){
     awayWDLCombined=awayWDLMod*0.70+awayWDLAllMod*0.30;
   } else if(hv(awayWDLMod)) awayWDLCombined=awayWDLMod;
   else if(hv(awayWDLAllMod)) awayWDLCombined=awayWDLAllMod;
-  // WDL modifier is now centered around 1.0 (from parseWDL fix), so apply directly
-  // Cap effect to ±20% to prevent extreme outliers overriding the xG model
+  else if(hv(awayWDL6Mod)) awayWDLCombined=awayWDL6Mod;
   if(hv(homeWDLCombined)) homeXG*=Math.max(0.80,Math.min(1.20,homeWDLCombined));
   if(hv(awayWDLCombined)) awayXG*=Math.max(0.80,Math.min(1.20,awayWDLCombined));
   if(hasWDL) dataQualityScore=Math.max(20,Math.min(100,Math.round(dataQualityScore)+8));
@@ -561,11 +671,15 @@ function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awa
     homeXG:+homeXG.toFixed(2),awayXG:+awayXG.toFixed(2),
     homeAttackStr:+homeAttackStr.toFixed(2),homeDefenseStr:+homeDefenseStr.toFixed(2),
     awayAttackStr:+awayAttackStr.toFixed(2),awayDefenseStr:+awayDefenseStr.toFixed(2),
+    homeAttackStrL6:homeAttackStrL6!==null?+homeAttackStrL6.toFixed(2):null,
+    homeDefenseStrL6:homeDefenseStrL6!==null?+homeDefenseStrL6.toFixed(2):null,
+    awayAttackStrL6:awayAttackStrL6!==null?+awayAttackStrL6.toFixed(2):null,
+    awayDefenseStrL6:awayDefenseStrL6!==null?+awayDefenseStrL6.toFixed(2):null,
     dataSource,confidence,dataQualityScore,ciWidth,
     homeFormStr,awayFormStr,compType:compTypeVal,
     homeFormMult,awayFormMult,homeAdv,statDivergenceWarning,
     homeWDLCombined,awayWDLCombined,homeWDLStr,awayWDLStr,
-    homeWDLAllStr,awayWDLAllStr,hasWDL
+    homeWDLAllStr,awayWDLAllStr,homeWDL6Str,awayWDL6Str,hasWDL
   };
 }
 
@@ -682,7 +796,7 @@ function renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goa
     if(xgResult.homeWDLCombined!==null){
       const hwP=((xgResult.homeWDLCombined-1)*100).toFixed(1);
       const hwC=xgResult.homeWDLCombined>1.01?'var(--green)':xgResult.homeWDLCombined<0.97?'var(--red)':'var(--amber)';
-      const hwS=(xgResult.homeWDLStr||xgResult.homeWDLAllStr||'');
+      const hwS=(xgResult.homeWDLStr||'')+(xgResult.homeWDLAllStr?', '+(xgResult.homeWDLAllStr||''):'')+(xgResult.homeWDL6Str?' · L6: '+xgResult.homeWDL6Str:'');
       html+='<div class="metric"><div class="ml">Home WDL</div><div class="mv" style="color:'+hwC+';font-size:18px">'+(xgResult.homeWDLCombined>=1?'+':'')+hwP+'%</div><div class="ms">'+hwS+'</div></div>';
     } else {
       html+='<div class="metric"><div class="ml">Home WDL</div><div class="mv" style="color:var(--muted);font-size:14px">—</div><div class="ms">Not provided</div></div>';
@@ -690,7 +804,7 @@ function renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goa
     if(xgResult.awayWDLCombined!==null){
       const awP=((xgResult.awayWDLCombined-1)*100).toFixed(1);
       const awC=xgResult.awayWDLCombined>1.01?'var(--green)':xgResult.awayWDLCombined<0.97?'var(--red)':'var(--amber)';
-      const awS=(xgResult.awayWDLStr||xgResult.awayWDLAllStr||'');
+      const awS=(xgResult.awayWDLStr||'')+(xgResult.awayWDLAllStr?', '+(xgResult.awayWDLAllStr||''):'')+(xgResult.awayWDL6Str?' · L6: '+xgResult.awayWDL6Str:'');
       html+='<div class="metric"><div class="ml">Away WDL</div><div class="mv" style="color:'+awC+';font-size:18px">'+(xgResult.awayWDLCombined>=1?'+':'')+awP+'%</div><div class="ms">'+awS+'</div></div>';
     } else {
       html+='<div class="metric"><div class="ml">Away WDL</div><div class="mv" style="color:var(--muted);font-size:14px">—</div><div class="ms">Not provided</div></div>';
@@ -1056,7 +1170,7 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
   html+='<div class="tab-content" id="tab-sim">'+renderSimTab(sim,prbs,btts,totalXG,mat)+'</div>';
   html+='<div class="tab-content" id="tab-kelly">'+renderKellyTab(mat,prbs,btts)+'</div>';
 
-  html+='<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. Fixed external league reference (1.35 avg) for attack/defense strength calculation. Context-aware home advantage (+'+xgResult.homeAdv.toFixed(2)+' xG for '+xgResult.compType+'). Recency-weighted form (oldest→newest, W=3pts D=1pt — draw penalised for stagnation; range ±18%)'+(xgResult.hasWDL?'. WDL integrated as xG modifier (venue-split weighted 70/30 over combined; capped ±20%; centered on league-average PPG)':'')+'. Unified Tips ranked by model agreement (Poisson ↔ Monte Carlo convergence × data quality). Monte Carlo: 12,000 iterations (log-uniform sampler — unbiased at all lambda). Skellam distribution for goal difference. Quarter-ball AH lines supported.</div>';
+  html+='<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. Fixed external league reference (1.35 avg) for attack/defense strength calculation. Context-aware home advantage (+'+xgResult.homeAdv.toFixed(2)+' xG for '+xgResult.compType+'). Recency-weighted form (oldest→newest, W=3pts D=1pt — draw penalised for stagnation; range ±18%)'+(xgResult.hasWDL?'. WDL integrated as xG modifier (venue-split weighted 30/15/55 over all/last6; capped ±20%; centered on league-average PPG)':'')+'. Last 6 GF/GA and WDL stats blended at 35–45% recency weight (venue 35–40%, combined 15–20%, last6 45–55%). Unified Tips ranked by model agreement (Poisson ↔ Monte Carlo convergence × data quality). Monte Carlo: 12,000 iterations (log-uniform sampler — unbiased at all lambda). Skellam distribution for goal difference. Quarter-ball AH lines supported.</div>';
   html+='</div></div>';
 
   const rd=$('results');
@@ -1125,6 +1239,10 @@ window.runAnalysis=function(){
         awayW:$('awayW')?.value||'',awayD:$('awayD')?.value||'',awayL:$('awayL')?.value||'',
         homeWAll:$('homeWAll')?.value||'',homeDAll:$('homeDAll')?.value||'',homeLAll:$('homeLAll')?.value||'',
         awayWAll:$('awayWAll')?.value||'',awayDAll:$('awayDAll')?.value||'',awayLAll:$('awayLAll')?.value||'',
+        homeGFL6:$('homeGFL6')?.value||'',homeGAL6:$('homeGAL6')?.value||'',
+        awayGFL6:$('awayGFL6')?.value||'',awayGAL6:$('awayGAL6')?.value||'',
+        homeWL6:$('homeWL6')?.value||'',homeDL6:$('homeDL6')?.value||'',homeLL6:$('homeLL6')?.value||'',
+        awayWL6:$('awayWL6')?.value||'',awayDL6:$('awayDL6')?.value||'',awayLL6:$('awayLL6')?.value||'',
         homeForm:$('homeForm')?.value||'',awayForm:$('awayForm')?.value||'',
         compType:$('compType')?.value||'league'
       },
@@ -1142,7 +1260,9 @@ window.clearAll=function(){
    'homeGF','homeGA','awayGF','awayGA','homeGFAll','homeGAAll','awayGFAll','awayGAAll',
    'homeForm','awayForm','compType',
    'homeW','homeD','homeL','awayW','awayD','awayL',
-   'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll'].forEach(id=>{
+   'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll',
+   'homeGFL6','homeGAL6','awayGFL6','awayGAL6',
+   'homeWL6','homeDL6','homeLL6','awayWL6','awayDL6','awayLL6'].forEach(id=>{
     const el=$(id);if(el){el.value='';el.classList.remove('err','ok');}
   });
   const dcEl=$('dcIndicator');if(dcEl)dcEl.innerHTML='<span style="color:var(--muted)">DC: auto-detect</span>';
@@ -1159,11 +1279,17 @@ window.loadExample=function(){
   $('awayW').value='2';$('awayD').value='4';$('awayL').value='4';
   $('homeWAll').value='12';$('homeDAll').value='7';$('homeLAll').value='3';
   $('awayWAll').value='10';$('awayDAll').value='9';$('awayLAll').value='1';
+  $('homeGFL6').value='1.85';$('homeGAL6').value='0.70';
+  $('awayGFL6').value='1.55';$('awayGAL6').value='1.05';
+  $('homeWL6').value='3';$('homeDL6').value='2';$('homeLL6').value='1';
+  $('awayWL6').value='2';$('awayDL6').value='3';$('awayLL6').value='1';
   $('homeForm').value='LWDWW';$('awayForm').value='DLLWW';
   $('compType').value='league';
   ['homeGF','homeGA','awayGF','awayGA','homeGFAll','homeGAAll','awayGFAll','awayGAAll',
    'homeW','homeD','homeL','awayW','awayD','awayL',
-   'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll'].forEach(id=>{
+   'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll',
+   'homeGFL6','homeGAL6','awayGFL6','awayGAL6',
+   'homeWL6','homeDL6','homeLL6','awayWL6','awayDL6','awayLL6'].forEach(id=>{
     const el=$(id);if(el){el.classList.remove('err');el.classList.add('ok');}
   });
   window.runAnalysis();
