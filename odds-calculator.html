@@ -19,11 +19,16 @@
     <div class="panel">
       <div class="panel-header">
         <div class="panel-title"><span class="icon">🧮</span> Odds Calculator</div>
-        <div class="panel-sub">Enter 1×2 odds → Margin-stripped probabilities, O/U, AH, Value Bets & Kelly Staking</div>
+        <div class="panel-sub">Enter 1×2 odds and/or model probabilities → Margin-stripped probabilities, O/U, AH, Value Bets & Kelly Staking</div>
       </div>
       <div class="panel-body">
 
-        <p class="predictor-desc">Enter the bookmaker's 1×2 (Home / Draw / Away) decimal odds. The model strips the overround, infers expected goals via grid-search Poisson fit, and generates full market probabilities.</p>
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="field"><label>Home Team</label><input id="homeTeam" type="text" placeholder="e.g. Arsenal"></div>
+          <div class="field"><label>Away Team</label><input id="awayTeam" type="text" placeholder="e.g. Chelsea"></div>
+        </div>
+
+        <p class="predictor-desc">Enter the bookmaker's 1×2 decimal odds and/or your model's probabilities or odds. The system strips the overround, infers expected goals via grid-search Poisson fit, and generates full market probabilities. When both are provided, they are combined for a blended estimate.</p>
 
         <div class="grid3" style="margin-bottom:20px">
           <div class="field">
@@ -37,6 +42,25 @@
           <div class="field">
             <label>Away Win (2)</label>
             <input type="number" id="a" step="0.01" min="1.01" placeholder="e.g. 3.20">
+          </div>
+        </div>
+
+        <div class="divider-short" style="margin-top:20px"></div>
+
+        <p class="predictor-desc" style="margin-top:16px">Or enter your Model's 1×2 probabilities / odds <span style="color:var(--muted);font-weight:400">(optional — decimals like 0.45 or odds like 2.20)</span></p>
+
+        <div class="grid3" style="margin-bottom:20px">
+          <div class="field">
+            <label>Model Home (1)</label>
+            <input type="number" id="model-h" step="any" min="0" placeholder="e.g. 0.45 or 2.20">
+          </div>
+          <div class="field">
+            <label>Model Draw (X)</label>
+            <input type="number" id="model-d" step="any" min="0" placeholder="e.g. 0.30 or 3.40">
+          </div>
+          <div class="field">
+            <label>Model Away (2)</label>
+            <input type="number" id="model-a" step="any" min="0" placeholder="e.g. 0.25 or 3.10">
           </div>
         </div>
 
@@ -54,7 +78,7 @@
           <div class="divider-short"></div>
 
           <div class="slabel">1×2 Probabilities (margin-removed)</div>
-          <div class="metric-grid grid-mb">
+          <div class="metric-grid grid-mb" style="grid-template-columns:repeat(3,1fr)!important">
             <div class="metric">
               <div class="mlabel">Home Win</div>
               <div class="mval mwin" id="r-h">-</div>
@@ -107,14 +131,18 @@
           </div>
 
           <div class="tabs" id="resTabs">
-            <button class="tab-btn active" data-tab="tab-ou">📊 O/U Lines</button>
+            <button class="tab-btn active" data-tab="tab-1x2">🎯 1×2 Match Odds</button>
+            <button class="tab-btn" data-tab="tab-tips">🏆 Top 3 Tips</button>
+            <button class="tab-btn" data-tab="tab-ou">📊 O/U Lines</button>
             <button class="tab-btn" data-tab="tab-ah">⚖️ Asian Handicap</button>
             <button class="tab-btn" data-tab="tab-value">💎 Value Bets</button>
             <button class="tab-btn" data-tab="tab-kelly">💰 Kelly Stakes</button>
             <button class="tab-btn" data-tab="tab-scores">🏆 Score Matrix</button>
           </div>
 
-          <div class="tab-content active" id="tab-ou"></div>
+          <div class="tab-content active" id="tab-1x2"></div>
+          <div class="tab-content" id="tab-tips"></div>
+          <div class="tab-content" id="tab-ou"></div>
           <div class="tab-content" id="tab-ah"></div>
           <div class="tab-content" id="tab-value"></div>
           <div class="tab-content" id="tab-kelly"></div>
@@ -172,7 +200,7 @@ const fo = p => p > 0.001 ? (1 / p).toFixed(2) : '—';
 const BANKROLL = 1000;
 
 const MAX_HISTORY = 20;
-const STORAGE_KEY = 'betiqpro_history';
+const STORAGE_KEY = 'betiqpro_history_odds_calculator';
 
 function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
@@ -192,7 +220,7 @@ function renderHistory() {
   const h = window._predictionHistory;
   if (cnt) cnt.textContent = '(' + h.length + ')';
   if (h.length === 0) {
-    el.innerHTML = '<tr><td colspan="5" class="h-empty"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
+    el.innerHTML = '<tr><td colspan="5" class="h-empty" style="text-align:center"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
     return;
   }
   let html = '';
@@ -243,6 +271,11 @@ window.reloadEntry = function(idx) {
   $('h').value = inp.h || '';
   $('d').value = inp.d || '';
   $('a').value = inp.a || '';
+  $('model-h').value = inp.mh || '';
+  $('model-d').value = inp.md || '';
+  $('model-a').value = inp.ma || '';
+  $('homeTeam').value = inp.homeTeam || '';
+  $('awayTeam').value = inp.awayTeam || '';
   $('results').style.display = 'none';
   run();
 };
@@ -366,15 +399,78 @@ function fitXG(hO, dO, aO) {
   return { lH: best.lH, lA: best.lA, margin: st.margin };
 }
 
+function fitXGFromProbs(ph, pd, pa) {
+  let best = { lH: 1.4, lA: 1.1 }, bestErr = Infinity;
+  for (let lH = 0.1; lH <= 4.0; lH += 0.05) {
+    for (let lA = 0.1; lA <= 4.0; lA += 0.05) {
+      const m = buildMatrix(lH, lA);
+      const x = calc1x2(m);
+      const e = (x.h - ph) ** 2 + (x.d - pd) ** 2 + (x.a - pa) ** 2;
+      if (e < bestErr) { bestErr = e; best = { lH, lA }; }
+    }
+  }
+  return { lH: best.lH, lA: best.lA };
+}
+
+function parseModelInputs(mh, md, ma) {
+  const sum = mh + md + ma;
+  let ph, pd, pa;
+  if (sum > 0.8 && sum < 1.2) {
+    ph = mh; pd = md; pa = ma;
+  } else if (sum > 80 && sum < 120) {
+    ph = mh / 100; pd = md / 100; pa = ma / 100;
+  } else if (mh >= 1.01 && md >= 1.01 && ma >= 1.01) {
+    const r = { h: 1 / mh, d: 1 / md, a: 1 / ma };
+    const s = r.h + r.d + r.a;
+    ph = r.h / s; pd = r.d / s; pa = r.a / s;
+  } else {
+    return null;
+  }
+  const total = ph + pd + pa;
+  if (total <= 0) return null;
+  return { ph: ph / total, pd: pd / total, pa: pa / total };
+}
+
 function run() {
   const errBox = $('errBox');
   errBox.classList.remove('show');
+
   const h = parseFloat($('h').value), d = parseFloat($('d').value), a = parseFloat($('a').value);
-  if (isNaN(h) || isNaN(d) || isNaN(a) || h < 1.01 || d < 1.01 || a < 1.01) {
-    errBox.textContent = '⚠️ Please enter valid 1×2 odds for Home, Draw, and Away.';
+  const mh = parseFloat($('model-h').value), md = parseFloat($('model-d').value), ma = parseFloat($('model-a').value);
+
+  const hasBookmaker = !isNaN(h) && !isNaN(d) && !isNaN(a) && h >= 1.01 && d >= 1.01 && a >= 1.01;
+  const hasModel = !isNaN(mh) && !isNaN(md) && !isNaN(ma) && mh > 0 && md > 0 && ma > 0;
+
+  if (!hasBookmaker && !hasModel) {
+    errBox.textContent = '⚠️ Please enter Bookmaker odds and/or Model probabilities/odds.';
     errBox.classList.add('show'); return;
   }
-  const fit = fitXG(h, d, a);
+
+  let bookProbs = null, modelProbs = null;
+  if (hasBookmaker) bookProbs = stripMargin(h, d, a);
+  if (hasModel) {
+    modelProbs = parseModelInputs(mh, md, ma);
+    if (!modelProbs) {
+      errBox.textContent = '⚠️ Invalid Model inputs. Enter probabilities (e.g. 0.45, 0.30, 0.25) or odds (e.g. 2.20, 3.40, 3.10).';
+      errBox.classList.add('show'); return;
+    }
+  }
+
+  let useProbs;
+  if (hasBookmaker && hasModel) {
+    useProbs = {
+      ph: (bookProbs.ph + modelProbs.ph) / 2,
+      pd: (bookProbs.pd + modelProbs.pd) / 2,
+      pa: (bookProbs.pa + modelProbs.pa) / 2,
+      margin: bookProbs.margin,
+    };
+  } else if (hasBookmaker) {
+    useProbs = { ph: bookProbs.ph, pd: bookProbs.pd, pa: bookProbs.pa, margin: bookProbs.margin };
+  } else {
+    useProbs = { ph: modelProbs.ph, pd: modelProbs.pd, pa: modelProbs.pa, margin: null };
+  }
+
+  const fit = fitXGFromProbs(useProbs.ph, useProbs.pd, useProbs.pa);
   const mat = buildMatrix(fit.lH, fit.lA);
   const prbs = calc1x2(mat);
 
@@ -386,7 +482,66 @@ function run() {
   $('fo-a').textContent = fo(prbs.a);
   $('xg-h').textContent = fit.lH.toFixed(2);
   $('xg-a').textContent = fit.lA.toFixed(2);
-  $('margin').textContent = fit.margin.toFixed(2) + '%';
+  $('margin').textContent = useProbs.margin !== null ? useProbs.margin.toFixed(2) + '%' : 'N/A (model only)';
+
+  // 1x2 Tab
+  const modeLabel = hasBookmaker && hasModel ? 'Blended (Bookmaker × Model)' : hasBookmaker ? 'Bookmaker (margin-removed)' : 'Model probabilities';
+  const outcomes = [
+    { label: 'Home Win', cls: 'home', prob: prbs.h },
+    { label: 'Draw', cls: 'draw', prob: prbs.d },
+    { label: 'Away Win', cls: 'away', prob: prbs.a },
+  ];
+  const extraCols = hasBookmaker && hasModel ? '<th>Bookmaker</th><th>Model</th>' : '';
+  const extraData = hasBookmaker && hasModel ? [
+    { book: bookProbs.ph, model: modelProbs.ph },
+    { book: bookProbs.pd, model: modelProbs.pd },
+    { book: bookProbs.pa, model: modelProbs.pa },
+  ] : [];
+  let tab1x2Html = '<div class="rcard"><div class="rcard-title">🎯 1×2 Match Odds <span style="font-size:12px;font-weight:400;color:var(--muted)">· ' + modeLabel + '</span></div>';
+  tab1x2Html += '<div style="overflow-x:auto"><table class="markets-table" style="min-width:420px"><thead><tr><th style="text-align:left">Market</th>' + extraCols + '<th>Probability</th><th>Range</th><th>Fair Odds</th></tr></thead><tbody>';
+  outcomes.forEach((o, i) => {
+    const barW = (o.prob * 100).toFixed(1);
+    const color = o.cls === 'home' ? 'var(--win)' : o.cls === 'draw' ? 'var(--draw)' : 'var(--lose)';
+    tab1x2Html += '<tr>';
+    tab1x2Html += '<td style="text-align:left;font-weight:700;color:' + color + '">' + o.label + '</td>';
+    if (hasBookmaker && hasModel) {
+      tab1x2Html += '<td style="color:var(--muted)">' + fp(extraData[i].book) + '</td>';
+      tab1x2Html += '<td style="color:var(--muted)">' + fp(extraData[i].model) + '</td>';
+    }
+    tab1x2Html += '<td style="font-weight:700">' + fp(o.prob) + '</td>';
+    tab1x2Html += '<td style="min-width:100px"><div class="bar-track" style="height:14px;width:100%;margin:0"><div class="bar-fill ' + o.cls + '" style="width:' + barW + '%"></div></div></td>';
+    tab1x2Html += '<td style="font-family:\'JetBrains Mono\',monospace">' + fo(o.prob) + '</td>';
+    tab1x2Html += '</tr>';
+  });
+  tab1x2Html += '</tbody></table></div></div>';
+
+  // Double Chance
+  const dcMarkets = [
+    { label: '1X (Home or Draw)', cls: 'draw', prob: prbs.h + prbs.d },
+    { label: '12 (Home or Away)', cls: 'home', prob: prbs.h + prbs.a },
+    { label: 'X2 (Draw or Away)', cls: 'away', prob: prbs.d + prbs.a },
+  ];
+  const dcExtra = hasBookmaker && hasModel ? [
+    { book: bookProbs.ph + bookProbs.pd, model: modelProbs.ph + modelProbs.pd },
+    { book: bookProbs.ph + bookProbs.pa, model: modelProbs.ph + modelProbs.pa },
+    { book: bookProbs.pd + bookProbs.pa, model: modelProbs.pd + modelProbs.pa },
+  ] : [];
+  tab1x2Html += '<div class="rcard" style="margin-top:16px"><div class="rcard-title">🔄 Double Chance <span style="font-size:12px;font-weight:400;color:var(--muted)">· Two-outcome coverage (either team wins or draws)</span></div>';
+  tab1x2Html += '<div style="overflow-x:auto"><table class="markets-table" style="min-width:420px"><thead><tr><th style="text-align:left">Market</th>' + extraCols + '<th>Probability</th><th>Fair Odds</th></tr></thead><tbody>';
+  dcMarkets.forEach((m, i) => {
+    const color = m.cls === 'home' ? 'var(--win)' : m.cls === 'draw' ? 'var(--draw)' : 'var(--lose)';
+    tab1x2Html += '<tr>';
+    tab1x2Html += '<td style="text-align:left;font-weight:700;color:' + color + '">' + m.label + '</td>';
+    if (hasBookmaker && hasModel) {
+      tab1x2Html += '<td style="color:var(--muted)">' + fp(dcExtra[i].book) + '</td>';
+      tab1x2Html += '<td style="color:var(--muted)">' + fp(dcExtra[i].model) + '</td>';
+    }
+    tab1x2Html += '<td style="font-weight:700">' + fp(m.prob) + '</td>';
+    tab1x2Html += '<td style="font-family:\'JetBrains Mono\',monospace">' + fo(m.prob) + '</td>';
+    tab1x2Html += '</tr>';
+  });
+  tab1x2Html += '</tbody></table></div></div>';
+  $('tab-1x2').innerHTML = tab1x2Html;
 
   // BTTS
   let bttsYes = 0;
@@ -420,41 +575,103 @@ function run() {
       `<div class="cs-item"><div class="cs-score">${s.home}–${s.away}</div><div class="cs-prob">${fp(s.p)}</div><div class="cs-fair">${fo(s.p)}</div></div>`
     ).join('') + '</div></div>';
 
-  // Value Bets tab — show bookmaker odds vs model fair odds comparison
-  const st = stripMargin(h, d, a);
-  const edgeRows = [
-    { market: 'Home Win', prob: prbs.h, odds: h, implied: st.ph },
-    { market: 'Draw', prob: prbs.d, odds: d, implied: st.pd },
-    { market: 'Away Win', prob: prbs.a, odds: a, implied: st.pa },
-  ];
-  $('tab-value').innerHTML = '<div class="rcard"><div class="rcard-title">💎 Bookmaker Odds vs Model Fair Odds</div>' +
-    '<table class="markets-table"><thead><tr><th>Market</th><th>Book Odds</th><th>Book Implied (de-juiced)</th><th>Model %</th><th>Fair Odds</th><th>EV vs Book</th></tr></thead><tbody>' +
-    edgeRows.map(r => {
-      const ev = r.prob / r.implied - 1;
-      const isVal = ev > 0;
-      return '<tr>' +
-        '<td style="font-weight:700;text-align:left">' + r.market + '</td>' +
-        '<td>' + r.odds.toFixed(2) + '</td>' +
-        '<td>' + fp(r.implied) + '</td>' +
-        '<td>' + fp(r.prob) + '</td>' +
-        '<td>' + fo(r.prob) + '</td>' +
-        '<td style="color:' + (isVal ? 'var(--win)' : 'var(--lose)') + ';font-weight:700">' + (ev >= 0 ? '+' : '') + (ev * 100).toFixed(2) + '%</td>' +
-        '</tr>';
-    }).join('') + '</tbody></table></div>';
+  // Value Bets tab
+  if (hasBookmaker) {
+    const valProbs = modelProbs || bookProbs;
+    const edgeRows = [
+      { market: 'Home Win', bookProb: bookProbs.ph, modelProb: valProbs.ph, odds: h },
+      { market: 'Draw', bookProb: bookProbs.pd, modelProb: valProbs.pd, odds: d },
+      { market: 'Away Win', bookProb: bookProbs.pa, modelProb: valProbs.pa, odds: a },
+    ];
+    $('tab-value').innerHTML = '<div class="rcard"><div class="rcard-title">💎 ' + (hasModel ? 'Model vs Bookmaker' : 'Bookmaker') + ' — Value Analysis</div>' +
+      '<table class="markets-table"><thead><tr><th>Market</th><th>Book Odds</th><th>Book Implied (de-juiced)</th><th>' + (hasModel ? 'Model %' : 'Fair %') + '</th><th>Fair Odds</th><th>EV vs Book</th></tr></thead><tbody>' +
+      edgeRows.map(r => {
+        const ev = r.modelProb / r.bookProb - 1;
+        const isVal = ev > 0;
+        return '<tr>' +
+          '<td style="font-weight:700;text-align:left">' + r.market + '</td>' +
+          '<td>' + r.odds.toFixed(2) + '</td>' +
+          '<td>' + fp(r.bookProb) + '</td>' +
+          '<td>' + fp(r.modelProb) + '</td>' +
+          '<td>' + fo(r.modelProb) + '</td>' +
+          '<td style="color:' + (isVal ? 'var(--win)' : 'var(--lose)') + ';font-weight:700">' + (ev >= 0 ? '+' : '') + (ev * 100).toFixed(2) + '%</td>' +
+          '</tr>';
+      }).join('') + '</tbody></table></div>';
+  } else {
+    $('tab-value').innerHTML = '<div class="rcard"><div class="rcard-title">💎 Value Analysis</div><p style="color:var(--muted);text-align:center;padding:20px">No bookmaker odds provided. Enter bookmaker odds to compare with model probabilities and find value bets.</p></div>';
+  }
 
   // Kelly Stakes tab
-  const kellyTableHTML = renderKellyTable(prbs, mat, h, d, a);
-  $('tab-kelly').innerHTML = kellyTableHTML;
+  if (hasBookmaker) {
+    const kellyTableHTML = renderKellyTable(prbs, mat, h, d, a);
+    $('tab-kelly').innerHTML = kellyTableHTML;
+  } else {
+    $('tab-kelly').innerHTML = '<div class="rcard"><div class="rcard-title">💰 Kelly Staking</div><p style="color:var(--muted);text-align:center;padding:20px">Kelly staking requires bookmaker odds. Enter bookmaker odds to calculate optimal stake sizes.</p></div>';
+  }
 
   $('results').style.display = 'block';
 
+  // Monte Carlo tip generation (70%-90% range, 30 iterations)
+  const TIP_ITER = 30, TIP_MIN = 0.70, TIP_MAX = 0.90;
+  const _cands = [
+    { market:'Home Win', prob:prbs.h, cat:'1X2' },
+    { market:'Draw', prob:prbs.d, cat:'1X2' },
+    { market:'Away Win', prob:prbs.a, cat:'1X2' },
+    { market:'BTTS Yes', prob:bttsYes, cat:'BTTS' },
+    { market:'BTTS No', prob:1-bttsYes, cat:'BTTS' },
+  ];
+  [0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5].forEach(l => {
+    const ou = calcOU(mat, l); _cands.push({ market:'Over '+l, prob:ou.over, cat:'O/U' }); _cands.push({ market:'Under '+l, prob:ou.under, cat:'O/U' });
+  });
+  const _valid = _cands.filter(c => c.prob >= TIP_MIN && c.prob <= TIP_MAX);
+  const _hits = {}, _pSum = {};
+  _valid.forEach(c => { _hits[c.market] = 0; _pSum[c.market] = 0; });
+  for (let i = 0; i < TIP_ITER; i++) {
+    const nH = fit.lH * (0.85 + Math.random() * 0.30);
+    const nA = fit.lA * (0.85 + Math.random() * 0.30);
+    const m = buildMatrix(nH, nA); const p = calc1x2(m);
+    let bMC = 0; for (let x = 1; x <= 15; x++) for (let y = 1; y <= 15; y++) bMC += m[x][y];
+    _valid.forEach(c => {
+      let prob;
+      if (c.market === 'Home Win') prob = p.h;
+      else if (c.market === 'Draw') prob = p.d;
+      else if (c.market === 'Away Win') prob = p.a;
+      else if (c.market === 'BTTS Yes') prob = bMC;
+      else if (c.market === 'BTTS No') prob = 1 - bMC;
+      else if (c.market.startsWith('Over ')) prob = calcOU(m, +c.market.slice(5)).over;
+      else if (c.market.startsWith('Under ')) prob = calcOU(m, +c.market.slice(6)).under;
+      if (prob >= TIP_MIN && prob <= TIP_MAX) { _hits[c.market]++; _pSum[c.market] += prob; }
+    });
+  }
+  const _tipData = _valid.map(c => {
+    const hits = _hits[c.market] || 0; const stab = hits / TIP_ITER;
+    return { market:c.market, prob:c.prob, cat:c.cat, stability:stab, avgProb:_pSum[c.market] ? _pSum[c.market]/hits : c.prob, score:stab * (_pSum[c.market] ? _pSum[c.market]/hits : c.prob) };
+  }).filter(c => c.stability >= 0.2).sort((a, b) => b.score - a.score).slice(0, 3);
+  const unifiedTips = _tipData.map(t => ({ market:t.market, prob:t.avgProb }));
+
+  // Top 3 Tips tab
+  let tipsHtml = '<div class="rcard"><div class="rcard-title">🏆 Top 3 Tips <span style="font-size:12px;font-weight:400;color:var(--muted)">· Monte Carlo verified (30 iterations, 70%-90% range)</span></div>';
+  if (_tipData.length === 0) {
+    tipsHtml += '<p style="color:var(--muted);text-align:center;padding:20px">No tips meet the 70%-90% probability threshold with sufficient stability.</p>';
+  } else {
+    tipsHtml += '<div style="overflow-x:auto"><table class="markets-table" style="min-width:420px"><thead><tr><th>#</th><th style="text-align:left">Tip</th><th>Category</th><th>Probability</th><th>Fair Odds</th><th>Stability</th></tr></thead><tbody>';
+    _tipData.forEach((t, i) => {
+      const sp = (t.stability * 100).toFixed(0);
+      const sc = t.stability >= 0.6 ? 'var(--win)' : t.stability >= 0.4 ? 'var(--draw)' : 'var(--muted2)';
+      tipsHtml += '<tr><td style="font-weight:700;color:var(--accent)">#' + (i+1) + '</td><td style="text-align:left;font-weight:700">' + t.market + '</td><td style="color:var(--muted);font-size:11px">' + t.cat + '</td><td style="font-weight:700">' + fp(t.avgProb) + '</td><td style="font-family:\'JetBrains Mono\',monospace">' + fo(t.avgProb) + '</td><td><div class="bar-track" style="height:8px;width:50px;margin:0 auto"><div class="bar-fill" style="width:' + sp + '%;height:100%;background:' + sc + ';border-radius:4px"></div></div></td></tr>';
+    });
+    tipsHtml += '</tbody></table></div>';
+  }
+  tipsHtml += '</div>';
+  $('tab-tips').innerHTML = tipsHtml;
+
   window._predictionHistory.push({
     date: new Date().toLocaleDateString('en-GB'),
-    homeTeam: 'Home Team',
-    awayTeam: 'Away Team',
-    inputs: { h: $('h')?.value || '', d: $('d')?.value || '', a: $('a')?.value || '' },
+    homeTeam: $('homeTeam')?.value || 'Home Team',
+    awayTeam: $('awayTeam')?.value || 'Away Team',
+    inputs: { h: $('h')?.value || '', d: $('d')?.value || '', a: $('a')?.value || '', mh: $('model-h')?.value || '', md: $('model-d')?.value || '', ma: $('model-a')?.value || '', homeTeam: $('homeTeam')?.value || '', awayTeam: $('awayTeam')?.value || '' },
     prbs: { h: prbs.h, d: prbs.d, a: prbs.a },
-    unifiedTips: []
+    unifiedTips: unifiedTips
   });
   if (window._predictionHistory.length > MAX_HISTORY) window._predictionHistory.shift();
   saveHistoryToStorage();
@@ -490,13 +707,15 @@ function renderKellyTable(prbs, mat, h, d, a) {
 }
 
 window.clearAll = function() {
-  ['h', 'd', 'a'].forEach(id => { const el = $(id); if (el) { el.value = ''; el.classList.remove('err'); } });
+  ['h', 'd', 'a', 'model-h', 'model-d', 'model-a', 'homeTeam', 'awayTeam'].forEach(id => { const el = $(id); if (el) { el.value = ''; el.classList.remove('err'); } });
   $('results').style.display = 'none';
   $('errBox').classList.remove('show');
 };
 
 window.loadExample = function() {
   $('h').value = '2.10'; $('d').value = '3.40'; $('a').value = '3.20';
+  $('model-h').value = '0.48'; $('model-d').value = '0.27'; $('model-a').value = '0.25';
+  $('homeTeam').value = 'Arsenal'; $('awayTeam').value = 'Chelsea';
   $('errBox').classList.remove('show');
   run();
 };

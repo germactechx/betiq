@@ -529,7 +529,7 @@ buildMatchRows();
 
 // ── Prediction History (localStorage) ─────────────────────────
 const MAX_HISTORY = 20;
-const STORAGE_KEY = 'betiqpro_history';
+const STORAGE_KEY = 'betiqpro_history_match_prediction';
 
 function loadHistoryFromStorage() {
   try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
@@ -549,7 +549,7 @@ function renderHistory() {
   const h = window._predictionHistory;
   if (cnt) cnt.textContent = '(' + h.length + ')';
   if (h.length === 0) {
-    el.innerHTML = '<tr><td colspan="5" class="h-empty"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
+    el.innerHTML = '<tr><td colspan="5" class="h-empty" style="text-align:center"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
     return;
   }
   let html = '';

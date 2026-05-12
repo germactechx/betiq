@@ -9,7 +9,6 @@
     '  <nav class="navbar" id="mainNav">' +
     '    <a href="index.html">Dashboard</a>' +
     '    <a href="betiq-stats.html">BetIQ Stats</a>' +
-    '    <a href="betiq-odds.html">BetIQ Odds</a>' +
     '    <a href="match-prediction.html">Match Prediction</a>' +
     '    <a href="odds-calculator.html">Odds Calculator</a>' +
     '  </nav>' +

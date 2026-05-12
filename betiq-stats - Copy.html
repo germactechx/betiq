@@ -606,23 +606,22 @@ document.querySelectorAll('.field input').forEach(inp=>{
   el.addEventListener('input',function(){
     // Strip anything not a digit, dot, leading minus, or leading plus
     let v=this.value;
-    // Remove leading plus (we accept it visually but normalize)
-    v=v.replace(/^\+/,'');
-    // Keep only: optional leading minus, digits, one dot
+    // Keep only: optional leading sign (+/-), digits, one dot
+    const pos=v.startsWith('+');
     const neg=v.startsWith('-');
     let body=v.replace(/[^0-9.]/g,'');
     // Only one dot allowed
     const parts=body.split('.');
     if(parts.length>2) body=parts[0]+'.'+parts.slice(1).join('');
-    this.value=(neg?'-':'')+body;
+    this.value=(pos?'+':neg?'-':'')+body;
     // Validation highlight
-    if(this.value===''||this.value==='-'){this.classList.remove('err','ok');return;}
+    if(this.value===''||this.value==='+'||this.value==='-'){this.classList.remove('err','ok');return;}
     const n=parseFloat(this.value);
     if(isNaN(n)){this.classList.add('err');this.classList.remove('ok');}
     else{this.classList.remove('err');this.classList.add('ok');}
   });
   el.addEventListener('blur',function(){
-    if(this.value===''||this.value==='-'){this.classList.remove('err','ok');return;}
+    if(this.value===''||this.value==='+'||this.value==='-'){this.classList.remove('err','ok');return;}
     const n=parseFloat(this.value);
     if(isNaN(n)){this.classList.add('err');this.classList.remove('ok');}
     else{this.classList.remove('err');this.classList.add('ok');}
@@ -933,8 +932,8 @@ function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awa
   const homeFormStr=getStr('homeForm'),awayFormStr=getStr('awayForm');
   const homeFormMult=parseFormString(homeFormStr),awayFormMult=parseFormString(awayFormStr);
   const compMod=compModifier(compTypeVal);
-  homeXG*=compMod.home;
-  awayXG*=compMod.away;
+  homeXG*=homeFormMult*compMod.home;
+  awayXG*=awayFormMult*compMod.away;
 
   const homeWDLMod=parseWDL(homeW,homeD,homeL);
   const awayWDLMod=parseWDL(awayW,awayD,awayL);
@@ -977,6 +976,8 @@ function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awa
   } else if(hv(awayWDLMod)) awayWDLCombined=awayWDLMod;
   else if(hv(awayWDLAllMod)) awayWDLCombined=awayWDLAllMod;
   else if(hv(awayWDL6Mod)) awayWDLCombined=awayWDL6Mod;
+  if(hv(homeWDLCombined)) homeXG*=Math.max(0.80,Math.min(1.20,homeWDLCombined));
+  if(hv(awayWDLCombined)) awayXG*=Math.max(0.80,Math.min(1.20,awayWDLCombined));
   if(hasWDL) dataQualityScore=Math.max(20,Math.min(100,Math.round(dataQualityScore)+8));
 
   homeXG=Math.max(0.1,Math.min(9,homeXG));
@@ -994,8 +995,8 @@ function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awa
     awayAttackStrL6:awayAttackStrL6!==null?+awayAttackStrL6.toFixed(2):null,
     awayDefenseStrL6:awayDefenseStrL6!==null?+awayDefenseStrL6.toFixed(2):null,
     dataSource,confidence,dataQualityScore,ciWidth,
-    homeFormStr,awayFormStr,homeFormMult,awayFormMult,compType:compTypeVal,
-    homeAdv,statDivergenceWarning,
+    homeFormStr,awayFormStr,compType:compTypeVal,
+    homeFormMult,awayFormMult,homeAdv,statDivergenceWarning,
     homeWDLCombined,awayWDLCombined,homeWDLStr,awayWDLStr,
     homeWDLAllStr,awayWDLAllStr,homeWDL6Str,awayWDL6Str,hasWDL
   };
@@ -1080,63 +1081,54 @@ function renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goa
   html+='<div class="dq-ring"><svg width="54" height="54" viewBox="0 0 54 54"><circle class="dq-ring-bg" cx="27" cy="27" r="22"/><circle class="dq-ring-fill" cx="27" cy="27" r="22" stroke="'+strokeColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+offset.toFixed(1)+'"/></svg>';
   html+='<div class="dq-center" style="color:'+dqColor+'">'+dq+'%</div></div>';
   html+='<div class="dq-info"><div class="dq-info-title">Data Quality: '+(dq>=70?'Reliable':dq>=45?'Moderate':'Low')+(xgResult.statDivergenceWarning?' <span style="color:var(--red);font-size:9px">⚠ STAT DIVERGENCE</span>':'')+'</div>';
-  html+='<div class="dq-info-detail">Source: '+xgResult.dataSource+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG · Comp: '+xgResult.compType+(xgResult.homeFormStr?' · Home Form: '+xgResult.homeFormStr:'')+(xgResult.awayFormStr?' · Away Form: '+xgResult.awayFormStr:'')+'<br>Dynamic DC ρ: '+(xg+awayXG<2.8?calcDynamicRho(xg,awayXG).toFixed(3)+' (active)':'off')+'</div></div></div>';
+  html+='<div class="dq-info-detail">Source: '+xgResult.dataSource+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG · Comp: '+xgResult.compType+'<br>Dynamic DC ρ: '+(xg+awayXG<2.8?calcDynamicRho(xg,awayXG).toFixed(3)+' (active)':'off')+'</div></div></div>';
 
-  html+='<div class="metric-row-4">';
+  html+='<div class="metric-row">';
   html+='<div class="metric"><div class="ml">Home xG</div><div class="mv" style="color:var(--cyan)">'+xg.toFixed(2)+'</div><div class="ms">CI: ['+homeCI.low+', '+homeCI.high+']</div></div>';
   html+='<div class="metric"><div class="ml">Away xG</div><div class="mv" style="color:var(--cyan)">'+awayXG.toFixed(2)+'</div><div class="ms">CI: ['+awayCI.low+', '+awayCI.high+']</div></div>';
-  html+='<div class="metric"><div class="ml">Goal Diff</div><div class="mv" style="color:'+(goalDiff>=0?'var(--green)':'var(--red)')+';font-size:18px">'+(goalDiff>0?'+':'')+goalDiff.toFixed(2)+'</div><div class="ms">Home xG − Away xG</div></div>';
   html+='<div class="metric"><div class="ml">Total xG</div><div class="mv" style="color:var(--muted2)">'+totalXG.toFixed(2)+'</div><div class="ms">'+(goalDiff>0?'Home lean':goalDiff<0?'Away lean':'Even')+'</div></div>';
   html+='</div>';
 
-  html+='<div class="metric-row-4">';
+  html+='<div class="metric-row">';
   const haC=xgResult.homeAttackStr>1?'var(--green)':'var(--amber)';
   const hdC=xgResult.homeDefenseStr<1?'var(--green)':'var(--red)';
-  const adC=xgResult.awayDefenseStr<1?'var(--green)':'var(--red)';
   const aaC=xgResult.awayAttackStr>1?'var(--green)':'var(--amber)';
   html+='<div class="metric"><div class="ml">Home Attack</div><div class="mv" style="color:'+haC+'">'+xgResult.homeAttackStr.toFixed(2)+'</div><div class="ms">'+(xgResult.homeAttackStr>1?'Above avg':'Below avg')+'</div></div>';
-  html+='<div class="metric"><div class="ml">Home Defence</div><div class="mv" style="color:'+hdC+'">'+xgResult.homeDefenseStr.toFixed(2)+'</div><div class="ms">'+(xgResult.homeDefenseStr<1?'Strong def':'Leaky def')+'</div></div>';
-  html+='<div class="metric"><div class="ml">Away Defence</div><div class="mv" style="color:'+adC+'">'+xgResult.awayDefenseStr.toFixed(2)+'</div><div class="ms">'+(xgResult.awayDefenseStr<1?'Strong def':'Leaky def')+'</div></div>';
+  html+='<div class="metric"><div class="ml">Home Defense</div><div class="mv" style="color:'+hdC+'">'+xgResult.homeDefenseStr.toFixed(2)+'</div><div class="ms">'+(xgResult.homeDefenseStr<1?'Strong':'Leaky')+'</div></div>';
   html+='<div class="metric"><div class="ml">Away Attack</div><div class="mv" style="color:'+aaC+'">'+xgResult.awayAttackStr.toFixed(2)+'</div><div class="ms">'+(xgResult.awayAttackStr>1?'Above avg':'Below avg')+'</div></div>';
   html+='</div>';
 
-  html+='<div class="metric-row">';
-  html+='<div class="metric"><div class="ml">HA × AD</div><div class="mv" style="color:var(--cyan);font-size:18px">'+(xgResult.homeAttackStr*xgResult.awayDefenseStr).toFixed(2)+'</div><div class="ms">Home Attack × Away Defence</div></div>';
-  html+='<div class="metric"><div class="ml">AA × HD</div><div class="mv" style="color:var(--cyan);font-size:18px">'+(xgResult.awayAttackStr*xgResult.homeDefenseStr).toFixed(2)+'</div><div class="ms">Away Attack × Home Defence</div></div>';
-  html+='<div class="metric">'+(function(){
-    const ha=xgResult.homeAttackStr*xgResult.awayDefenseStr;
-    const aa=xgResult.awayAttackStr*xgResult.homeDefenseStr;
-    if(ha>aa){const r=((ha/aa-1)*100).toFixed(1);return'<div class="ml">Best: Home</div><div class="mv" style="color:var(--green);font-size:18px">'+ha.toFixed(2)+'</div><div class="ms">'+r+'% edge vs Away</div>';}
-    if(aa>ha){const r=((aa/ha-1)*100).toFixed(1);return'<div class="ml">Best: Away</div><div class="mv" style="color:var(--red);font-size:18px">'+aa.toFixed(2)+'</div><div class="ms">'+r+'% edge vs Home</div>';}
-    return'<div class="ml">Best: Even</div><div class="mv" style="color:var(--muted2);font-size:18px">—</div><div class="ms">HA×AD = AA×HD</div>';
-  })()+'</div>';
-  html+='</div>';
-
-  if(xgResult.homeFormStr||xgResult.awayFormStr){
-    const formDiff=+((xgResult.homeFormMult-xgResult.awayFormMult)*100).toFixed(1);
+  if(xgResult.homeFormMult||xgResult.awayFormMult){
+    html+='<div class="metric-row">';
     const hfP=((xgResult.homeFormMult-1)*100).toFixed(1);
     const afP=((xgResult.awayFormMult-1)*100).toFixed(1);
     const hfC=xgResult.homeFormMult>1.01?'var(--green)':xgResult.homeFormMult<0.97?'var(--red)':'var(--amber)';
     const afC=xgResult.awayFormMult>1.01?'var(--green)':xgResult.awayFormMult<0.97?'var(--red)':'var(--amber)';
-    html+='<div class="metric-row">';
     html+='<div class="metric"><div class="ml">Home Form Adj</div><div class="mv" style="color:'+hfC+';font-size:18px">'+(xgResult.homeFormMult>=1?'+':'')+hfP+'%</div><div class="ms">'+(xgResult.homeFormStr||'—')+'</div></div>';
     html+='<div class="metric"><div class="ml">Away Form Adj</div><div class="mv" style="color:'+afC+';font-size:18px">'+(xgResult.awayFormMult>=1?'+':'')+afP+'%</div><div class="ms">'+(xgResult.awayFormStr||'—')+'</div></div>';
-    html+='<div class="metric">'+(formDiff>0?'<div class="ml">Form Edge: Home</div><div class="mv" style="color:var(--green);font-size:18px">'+formDiff+'%</div><div class="ms">'+formDiff+'% edge vs Away</div>':formDiff<0?'<div class="ml">Form Edge: Away</div><div class="mv" style="color:var(--red);font-size:18px">'+(Math.abs(formDiff))+'%</div><div class="ms">'+(Math.abs(formDiff))+'% edge vs Home</div>':'<div class="ml">Form Edge</div><div class="mv" style="color:var(--muted2);font-size:18px">Even</div><div class="ms">Home = Away form</div>')+'</div>';
+    html+='<div class="metric"><div class="ml">Goal Diff</div><div class="mv" style="color:'+(goalDiff>=0?'var(--green)':'var(--red)')+';font-size:18px">'+(goalDiff>0?'+':'')+goalDiff.toFixed(2)+'</div></div>';
     html+='</div>';
   }
 
   if(xgResult.hasWDL){
-    const hwP=xgResult.homeWDLCombined!==null?((xgResult.homeWDLCombined-1)*100).toFixed(1):null;
-    const awP=xgResult.awayWDLCombined!==null?((xgResult.awayWDLCombined-1)*100).toFixed(1):null;
-    const hwC=xgResult.homeWDLCombined!==null?(xgResult.homeWDLCombined>1.01?'var(--green)':xgResult.homeWDLCombined<0.97?'var(--red)':'var(--amber)'):'var(--muted)';
-    const awC=xgResult.awayWDLCombined!==null?(xgResult.awayWDLCombined>1.01?'var(--green)':xgResult.awayWDLCombined<0.97?'var(--red)':'var(--amber)'):'var(--muted)';
-    const wdlDiff=xgResult.homeWDLCombined!==null&&xgResult.awayWDLCombined!==null?+((xgResult.homeWDLCombined-xgResult.awayWDLCombined)*100).toFixed(1):null;
-    const hwS=(xgResult.homeWDLStr||'')+(xgResult.homeWDLAllStr?', '+(xgResult.homeWDLAllStr||''):'')+(xgResult.homeWDL6Str?' · L6: '+xgResult.homeWDL6Str:'');
-    const awS=(xgResult.awayWDLStr||'')+(xgResult.awayWDLAllStr?', '+(xgResult.awayWDLAllStr||''):'')+(xgResult.awayWDL6Str?' · L6: '+xgResult.awayWDL6Str:'');
     html+='<div class="metric-row">';
-    html+='<div class="metric"><div class="ml">Home WDL</div><div class="mv" style="color:'+hwC+';font-size:18px">'+(hwP!==null?(xgResult.homeWDLCombined>=1?'+':'')+hwP+'%':'—')+'</div><div class="ms">'+hwS+'</div></div>';
-    html+='<div class="metric"><div class="ml">Away WDL</div><div class="mv" style="color:'+awC+';font-size:18px">'+(awP!==null?(xgResult.awayWDLCombined>=1?'+':'')+awP+'%':'—')+'</div><div class="ms">'+awS+'</div></div>';
-    html+='<div class="metric">'+(wdlDiff!==null?wdlDiff>0?'<div class="ml">WDL Edge: Home</div><div class="mv" style="color:var(--green);font-size:18px">'+wdlDiff+'%</div><div class="ms">'+wdlDiff+'% edge vs Away</div>':wdlDiff<0?'<div class="ml">WDL Edge: Away</div><div class="mv" style="color:var(--red);font-size:18px">'+(Math.abs(wdlDiff))+'%</div><div class="ms">'+(Math.abs(wdlDiff))+'% edge vs Home</div>':'<div class="ml">WDL Edge</div><div class="mv" style="color:var(--muted2);font-size:18px">Even</div><div class="ms">Home = Away WDL</div>':'<div class="ml">WDL Edge</div><div class="mv" style="color:var(--muted2);font-size:18px">—</div><div class="ms">Not enough data</div>')+'</div>';
+    if(xgResult.homeWDLCombined!==null){
+      const hwP=((xgResult.homeWDLCombined-1)*100).toFixed(1);
+      const hwC=xgResult.homeWDLCombined>1.01?'var(--green)':xgResult.homeWDLCombined<0.97?'var(--red)':'var(--amber)';
+      const hwS=(xgResult.homeWDLStr||'')+(xgResult.homeWDLAllStr?', '+(xgResult.homeWDLAllStr||''):'')+(xgResult.homeWDL6Str?' · L6: '+xgResult.homeWDL6Str:'');
+      html+='<div class="metric"><div class="ml">Home WDL</div><div class="mv" style="color:'+hwC+';font-size:18px">'+(xgResult.homeWDLCombined>=1?'+':'')+hwP+'%</div><div class="ms">'+hwS+'</div></div>';
+    } else {
+      html+='<div class="metric"><div class="ml">Home WDL</div><div class="mv" style="color:var(--muted);font-size:14px">—</div><div class="ms">Not provided</div></div>';
+    }
+    if(xgResult.awayWDLCombined!==null){
+      const awP=((xgResult.awayWDLCombined-1)*100).toFixed(1);
+      const awC=xgResult.awayWDLCombined>1.01?'var(--green)':xgResult.awayWDLCombined<0.97?'var(--red)':'var(--amber)';
+      const awS=(xgResult.awayWDLStr||'')+(xgResult.awayWDLAllStr?', '+(xgResult.awayWDLAllStr||''):'')+(xgResult.awayWDL6Str?' · L6: '+xgResult.awayWDL6Str:'');
+      html+='<div class="metric"><div class="ml">Away WDL</div><div class="mv" style="color:'+awC+';font-size:18px">'+(xgResult.awayWDLCombined>=1?'+':'')+awP+'%</div><div class="ms">'+awS+'</div></div>';
+    } else {
+      html+='<div class="metric"><div class="ml">Away WDL</div><div class="mv" style="color:var(--muted);font-size:14px">—</div><div class="ms">Not provided</div></div>';
+    }
+    html+='<div class="metric"><div class="ml">WDL Impact</div><div class="mv" style="color:var(--muted2);font-size:14px">ACTIVE</div><div class="ms">xG adjusted</div></div>';
     html+='</div>';
   }
 
@@ -1174,7 +1166,7 @@ function renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goa
 
   html+='<div class="card"><div class="card-title">🏆 Top Correct Score Probabilities</div>';
   html+='<div class="cs-grid">';
-  scores.slice(0,4).forEach(s=>{
+  scores.slice(0,5).forEach(s=>{
     const c=s.home>s.away?'var(--green)':s.home===s.away?'var(--amber)':'var(--red)';
     html+='<div class="cs-item"><div class="cs-score" style="color:'+c+'">'+s.home+'–'+s.away+'</div><div class="cs-prob">'+fp(s.p)+'</div><div class="cs-fair">'+fo(s.p)+'</div></div>';
   });
@@ -1269,7 +1261,7 @@ function renderAHTab(mat,bkAnalysis){
   let html='<div class="card"><div class="card-title">Asian Handicap Lines <span style="font-size:9px;font-weight:400;color:var(--muted)">· Quarter-ball supported · −N = team gives goals (fav) · +N = team receives goals (underdog)</span></div>';
   html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:520px">';
   html+='<thead><tr><th style="text-align:left">Home Label</th><th style="text-align:left">Away Label</th><th>H Cover %</th><th>A Cover %</th><th>Push %</th><th>Fair H/A</th><th>Line Type</th><th>Best Side</th>'+(hasBkAH?'<th>Bk Edge</th>':'')+'</tr></thead><tbody>';
-  [-4.5,-3.5,-2.5,-2.0,-1.75,-1.5,-1.25,-1.0,-0.75,-0.5,-0.25,0.0,0.25,0.5,0.75,1.0,1.5,1.75,2.0,2.5,3.5,4.5].forEach(threshold=>{
+  [-4.5,-3.5,-2.5,-1.5,-0.5,0.0,0.5,1.5,2.5,3.5,4.5].forEach(threshold=>{
     const c=calcAHCover(mat,threshold);
     const absT=Math.abs(threshold);
     const homeLabel=threshold===0?'0':(threshold<0?'−':'+')+(absT%1===0?absT.toFixed(1):absT.toFixed(2));
@@ -1324,12 +1316,12 @@ function renderKellyTab(mat,prbs,btts){
   markets.push({label:'DC 12',prob:prbs.h+prbs.a,cat:'DC',fairOdds:1/((prbs.h+prbs.a)||0.001)});
   markets.push({label:'BTTS Yes',prob:btts,cat:'BTTS',fairOdds:1/(btts||0.001)});
   markets.push({label:'BTTS No',prob:1-btts,cat:'BTTS',fairOdds:1/((1-btts)||0.001)});
-  [0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.25,2.5,2.75,3.0,3.5,4.5].forEach(line=>{
+  [0.5,1.5,2.5,3.5,4.5].forEach(line=>{
     const ou=calcOU(mat,line);
     markets.push({label:'Over '+line,prob:ou.over,cat:'O/U',fairOdds:1/(ou.over||0.001)});
     markets.push({label:'Under '+line,prob:ou.under,cat:'O/U',fairOdds:1/(ou.under||0.001)});
   });
-  [-4.5,-3.5,-2.5,-2.25,-2.0,-1.75,-1.5,-1.25,-1.0,-0.75,-0.5,-0.25,0.0,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0,2.25,2.5,3.5,4.5].forEach(threshold=>{
+  [-4.5,-3.5,-2.5,-1.5,-0.5,0.0,0.5,1.5,2.5,3.5,4.5].forEach(threshold=>{
     const ah=calcAHCover(mat,threshold);
     const absT=Math.abs(threshold);
     const fmt=absT%1===0?absT.toFixed(1):absT.toFixed(2);
@@ -1609,7 +1601,7 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
   html+='</div></div>';
   html+='<div class="panel-bd">';
 
-  html+='<div class="ds-bar">◆ '+xgResult.dataSource+(useDC?' · DC ON (ρ='+dispRho+')':' · DC OFF')+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG · '+xgResult.compType+(bkAnalysis?' · 🏦 BK ODDS':'')+'</div>';
+  html+='<div class="ds-bar">◆ '+xgResult.dataSource+(useDC?' · DC ON (ρ='+dispRho+')':' · DC OFF')+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG · '+xgResult.compType+(xgResult.hasWDL?' · WDL ON':'')+(bkAnalysis?' · 🏦 BK ODDS':'')+'</div>';
 
   html+='<div class="tabs" id="resTabs">';
   html+='<button class="tab-btn active" data-tab="tab-probs">📈 Probs</button>';
@@ -1637,7 +1629,7 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
   html+='<div class="tab-content" id="tab-kelly">'+renderKellyTab(mat,prbs,btts)+'</div>';
   if(bkAnalysis) html+='<div class="tab-content" id="tab-bk">'+renderBkTab(bkAnalysis,prbs,btts,mat,xgResult)+'</div>';
 
-  html+='<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. Attack/Defence strength model: λ₁ = Home_Attack × Away_Defence × league_avg × comp_mod · λ₂ = Away_Attack × Home_Defence × league_avg × comp_mod. Fixed external league reference (1.35 avg) for strength calculation. Context-aware home advantage (+'+xgResult.homeAdv.toFixed(2)+' xG for '+xgResult.compType+'). Last 6 GF/GA stats blended at 35–45% recency weight (venue 35–40%, combined 15–20%, last6 45–55%). Unified Tips ranked by model agreement (Poisson ↔ Monte Carlo convergence × data quality'+(bkAnalysis?' × bookmaker edge':'')+'). Monte Carlo: 12,000 iterations (log-uniform sampler — unbiased at all lambda). Skellam distribution for goal difference. Quarter-ball AH lines supported.'+(bkAnalysis?' Bookmaker vig removed via proportional scaling; model-bk blend weighted 60–75% model per data quality.':'')+'</div>';
+  html+='<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. Fixed external league reference (1.35 avg) for attack/defense strength calculation. Context-aware home advantage (+'+xgResult.homeAdv.toFixed(2)+' xG for '+xgResult.compType+'). Recency-weighted form (oldest→newest, W=3pts D=1pt — draw penalised for stagnation; range ±18%)'+(xgResult.hasWDL?'. WDL integrated as xG modifier (venue-split weighted 30/15/55 over all/last6; capped ±20%; centered on league-average PPG)':'')+'. Last 6 GF/GA and WDL stats blended at 35–45% recency weight (venue 35–40%, combined 15–20%, last6 45–55%). Unified Tips ranked by model agreement (Poisson ↔ Monte Carlo convergence × data quality'+(bkAnalysis?' × bookmaker edge':'')+'). Monte Carlo: 12,000 iterations (log-uniform sampler — unbiased at all lambda). Skellam distribution for goal difference. Quarter-ball AH lines supported.'+(bkAnalysis?' Bookmaker vig removed via proportional scaling; model-bk blend weighted 60–75% model per data quality.':'')+'</div>';
   html+='</div></div>';
 
   const rd=$('results');
@@ -1684,7 +1676,7 @@ window.runAnalysis=function(){
     const mat=buildMatrix(xgResult.homeXG,xgResult.awayXG,useDC);
     const prbs=calc1x2(mat),btts=calcBTTS(mat);
     const scores=getTopScores(mat,8);
-    const ouData=[0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.5,6.5,7.5,8.5].map(line=>{const ou=calcOU(mat,line);return{line,over:ou.over,under:ou.under};});
+    const ouData=[0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5].map(line=>{const ou=calcOU(mat,line);return{line,over:ou.over,under:ou.under};});
     const skellam=computeSkellam(xgResult.homeXG,xgResult.awayXG);
     const homeCI=computeCI(xgResult.homeXG,xgResult.ciWidth),awayCI=computeCI(xgResult.awayXG,xgResult.ciWidth);
     const fairValue=computeFairValue(prbs,btts,xgResult.dataQualityScore,totalXG);
@@ -1735,7 +1727,7 @@ window.runAnalysis=function(){
 window.clearAll=function(){
   ['homeTeam','awayTeam',
    'homeGF','homeGA','awayGF','awayGA','homeGFAll','homeGAAll','awayGFAll','awayGAAll',
-   'homeForm','awayForm',
+   'homeForm','awayForm','compType',
    'homeW','homeD','homeL','awayW','awayD','awayL',
    'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll',
    'homeGFL6','homeGAL6','awayGFL6','awayGAL6',

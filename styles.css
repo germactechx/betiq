@@ -786,6 +786,9 @@ input[type=text]::placeholder { color: var(--muted); opacity: 0.5; }
 
 .metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
 
+/* 4-card strength row: 4-col desktop → 2×2 tablet → 2-col mobile */
+.metric-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+
 /* ==================== STATS TABLES ==================== */
 .stats-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .stats-table th {
@@ -1538,6 +1541,7 @@ footer {
   .g4         { grid-template-columns: repeat(2, 1fr); }
   .metric-grid{ grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .metric-row { grid-template-columns: repeat(2, 1fr); }
+  .metric-row-4 { grid-template-columns: repeat(2, 1fr); }
 
   /* Keep odds grid at 3 columns for space efficiency */
   .grid3-odds { grid-template-columns: 1fr 1fr 1fr !important; gap: 7px !important; }
@@ -1630,6 +1634,7 @@ footer {
   .grid3-odds .field label  { font-size: 8px; }
 
   .metric-grid { grid-template-columns: repeat(2, 1fr); gap: 7px; }
+  .metric-row-4 { grid-template-columns: repeat(2, 1fr); }
   .field input, .field select { height: 38px; font-size: 12px; }
   .metric .mval { font-size: 18px; }
 
