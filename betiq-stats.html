@@ -6,6 +6,7 @@
 <title>BetIQ - Stats Based Football Predictor</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 /* ── Bookmaker Odds Panel ─────────────────────────────── */
 .bk-section{border:1px solid var(--border2);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;background:var(--surface2);}
@@ -59,6 +60,50 @@
           <div class="g2" style="margin-bottom:14px">
             <div class="field"><label>Home Team</label><input id="homeTeam" type="text" placeholder="e.g. Arsenal"></div>
             <div class="field"><label>Away Team</label><input id="awayTeam" type="text" placeholder="e.g. Chelsea"></div>
+          </div>
+
+          <!-- API AUTO-FILL -->
+          <div class="sec" style="border-color:rgba(167,139,250,.15);background:rgba(167,139,250,.03);margin-bottom:14px;padding:12px 14px">
+            <div class="slabel" style="margin-bottom:8px">Auto-Fill from API <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(free tier seasons 2022–2024 — uses API-Football via RapidAPI)</span></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+              <div class="field" style="flex:2;min-width:180px">
+                <label>RapidAPI Key</label>
+                <input id="apiKey" type="password" placeholder="Paste your API-Football key">
+              </div>
+              <div class="field" style="flex:1;min-width:120px">
+                <label>League</label>
+                <select id="apiLeague">
+                  <option value="auto">Auto-detect</option>
+                  <option value="39">Premier League</option>
+                  <option value="140">La Liga</option>
+                  <option value="78">Bundesliga</option>
+                  <option value="135">Serie A</option>
+                  <option value="61">Ligue 1</option>
+                  <option value="88">Eredivisie</option>
+                  <option value="94">Primeira Liga</option>
+                  <option value="40">Championship</option>
+                  <option value="203">Süper Lig</option>
+                  <option value="71">Brasileirão</option>
+                </select>
+              </div>
+              <div class="field" style="flex:0.5;min-width:70px">
+                <label>Season</label>
+                <input id="apiSeason" type="number" placeholder="2024" value="2024">
+              </div>
+              <button class="btn btn-primary" onclick="autoFillData()" style="height:40px;flex-shrink:0;padding:0 14px">🔍 Fetch &amp; Fill</button>
+            </div>
+            <div id="apiStatus" style="font-size:10px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace"></div>
+          </div>
+
+          <!-- EXCEL IMPORT -->
+          <div class="sec" style="border-color:rgba(0,212,255,.15);background:rgba(0,212,255,.03);margin-bottom:14px;padding:12px 14px">
+            <div class="slabel" style="margin-bottom:8px">📥 Import from Excel <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(.xlsx or .csv — one match per row)</span></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" style="font-size:12px;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:6px 10px;flex:1;min-width:160px">
+              <button class="btn btn-primary" onclick="importFromExcel()" style="height:36px;flex-shrink:0;padding:0 14px;font-size:11px">📤 Import &amp; Fill</button>
+              <button class="btn btn-secondary btn-outline" onclick="downloadExcelTemplate()" style="height:36px;flex-shrink:0;padding:0 14px;font-size:11px">📄 Template</button>
+            </div>
+            <div id="excelStatus" style="font-size:10px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace"></div>
           </div>
 
           <!-- CORE STATS -->
@@ -146,6 +191,103 @@
                 <div class="field"><label>D</label><input id="awayDL6" type="number" min="0" placeholder="3"></div>
                 <div class="field"><label>L</label><input id="awayLL6" type="number" min="0" placeholder="1"></div>
               </div>
+            </div>
+          </div>
+
+          <!-- HALF TIME STATS (optional) -->
+          <div class="bk-section" id="htSection">
+            <div class="bk-header" onclick="toggleHtStats()" id="htToggleBtn">
+              <span class="bk-icon">⏱️</span>
+              <span class="bk-title">Half Time Stats <span class="bk-badge">Optional — enables HT/FT predictions</span></span>
+              <span class="bk-chevron" id="htChevron">▼</span>
+            </div>
+            <div class="bk-body" id="htBody" style="display:none">
+              <div class="bk-note">Enter your teams' first-half (Half Time) statistics here. When filled, the model generates dedicated Half Time predictions plus HT/FT outcome probabilities alongside your Full Time analysis.</div>
+
+              <div class="slabel">HT All Matches Combined <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional)</span></div>
+              <div class="g4" style="margin-bottom:14px">
+                <div class="field"><label>Home GF All</label><input id="homeHTGFAll" type="number" step="0.01" placeholder="0.65"></div>
+                <div class="field"><label>Home GA All</label><input id="homeHTGAAll" type="number" step="0.01" placeholder="0.50"></div>
+                <div class="field"><label>Away GF All</label><input id="awayHTGFAll" type="number" step="0.01" placeholder="0.55"></div>
+                <div class="field"><label>Away GA All</label><input id="awayHTGAAll" type="number" step="0.01" placeholder="0.60"></div>
+              </div>
+
+              <div class="slabel">HT Home / Away Venue Stats</div>
+              <div class="g4" style="margin-bottom:16px">
+                <div class="field"><label>Home GF</label><input id="homeHTGF" type="number" step="0.01" placeholder="0.75"></div>
+                <div class="field"><label>Home GA</label><input id="homeHTGA" type="number" step="0.01" placeholder="0.45"></div>
+                <div class="field"><label>Away GF</label><input id="awayHTGF" type="number" step="0.01" placeholder="0.60"></div>
+                <div class="field"><label>Away GA</label><input id="awayHTGA" type="number" step="0.01" placeholder="0.55"></div>
+              </div>
+
+              <div class="slabel">HT Home / Away Last 6 Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — recent form boost)</span></div>
+              <div class="g4" style="margin-bottom:16px">
+                <div class="field"><label>Home GF (L6)</label><input id="homeHTGFL6" type="number" step="0.01" placeholder="0.80"></div>
+                <div class="field"><label>Home GA (L6)</label><input id="homeHTGAL6" type="number" step="0.01" placeholder="0.40"></div>
+                <div class="field"><label>Away GF (L6)</label><input id="awayHTGFL6" type="number" step="0.01" placeholder="0.65"></div>
+                <div class="field"><label>Away GA (L6)</label><input id="awayHTGAL6" type="number" step="0.01" placeholder="0.50"></div>
+              </div>
+
+              <div class="slabel">HT Home / Away 1x2 All Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional)</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Home HT Stats</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                    <div class="field"><label>W</label><input id="homeHTWAll" type="number" min="0" placeholder="8"></div>
+                    <div class="field"><label>D</label><input id="homeHTDAll" type="number" min="0" placeholder="9"></div>
+                    <div class="field"><label>L</label><input id="homeHTLAll" type="number" min="0" placeholder="5"></div>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Away HT Stats</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                    <div class="field"><label>W</label><input id="awayHTWAll" type="number" min="0" placeholder="6"></div>
+                    <div class="field"><label>D</label><input id="awayHTDAll" type="number" min="0" placeholder="10"></div>
+                    <div class="field"><label>L</label><input id="awayHTLAll" type="number" min="0" placeholder="6"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="slabel">HT Home / Away 1x2 Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional)</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Home HT Stats</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                    <div class="field"><label>W</label><input id="homeHTW" type="number" min="0" placeholder="4"></div>
+                    <div class="field"><label>D</label><input id="homeHTD" type="number" min="0" placeholder="3"></div>
+                    <div class="field"><label>L</label><input id="homeHTL" type="number" min="0" placeholder="3"></div>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Away HT Stats</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                    <div class="field"><label>W</label><input id="awayHTW" type="number" min="0" placeholder="3"></div>
+                    <div class="field"><label>D</label><input id="awayHTD" type="number" min="0" placeholder="3"></div>
+                    <div class="field"><label>L</label><input id="awayHTL" type="number" min="0" placeholder="4"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="slabel">HT Home / Away 1x2 Last 6 Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — recent form boost)</span></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Home HT Last 6</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                    <div class="field"><label>W</label><input id="homeHTWL6" type="number" min="0" placeholder="3"></div>
+                    <div class="field"><label>D</label><input id="homeHTDL6" type="number" min="0" placeholder="2"></div>
+                    <div class="field"><label>L</label><input id="homeHTLL6" type="number" min="0" placeholder="1"></div>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Away HT Last 6</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                    <div class="field"><label>W</label><input id="awayHTWL6" type="number" min="0" placeholder="2"></div>
+                    <div class="field"><label>D</label><input id="awayHTDL6" type="number" min="0" placeholder="2"></div>
+                    <div class="field"><label>L</label><input id="awayHTLL6" type="number" min="0" placeholder="2"></div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -259,6 +401,13 @@ const MAX = 15;
 // ══════════════════════════════════════════════════════════════
 window.toggleBkOdds = function(){
   const body = $('bkBody'), chev = $('bkChevron');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  chev.classList.toggle('open', !isOpen);
+};
+
+window.toggleHtStats = function(){
+  const body = $('htBody'), chev = $('htChevron');
   const isOpen = body.style.display !== 'none';
   body.style.display = isOpen ? 'none' : 'block';
   chev.classList.toggle('open', !isOpen);
@@ -543,6 +692,27 @@ window.reloadEntry=function(idx){
   set('bkHome',inp.bkHome||'');set('bkDraw',inp.bkDraw||'');set('bkAway',inp.bkAway||'');
   set('bkOULine',inp.bkOULine||'');set('bkOver',inp.bkOver||'');set('bkUnder',inp.bkUnder||'');
   set('bkAHLine',inp.bkAHLine||'');set('bkAHHome',inp.bkAHHome||'');set('bkAHAway',inp.bkAHAway||'');
+  // Restore Half Time inputs
+  set('homeHTGF',inp.homeHTGF||'');set('homeHTGA',inp.homeHTGA||'');
+  set('awayHTGF',inp.awayHTGF||'');set('awayHTGA',inp.awayHTGA||'');
+  set('homeHTGFAll',inp.homeHTGFAll||'');set('homeHTGAAll',inp.homeHTGAAll||'');
+  set('awayHTGFAll',inp.awayHTGFAll||'');set('awayHTGAAll',inp.awayHTGAAll||'');
+  set('homeHTGFL6',inp.homeHTGFL6||'');set('homeHTGAL6',inp.homeHTGAL6||'');
+  set('awayHTGFL6',inp.awayHTGFL6||'');set('awayHTGAL6',inp.awayHTGAL6||'');
+  set('homeHTW',inp.homeHTW||'');set('homeHTD',inp.homeHTD||'');set('homeHTL',inp.homeHTL||'');
+  set('awayHTW',inp.awayHTW||'');set('awayHTD',inp.awayHTD||'');set('awayHTL',inp.awayHTL||'');
+  set('homeHTWAll',inp.homeHTWAll||'');set('homeHTDAll',inp.homeHTDAll||'');set('homeHTLAll',inp.homeHTLAll||'');
+  set('awayHTWAll',inp.awayHTWAll||'');set('awayHTDAll',inp.awayHTDAll||'');set('awayHTLAll',inp.awayHTLAll||'');
+  set('homeHTWL6',inp.homeHTWL6||'');set('homeHTDL6',inp.homeHTDL6||'');set('homeHTLL6',inp.homeHTLL6||'');
+  set('awayHTWL6',inp.awayHTWL6||'');set('awayHTDL6',inp.awayHTDL6||'');set('awayHTLL6',inp.awayHTLL6||'');
+  // Open HT panel if any HT value was restored
+  const hasSavedHt=['homeHTGF','awayHTGF','homeHTGFAll','awayHTGFAll',
+    'homeHTGFL6','awayHTGFL6','homeHTW','awayHTW','homeHTWAll','awayHTWAll',
+    'homeHTWL6','awayHTWL6'].some(k=>inp[k]);
+  if(hasSavedHt){
+    const htBody=$('htBody'),htChev=$('htChevron');
+    if(htBody&&htBody.style.display==='none'){htBody.style.display='block';if(htChev)htChev.classList.add('open');}
+  }
   // Open bk panel if any bk value was restored
   const hasSavedBk=['bkHome','bkDraw','bkAway','bkOver','bkUnder','bkAHHome','bkAHAway'].some(k=>inp[k]);
   if(hasSavedBk){
@@ -999,6 +1169,101 @@ function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awa
     homeWDLCombined,awayWDLCombined,homeWDLStr,awayWDLStr,
     homeWDLAllStr,awayWDLAllStr,homeWDL6Str,awayWDL6Str,hasWDL
   };
+}
+
+// ── Half Time XG Computation ────────────────────────────────
+function computeHTXG(){
+  const homeGF=getNum('homeHTGF'),homeGA=getNum('homeHTGA'),
+        awayGF=getNum('awayHTGF'),awayGA=getNum('awayHTGA');
+  const homeGFAll=getNum('homeHTGFAll'),homeGAAll=getNum('homeHTGAAll'),
+        awayGFAll=getNum('awayHTGFAll'),awayGAAll=getNum('awayHTGAAll');
+  const homeGFL6=getNum('homeHTGFL6'),homeGAL6=getNum('homeHTGAL6'),
+        awayGFL6=getNum('awayHTGFL6'),awayGAL6=getNum('awayHTGAL6');
+  let hasAny=false;
+  [homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awayGAAll,
+   homeGFL6,homeGAL6,awayGFL6,awayGAL6].forEach(v=>{if(hv(v))hasAny=true;});
+  if(!hasAny) return null;
+  let splitCount=0,combinedCount=0;
+  if(hv(homeGF))splitCount++;if(hv(homeGA))splitCount++;
+  if(hv(awayGF))splitCount++;if(hv(awayGA))splitCount++;
+  if(hv(homeGFAll))combinedCount++;if(hv(homeGAAll))combinedCount++;
+  if(hv(awayGFAll))combinedCount++;if(hv(awayGAAll))combinedCount++;
+  const hasSplit=splitCount>=2,hasCombined=combinedCount>=2;
+  const compTypeVal=getStr('compType')||'league';
+  const homeAdv=getHomeAdv(compTypeVal)*0.33;
+  const leagueBase=0.48;
+  const hasL6=hv(homeGFL6)||hv(homeGAL6)||hv(awayGFL6)||hv(awayGAL6);
+  let homeXG,awayXG,dataSource,confidence,dataQualityScore=0,ciWidth=0;
+  if(hasSplit&&hasCombined){
+    const hGF=hv(homeGF)?homeGF:homeGFAll*0.9,hGA=hv(homeGA)?homeGA:homeGAAll*1.05;
+    const aGF=hv(awayGF)?awayGF:awayGFAll*0.85,aGA=hv(awayGA)?awayGA:awayGFAll*1.15;
+    const hxS=leagueBase*(hGF/leagueBase)*(aGA/leagueBase)+homeAdv;
+    const axS=leagueBase*(aGF/leagueBase)*(hGA/leagueBase);
+    const hxC=((homeGFAll+awayGAAll)/2)*1.08,axC=(awayGFAll+homeGAAll)/2;
+    if(hasL6){
+      const hxL6=leagueBase*(homeGFL6/leagueBase)*(awayGAL6/leagueBase)+homeAdv;
+      const axL6=leagueBase*(awayGFL6/leagueBase)*(homeGAL6/leagueBase);
+      homeXG=hxS*0.35+hxC*0.20+hxL6*0.45;
+      awayXG=axS*0.35+axC*0.20+axL6*0.45;
+      dataSource='HT Split+Combined+L6';
+    }else{homeXG=hxS*0.6+hxC*0.4;awayXG=axS*0.6+axC*0.4;dataSource='HT Split+Combined';}
+    confidence=splitCount===4&&combinedCount===4?'HIGH':'MEDIUM';
+    dataQualityScore=Math.max(20,Math.min(100,Math.round(((splitCount+combinedCount)/8)*70+20)));
+  }else if(hasSplit){
+    const hGF=hv(homeGF)?homeGF:leagueBase,hGA=hv(homeGA)?homeGA:leagueBase;
+    const aGF=hv(awayGF)?awayGF:leagueBase,aGA=hv(awayGA)?awayGA:leagueBase;
+    const hxS=leagueBase*(hGF/leagueBase)*(aGA/leagueBase)+homeAdv;
+    const axS=leagueBase*(aGF/leagueBase)*(hGA/leagueBase);
+    if(hasL6){
+      const hxL6=leagueBase*(homeGFL6/leagueBase)*(awayGAL6/leagueBase)+homeAdv;
+      const axL6=leagueBase*(awayGFL6/leagueBase)*(homeGAL6/leagueBase);
+      homeXG=hxS*0.55+hxL6*0.45;awayXG=axS*0.55+axL6*0.45;
+      dataSource=splitCount===4?'HT Split+L6':'HT Split+L6 partial';
+    }else{homeXG=hxS;awayXG=axS;dataSource=splitCount===4?'HT Split':'HT Split partial';}
+    confidence=splitCount===4?'HIGH':'MEDIUM';
+    dataQualityScore=Math.max(20,Math.min(100,Math.round((splitCount/8)*70)));
+  }else if(hasCombined){
+    const hxC=((homeGFAll||leagueBase)+(awayGAAll||leagueBase))/2+homeAdv;
+    const axC=((awayGFAll||leagueBase)+(homeGAAll||leagueBase))/2;
+    if(hasL6){
+      const hxL6=leagueBase*((homeGFL6||leagueBase)/leagueBase)*((awayGAL6||leagueBase)/leagueBase)+homeAdv;
+      const axL6=leagueBase*((awayGFL6||leagueBase)/leagueBase)*((homeGAL6||leagueBase)/leagueBase);
+      homeXG=hxC*0.40+hxL6*0.60;awayXG=axC*0.40+axL6*0.60;
+      dataSource='HT Combined+L6';
+    }else{homeXG=hxC;awayXG=axC;dataSource='HT Combined';}
+    confidence=combinedCount===4?'HIGH':'LOW';
+    dataQualityScore=Math.max(20,Math.min(100,Math.round((combinedCount/8)*70)));
+  }else if(hasL6){
+    homeXG=leagueBase*((homeGFL6||leagueBase)/leagueBase)*((awayGAL6||leagueBase)/leagueBase)+homeAdv;
+    awayXG=leagueBase*((awayGFL6||leagueBase)/leagueBase)*((homeGAL6||leagueBase)/leagueBase);
+    dataSource='HT Last 6';confidence='LOW';dataQualityScore=20;
+  }else return null;
+  homeXG=Math.max(0.05,Math.min(4,homeXG));
+  awayXG=Math.max(0.05,Math.min(4,awayXG));
+  const fieldsFilled=splitCount+combinedCount;
+  ciWidth=fieldsFilled>=8?0.08:fieldsFilled>=6?0.15:fieldsFilled>=4?0.25:0.40;
+  return{homeXG:+homeXG.toFixed(2),awayXG:+awayXG.toFixed(2),
+    dataSource,confidence,dataQualityScore,ciWidth,compType:compTypeVal,homeAdv};
+}
+
+// ── HT/FT Joint Probability ──────────────────────────────
+function computeHTFTJoint(htPrbs,ftPrbs){
+  const corr=0.35;
+  const condGivenHt=[
+    {h:ftPrbs.h+corr*ftPrbs.a,d:ftPrbs.d*(1-corr*0.3),a:ftPrbs.a*(1-corr)},
+    {h:ftPrbs.h*(1-corr*0.4),d:ftPrbs.d+corr*0.25,a:ftPrbs.a*(1-corr*0.4)},
+    {h:ftPrbs.h*(1-corr),d:ftPrbs.d*(1-corr*0.3),a:ftPrbs.a+corr*ftPrbs.h}
+  ];
+  condGivenHt.forEach(r=>{const s=r.h+r.d+r.a;r.h/=s;r.d/=s;r.a/=s;});
+  const outcomes=['H','D','A'];
+  const result={};
+  for(let i=0;i<3;i++){
+    for(let j=0;j<3;j++){
+      const key=outcomes[i]+'/'+outcomes[j];
+      result[key]=htPrbs[outcomes[i].toLowerCase()]*condGivenHt[i][outcomes[j].toLowerCase()];
+    }
+  }
+  return result;
 }
 
 // ── Monte Carlo (12,000 iterations) ───────────────────────────
@@ -1589,7 +1854,50 @@ window.runUnifiedTips=function(){
 // ══════════════════════════════════════════════════════════════
 //  MAIN RENDER
 // ══════════════════════════════════════════════════════════════
-function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayCI,fairValue,useDC,sim,bkAnalysis){
+function renderHTTab(htResult, ftPrbs){
+  const htXg=htResult.xg, htPrbs=htResult.prbs;
+  const joint=htResult.htftJoint;
+  let html='';
+  html+='<div class="status-ok" style="margin-bottom:14px">⏱️ Half Time model active — HT predictions derived from first-half statistics. HT/FT matrix combines HT model with FT probabilities via empirical correlation (ρ=0.35).</div>';
+  html+='<div class="card"><div class="card-title">⏱️ Half Time Probabilities</div>';
+  html+='<div class="metric-row">';
+  html+='<div class="metric"><div class="ml">HT Home Win</div><div class="mv" style="color:var(--green)">'+fp(htPrbs.h)+'</div><div class="ms">Fair: '+fo(htPrbs.h)+'</div></div>';
+  html+='<div class="metric"><div class="ml">HT Draw</div><div class="mv" style="color:var(--amber)">'+fp(htPrbs.d)+'</div><div class="ms">Fair: '+fo(htPrbs.d)+'</div></div>';
+  html+='<div class="metric"><div class="ml">HT Away Win</div><div class="mv" style="color:var(--over)">'+fp(htPrbs.a)+'</div><div class="ms">Fair: '+fo(htPrbs.a)+'</div></div>';
+  html+='</div>';
+  html+='<div class="metric-row" style="margin-top:8px">';
+  html+='<div class="metric"><div class="ml">HT Home xG</div><div class="mv" style="color:var(--cyan);font-size:18px">'+htXg.homeXG.toFixed(2)+'</div><div class="ms">'+htResult.xg.dataSource+'</div></div>';
+  html+='<div class="metric"><div class="ml">HT Away xG</div><div class="mv" style="color:var(--cyan);font-size:18px">'+htXg.awayXG.toFixed(2)+'</div><div class="ms">DQ: '+htResult.xg.dataQualityScore+'%</div></div>';
+  html+='<div class="metric"><div class="ml">HT DC 1X</div><div class="mv" style="color:var(--green);font-size:18px">'+fp(htPrbs.h+htPrbs.d)+'</div><div class="ms">DC X2: '+fp(htPrbs.d+htPrbs.a)+'</div></div>';
+  html+='</div></div>';
+
+  html+='<div class="card"><div class="card-title">🔄 HT / FT Outcome Matrix</div>';
+  html+='<div style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.6">Joint probabilities for each half-time / full-time combination. E.g. <strong>H/H</strong> = Home leads at HT <em>and</em> wins at FT. The matrix accounts for the empirical correlation between HT and FT results.</div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:400px">';
+  html+='<thead><tr><th style="text-align:left">HT → FT</th><th>FT Home (H)</th><th>FT Draw (D)</th><th>FT Away (A)</th><th>HT Total</th></tr></thead><tbody>';
+  const htRows=['H','D','A'], ftCols=['H','D','A'];
+  const htLabels={H:'Home',D:'Draw',A:'Away'};
+  for(let i=0;i<3;i++){
+    const htKey=htRows[i];
+    let htTotal=0;for(let j=0;j<3;j++) htTotal+=joint[htKey+'/'+ftCols[j]];
+    html+='<tr>';
+    html+='<td style="text-align:left;font-weight:700"><span style="color:'+(i===0?'var(--green)':i===1?'var(--amber)':'var(--red)')+'">HT '+htLabels[htKey]+'</span></td>';
+    for(let j=0;j<3;j++){
+      const key=htKey+'/'+ftCols[j];
+      const val=joint[key]||0;
+      const color=key==='H/H'||key==='D/D'||key==='A/A'?'var(--green)':'var(--muted2)';
+      html+='<td style="font-weight:'+(key==='H/H'||key==='D/D'||key==='A/A'?'700':'400')+';color:'+color+'">'+fp(val)+' <span style="font-size:9px;color:var(--muted)">'+fo(val)+'</span></td>';
+    }
+    html+='<td style="font-weight:700;color:var(--cyan)">'+fp(htTotal)+'</td>';
+    html+='</tr>';
+  }
+  html+='</tbody></table></div></div>';
+
+  html+='<div class="note"><strong>HT/FT Interpretation:</strong> Diagonal cells (H/H, D/D, A/A) represent the HT leader <em>maintaining</em> to FT. Off-diagonal cells represent <em>swings</em> — e.g. D/H = HT draw but Home wins FT. High diagonal probabilities indicate leader stability; high off-diagonals suggest volatile matches with potential comebacks.</div>';
+  return html;
+}
+
+function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayCI,fairValue,useDC,sim,bkAnalysis,htResult){
   const xg=xgResult.homeXG,awayXG=xgResult.awayXG;
   const totalXG=+(xg+awayXG).toFixed(2),goalDiff=+(xg-awayXG).toFixed(2);
   const conf=confLevel(xgResult.confidence);
@@ -1601,19 +1909,21 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
 
   const confBadge='<div style="font-size:9px;font-weight:700;padding:4px 9px;border-radius:4px;font-family:\'JetBrains Mono\',monospace;background:'+conf.bg+';color:'+conf.color+';border:1px solid '+conf.border+'">⬡ '+conf.label+' CONFIDENCE</div>';
   const bkBadge=bkAnalysis?'<div style="font-size:9px;font-weight:700;padding:4px 9px;border-radius:4px;font-family:\'JetBrains Mono\',monospace;background:rgba(167,139,250,.12);color:var(--purple);border:1px solid rgba(167,139,250,.3)">🏦 BK ODDS ACTIVE</div>':'';
+  const htBadge=htResult?'<div style="font-size:9px;font-weight:700;padding:4px 9px;border-radius:4px;font-family:\'JetBrains Mono\',monospace;background:rgba(245,200,66,.12);color:var(--amber);border:1px solid rgba(245,200,66,.3)">⏱️ HT DATA ACTIVE</div>':'';
 
   let html='<div class="panel anim">';
   html+='<div class="panel-hd"><div class="panel-title">📊 Prediction Results</div>';
-  html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+confBadge+bkBadge;
+  html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+confBadge+bkBadge+htBadge;
   html+='<button onclick="copyResults()" style="font-size:11px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:4px;cursor:pointer;font-family:\'Inter\',sans-serif;font-weight:600">📋 Copy</button>';
   html+='</div></div>';
   html+='<div class="panel-bd">';
 
-  html+='<div class="ds-bar">◆ '+xgResult.dataSource+(useDC?' · DC ON (ρ='+dispRho+')':' · DC OFF')+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG · '+xgResult.compType+(bkAnalysis?' · 🏦 BK ODDS':'')+'</div>';
+  html+='<div class="ds-bar">◆ '+xgResult.dataSource+(useDC?' · DC ON (ρ='+dispRho+')':' · DC OFF')+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG · '+xgResult.compType+(bkAnalysis?' · 🏦 BK ODDS':'')+(htResult?' · ⏱️ HT':'')+'</div>';
 
   html+='<div class="tabs" id="resTabs">';
   html+='<button class="tab-btn active" data-tab="tab-probs">📈 Probs</button>';
   html+='<button class="tab-btn" data-tab="tab-unified">🎯 Unified Tips</button>';
+  html+='<button class="tab-btn" data-tab="tab-ht">⏱️ HT/FT</button>';
   html+='<button class="tab-btn" data-tab="tab-ou">📊 O/U</button>';
   html+='<button class="tab-btn" data-tab="tab-ah">⚖️ AH</button>';
   html+='<button class="tab-btn" data-tab="tab-sim">🎲 Simulation</button>';
@@ -1631,13 +1941,16 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
     '<button onclick="runUnifiedTips()" style="font-size:12px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:8px 18px;border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-weight:700">▶ Run Unified Analysis</button>'+
     '</div></div></div>';
 
+  if(htResult) html+='<div class="tab-content" id="tab-ht">'+renderHTTab(htResult,prbs)+'</div>';
+  else html+='<div class="tab-content" id="tab-ht"><div style="padding:24px;color:var(--muted);text-align:center">⏱️ Enter Half Time statistics in the input panel above and re-run to enable HT/FT predictions.</div></div>';
+
   html+='<div class="tab-content" id="tab-ou">'+renderOUTab(ouData,mat,bkAnalysis)+'</div>';
   html+='<div class="tab-content" id="tab-ah">'+renderAHTab(mat,bkAnalysis)+'</div>';
   html+='<div class="tab-content" id="tab-sim">'+renderSimTab(sim,prbs,btts,totalXG,mat)+'</div>';
   html+='<div class="tab-content" id="tab-kelly">'+renderKellyTab(mat,prbs,btts)+'</div>';
   if(bkAnalysis) html+='<div class="tab-content" id="tab-bk">'+renderBkTab(bkAnalysis,prbs,btts,mat,xgResult)+'</div>';
 
-  html+='<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. Attack/Defence strength model: λ₁ = Home_Attack × Away_Defence × league_avg × comp_mod · λ₂ = Away_Attack × Home_Defence × league_avg × comp_mod. Fixed external league reference (1.35 avg) for strength calculation. Context-aware home advantage (+'+xgResult.homeAdv.toFixed(2)+' xG for '+xgResult.compType+'). Last 6 GF/GA stats blended at 35–45% recency weight (venue 35–40%, combined 15–20%, last6 45–55%). Unified Tips ranked by model agreement (Poisson ↔ Monte Carlo convergence × data quality'+(bkAnalysis?' × bookmaker edge':'')+'). Monte Carlo: 12,000 iterations (log-uniform sampler — unbiased at all lambda). Skellam distribution for goal difference. Quarter-ball AH lines supported.'+(bkAnalysis?' Bookmaker vig removed via proportional scaling; model-bk blend weighted 60–75% model per data quality.':'')+'</div>';
+  html+='<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. Attack/Defence strength model: λ₁ = Home_Attack × Away_Defence × league_avg × comp_mod · λ₂ = Away_Attack × Home_Defence × league_avg × comp_mod. Fixed external league reference (1.35 avg) for strength calculation. Context-aware home advantage (+'+xgResult.homeAdv.toFixed(2)+' xG for '+xgResult.compType+'). Last 6 GF/GA stats blended at 35–45% recency weight (venue 35–40%, combined 15–20%, last6 45–55%). Unified Tips ranked by model agreement (Poisson ↔ Monte Carlo convergence × data quality'+(bkAnalysis?' × bookmaker edge':'')+'). Monte Carlo: 12,000 iterations (log-uniform sampler — unbiased at all lambda). Skellam distribution for goal difference. Quarter-ball AH lines supported.'+(bkAnalysis?' Bookmaker vig removed via proportional scaling; model-bk blend weighted 60–75% model per data quality.':'')+(htResult?' ⏱️ HT model uses dedicated first-half stats with league base 0.48 avg goals. HT/FT joint probabilities computed via empirical correlation (ρ=0.35) between HT and FT outcomes.':'')+'</div>';
   html+='</div></div>';
 
   const rd=$('results');
@@ -1695,7 +2008,19 @@ window.runAnalysis=function(){
     const bkAnalysis = bkOdds ? analyzeBkOdds(bkOdds, prbs, btts, mat, xgResult.dataQualityScore) : null;
     window._lastBkAnalysis = bkAnalysis;
 
-    renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayCI,fairValue,useDC,sim,bkAnalysis);
+    // ── Half Time integration ───────────────────────────────────
+    let htResult = null;
+    const htXg = computeHTXG();
+    if(htXg){
+      const htTotalXG=htXg.homeXG+htXg.awayXG;
+      const useHtDC=htTotalXG<1.4;
+      const htMat=buildMatrix(htXg.homeXG,htXg.awayXG,useHtDC);
+      const htPrbs=calc1x2(htMat);
+      const htftJoint=computeHTFTJoint(htPrbs,prbs);
+      htResult={xg:htXg,mat:htMat,prbs:htPrbs,htftJoint:htftJoint};
+    }
+
+    renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayCI,fairValue,useDC,sim,bkAnalysis,htResult);
 
     const homeTeam=getStr('homeTeam')||'Home';
     const awayTeam=getStr('awayTeam')||'Away';
@@ -1721,7 +2046,20 @@ window.runAnalysis=function(){
         // bookmaker odds
         bkHome:$('bkHome')?.value||'',bkDraw:$('bkDraw')?.value||'',bkAway:$('bkAway')?.value||'',
         bkOULine:$('bkOULine')?.value||'',bkOver:$('bkOver')?.value||'',bkUnder:$('bkUnder')?.value||'',
-        bkAHLine:$('bkAHLine')?.value||'',bkAHHome:$('bkAHHome')?.value||'',bkAHAway:$('bkAHAway')?.value||''
+        bkAHLine:$('bkAHLine')?.value||'',bkAHHome:$('bkAHHome')?.value||'',bkAHAway:$('bkAHAway')?.value||'',
+        // half time inputs
+        homeHTGF:$('homeHTGF')?.value||'',homeHTGA:$('homeHTGA')?.value||'',
+        awayHTGF:$('awayHTGF')?.value||'',awayHTGA:$('awayHTGA')?.value||'',
+        homeHTGFAll:$('homeHTGFAll')?.value||'',homeHTGAAll:$('homeHTGAAll')?.value||'',
+        awayHTGFAll:$('awayHTGFAll')?.value||'',awayHTGAAll:$('awayHTGAAll')?.value||'',
+        homeHTGFL6:$('homeHTGFL6')?.value||'',homeHTGAL6:$('homeHTGAL6')?.value||'',
+        awayHTGFL6:$('awayHTGFL6')?.value||'',awayHTGAL6:$('awayHTGAL6')?.value||'',
+        homeHTW:$('homeHTW')?.value||'',homeHTD:$('homeHTD')?.value||'',homeHTL:$('homeHTL')?.value||'',
+        awayHTW:$('awayHTW')?.value||'',awayHTD:$('awayHTD')?.value||'',awayHTL:$('awayHTL')?.value||'',
+        homeHTWAll:$('homeHTWAll')?.value||'',homeHTDAll:$('homeHTDAll')?.value||'',homeHTLAll:$('homeHTLAll')?.value||'',
+        awayHTWAll:$('awayHTWAll')?.value||'',awayHTDAll:$('awayHTDAll')?.value||'',awayHTLAll:$('awayHTLAll')?.value||'',
+        homeHTWL6:$('homeHTWL6')?.value||'',homeHTDL6:$('homeHTDL6')?.value||'',homeHTLL6:$('homeHTLL6')?.value||'',
+        awayHTWL6:$('awayHTWL6')?.value||'',awayHTDL6:$('awayHTDL6')?.value||'',awayHTLL6:$('awayHTLL6')?.value||''
       },
       prbs:{h:prbs.h,d:prbs.d,a:prbs.a},
       unifiedTips:[]
@@ -1740,7 +2078,13 @@ window.clearAll=function(){
    'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll',
    'homeGFL6','homeGAL6','awayGFL6','awayGAL6',
    'homeWL6','homeDL6','homeLL6','awayWL6','awayDL6','awayLL6',
-   'bkHome','bkDraw','bkAway','bkOver','bkUnder','bkAHHome','bkAHAway','bkOULine','bkAHLine'].forEach(id=>{
+   'bkHome','bkDraw','bkAway','bkOver','bkUnder','bkAHHome','bkAHAway','bkOULine','bkAHLine',
+   'homeHTGF','homeHTGA','awayHTGF','awayHTGA',
+   'homeHTGFAll','homeHTGAAll','awayHTGFAll','awayHTGAAll',
+   'homeHTGFL6','homeHTGAL6','awayHTGFL6','awayHTGAL6',
+   'homeHTW','homeHTD','homeHTL','awayHTW','awayHTD','awayHTL',
+   'homeHTWAll','homeHTDAll','homeHTLAll','awayHTWAll','awayHTDAll','awayHTLAll',
+   'homeHTWL6','homeHTDL6','homeHTLL6','awayHTWL6','awayHTDL6','awayHTLL6'].forEach(id=>{
     const el=$(id);if(el){el.value='';el.classList.remove('err','ok');}
   });
   const dcEl=$('dcIndicator');if(dcEl)dcEl.innerHTML='<span style="color:var(--muted)">DC: auto-detect</span>';
@@ -1767,6 +2111,16 @@ window.loadExample=function(){
   $('bkHome').value='1.85';$('bkDraw').value='3.60';$('bkAway').value='4.50';
   $('bkOULine').value='2.5';$('bkOver').value='1.88';$('bkUnder').value='1.95';
   $('bkAHLine').value='-0.5';$('bkAHHome').value='1.95';$('bkAHAway').value='1.90';
+  // Example Half Time stats (Arsenal vs Chelsea)
+  $('homeHTGF').value='0.75';$('homeHTGA').value='0.40';$('awayHTGF').value='0.55';$('awayHTGA').value='0.50';
+  $('homeHTGFAll').value='0.65';$('homeHTGAAll').value='0.50';$('awayHTGFAll').value='0.55';$('awayHTGAAll').value='0.60';
+  $('homeHTGFL6').value='0.80';$('homeHTGAL6').value='0.35';$('awayHTGFL6').value='0.60';$('awayHTGAL6').value='0.45';
+  $('homeHTW').value='4';$('homeHTD').value='3';$('homeHTL').value='3';
+  $('awayHTW').value='3';$('awayHTD').value='3';$('awayHTL').value='4';
+  $('homeHTWAll').value='8';$('homeHTDAll').value='9';$('homeHTLAll').value='5';
+  $('awayHTWAll').value='6';$('awayHTDAll').value='10';$('awayHTLAll').value='6';
+  $('homeHTWL6').value='3';$('homeHTDL6').value='2';$('homeHTLL6').value='1';
+  $('awayHTWL6').value='2';$('awayHTDL6').value='2';$('awayHTLL6').value='2';
   // Open the bookmaker panel so user can see the values
   const bkBody=$('bkBody'),bkChev=$('bkChevron');
   if(bkBody&&bkBody.style.display==='none'){bkBody.style.display='block';if(bkChev)bkChev.classList.add('open');}
@@ -1775,7 +2129,13 @@ window.loadExample=function(){
    'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll',
    'homeGFL6','homeGAL6','awayGFL6','awayGAL6',
    'homeWL6','homeDL6','homeLL6','awayWL6','awayDL6','awayLL6',
-   'bkHome','bkDraw','bkAway','bkOver','bkUnder','bkOULine','bkAHLine','bkAHHome','bkAHAway'].forEach(id=>{
+   'bkHome','bkDraw','bkAway','bkOver','bkUnder','bkOULine','bkAHLine','bkAHHome','bkAHAway',
+   'homeHTGF','homeHTGA','awayHTGF','awayHTGA',
+   'homeHTGFAll','homeHTGAAll','awayHTGFAll','awayHTGAAll',
+   'homeHTGFL6','homeHTGAL6','awayHTGFL6','awayHTGAL6',
+   'homeHTW','homeHTD','homeHTL','awayHTW','awayHTD','awayHTL',
+   'homeHTWAll','homeHTDAll','homeHTLAll','awayHTWAll','awayHTDAll','awayHTLAll',
+   'homeHTWL6','homeHTDL6','homeHTLL6','awayHTWL6','awayHTDL6','awayHTLL6'].forEach(id=>{
     const el=$(id);if(el){el.classList.remove('err');el.classList.add('ok');}
   });
   window.runAnalysis();
@@ -1785,6 +2145,268 @@ window.copyResults=function(){
   const snap=window._lastSnapshot;if(!snap)return;
   const text='BetIQPro\nHome xG: '+snap.homeXG.toFixed(2)+' | Away xG: '+snap.awayXG.toFixed(2)+'\nHome Win: '+fp(snap.prbs.h)+' | Draw: '+fp(snap.prbs.d)+' | Away: '+fp(snap.prbs.a)+'\nBTTS Yes: '+fp(snap.btts)+'\nData: '+snap.dataSource+' · Quality: '+Math.round(snap.dataQualityScore)+'%';
   navigator.clipboard.writeText(text).catch(()=>{});
+};
+
+// ══════════════════════════════════════════════════════════════
+//  API AUTO-FILL — RapidAPI API-Football (CORS supported ✓)
+// ══════════════════════════════════════════════════════════════
+function fetchApiFootball(endpoint, apiKey, retries){
+  retries = retries || 0;
+  // Support both RapidAPI proxy and direct api-sports.io key
+  const isRapidKey = apiKey.length < 40 || apiKey.includes('-');
+  const url = isRapidKey
+    ? 'https://api-football-v1.p.rapidapi.com/v3' + endpoint
+    : 'https://v3.football.api-sports.io' + endpoint;
+  const headers = isRapidKey
+    ? { 'X-RapidAPI-Key': apiKey, 'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com' }
+    : { 'x-apisports-key': apiKey };
+  return fetch(url, { headers }).then(r => {
+    if(r.status === 429 && retries < 3){
+      const wait = (retries + 1) * 2000;
+      return new Promise(resolve => setTimeout(() => resolve(fetchApiFootball(endpoint, apiKey, retries + 1)), wait));
+    }
+    if(!r.ok) throw new Error('HTTP ' + r.status + (r.status === 429 ? ' — rate limit. Try again in a few minutes.' : ''));
+    return r.json();
+  }).then(d => {
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(d => {
+    if(d.errors && Object.keys(d.errors).length){
+      const msg = Object.values(d.errors)[0];
+      if(typeof msg === 'string' && msg.includes('limit')) throw new Error('API rate limit reached. Try again later.');
+      throw new Error(msg);
+    }
+    return d;
+  });
+}
+
+window.autoFillData = function(){
+  const statEl = $('apiStatus');
+  const apiKey = ($('apiKey')?.value || '').trim();
+  if(!apiKey){ statEl.textContent = '⚠️ Enter your API-Football key from RapidAPI.'; return; }
+  const homeName = ($('homeTeam')?.value || '').trim();
+  const awayName = ($('awayTeam')?.value || '').trim();
+  if(!homeName || !awayName){ statEl.textContent = '⚠️ Enter both Home and Away team names.'; return; }
+  statEl.textContent = '⏳ Searching teams...';
+  statEl.style.color = 'var(--muted2)';
+
+  const leagueVal = $('apiLeague')?.value || 'auto';
+  let seasonVal = parseInt($('apiSeason')?.value) || 2024;
+  const manualLeagueId = leagueVal !== 'auto' ? parseInt(leagueVal) : null;
+  if(!manualLeagueId && leagueVal === 'auto') seasonVal = 2024; // free tier
+
+  Promise.all([
+    fetchApiFootball('/teams?name=' + encodeURIComponent(homeName), apiKey),
+    fetchApiFootball('/teams?name=' + encodeURIComponent(awayName), apiKey)
+  ]).then(([homeRes, awayRes]) => {
+    if(!homeRes.response || !homeRes.response[0]) throw new Error('Home team "' + homeName + '" not found.');
+    if(!awayRes.response || !awayRes.response[0]) throw new Error('Away team "' + awayName + '" not found.');
+    const homeTeam = homeRes.response[0].team;
+    const awayTeam = awayRes.response[0].team;
+    $('homeTeam').value = homeTeam.name;
+    $('awayTeam').value = awayTeam.name;
+    statEl.textContent = '⏳ Found ' + homeTeam.name + ' & ' + awayTeam.name + ' — detecting league...';
+
+    function findLeague(){
+      if(manualLeagueId) return Promise.resolve(manualLeagueId);
+      const seasonStr = '' + seasonVal;
+      return fetchApiFootball('/leagues?team=' + homeTeam.id + '&season=' + seasonStr, apiKey).then(lr => {
+        const leagues = lr.response || [];
+        if(!leagues.length) throw new Error('No league found for ' + homeTeam.name + ' in ' + seasonStr);
+        return fetchApiFootball('/leagues?team=' + awayTeam.id + '&season=' + seasonStr, apiKey).then(alr => {
+          const awayLgs = (alr.response || []).map(l => l.league.id);
+          const common = leagues.filter(l => awayLgs.includes(l.league.id));
+          return common.length ? common[0].league.id : leagues[0].league.id;
+        });
+      });
+    }
+
+    return findLeague().then(leagueId => {
+      statEl.textContent = '⏳ Fetching stats for ' + homeTeam.name + ' vs ' + awayTeam.name + '...';
+      const seasonStr = '' + seasonVal;
+      return Promise.all([
+        fetchApiFootball('/teams/statistics?team=' + homeTeam.id + '&league=' + leagueId + '&season=' + seasonStr, apiKey),
+        fetchApiFootball('/teams/statistics?team=' + awayTeam.id + '&league=' + leagueId + '&season=' + seasonStr, apiKey)
+      ]).then(([hs, as]) => {
+        if(!hs.response) throw new Error('No stats for ' + homeTeam.name + ' in season ' + seasonStr + '. Free tier: use 2024.');
+        if(!as.response) throw new Error('No stats for ' + awayTeam.name + ' in season ' + seasonStr);
+        statEl.textContent = '⏳ Fetching recent fixtures...';
+        return Promise.all([
+          fetchApiFootball('/fixtures?team=' + homeTeam.id + '&league=' + leagueId + '&season=' + seasonStr + '&last=6', apiKey),
+          fetchApiFootball('/fixtures?team=' + awayTeam.id + '&league=' + leagueId + '&season=' + seasonStr + '&last=6', apiKey)
+        ]).then(([hFix, aFix]) => ({homeTeam, awayTeam, hs: hs.response, as: as.response, hFix, aFix}));
+      });
+    });
+  }).then(({homeTeam, awayTeam, hs, as, hFix, aFix}) => {
+    statEl.textContent = '⏳ Populating fields...';
+    function avg(t, p){ return p > 0 ? +(t / p).toFixed(2) : 0; }
+    function setVal(id, val){
+      const el = $(id);
+      if(el){
+        el.value = val != null && val !== '' ? val : '';
+        if(el.value !== '' && !isNaN(parseFloat(el.value))){ el.classList.remove('err'); el.classList.add('ok'); }
+        else el.classList.remove('err', 'ok');
+      }
+    }
+    const hp = hs.fixtures?.played || {};
+    const ap = as.fixtures?.played || {};
+    // Combined
+    setVal('homeGFAll', avg(hs.goals?.for?.total?.total, hp.total));
+    setVal('homeGAAll', avg(hs.goals?.against?.total?.total, hp.total));
+    setVal('awayGFAll', avg(as.goals?.for?.total?.total, ap.total));
+    setVal('awayGAAll', avg(as.goals?.against?.total?.total, ap.total));
+    // Venue
+    setVal('homeGF', avg(hs.goals?.for?.total?.home, hp.home));
+    setVal('homeGA', avg(hs.goals?.against?.total?.home, hp.home));
+    setVal('awayGF', avg(as.goals?.for?.total?.away, ap.away));
+    setVal('awayGA', avg(as.goals?.against?.total?.away, ap.away));
+    // 1x2 All
+    setVal('homeWAll', hs.fixtures?.wins?.total); setVal('homeDAll', hs.fixtures?.draws?.total); setVal('homeLAll', hs.fixtures?.loses?.total);
+    setVal('awayWAll', as.fixtures?.wins?.total); setVal('awayDAll', as.fixtures?.draws?.total); setVal('awayLAll', as.fixtures?.loses?.total);
+    // 1x2 Venue
+    setVal('homeW', hs.fixtures?.wins?.home); setVal('homeD', hs.fixtures?.draws?.home); setVal('homeL', hs.fixtures?.loses?.home);
+    setVal('awayW', as.fixtures?.wins?.away); setVal('awayD', as.fixtures?.draws?.away); setVal('awayL', as.fixtures?.loses?.away);
+    // Form
+    setVal('homeForm', hs.form || ''); setVal('awayForm', as.form || '');
+    // L6
+    function calcL6(fixRes, teamId){
+      const fixs = fixRes.response || []; let gf=0,ga=0,w=0,d=0,l=0,c=0;
+      fixs.forEach(f => {
+        const ih = f.teams?.home?.id === teamId;
+        const hg = f.goals?.home, ag = f.goals?.away;
+        if(hg == null || ag == null) return;
+        if(ih){ gf+=hg; ga+=ag; if(hg>ag)w++;else if(hg===ag)d++;else l++; }
+        else{ gf+=ag; ga+=hg; if(ag>hg)w++;else if(ag===hg)d++;else l++; }
+        c++;
+      });
+      return c ? { gf:+(gf/c).toFixed(2), ga:+(ga/c).toFixed(2), w,d,l } : null;
+    }
+    const hl6 = calcL6(hFix, homeTeam.id), al6 = calcL6(aFix, awayTeam.id);
+    if(hl6){ setVal('homeGFL6', hl6.gf); setVal('homeGAL6', hl6.ga); setVal('homeWL6', hl6.w); setVal('homeDL6', hl6.d); setVal('homeLL6', hl6.l); }
+    if(al6){ setVal('awayGFL6', al6.gf); setVal('awayGAL6', al6.ga); setVal('awayWL6', al6.w); setVal('awayDL6', al6.d); setVal('awayLL6', al6.l); }
+
+    statEl.textContent = '✅ Auto-fill complete! Data for ' + homeTeam.name + ' vs ' + awayTeam.name;
+    statEl.style.color = 'var(--green)';
+    window.runAnalysis();
+  }).catch(err => {
+    let msg = err.message;
+    if(msg.includes('Free plans') && seasonVal > 2024){
+      statEl.textContent = '⚠️ Free tier limited to 2024 — retrying...';
+      statEl.style.color = 'var(--amber)';
+      $('apiSeason').value = '2024';
+      setTimeout(() => window.autoFillData(), 500);
+      return;
+    }
+    statEl.textContent = '❌ ' + msg;
+    statEl.style.color = 'var(--red)';
+    console.error('Auto-fill error:', err);
+  });
+};
+
+// ══════════════════════════════════════════════════════════════
+//  EXCEL IMPORT
+// ══════════════════════════════════════════════════════════════
+const EXCEL_COL_MAP = {
+  'Home Team':'homeTeam','Away Team':'awayTeam','Competition':'compType',
+  'Home GF All':'homeGFAll','Home GA All':'homeGAAll','Away GF All':'awayGFAll','Away GA All':'awayGAAll',
+  'Home GF':'homeGF','Home GA':'homeGA','Away GF':'awayGF','Away GA':'awayGA',
+  'Home W All':'homeWAll','Home D All':'homeDAll','Home L All':'homeLAll',
+  'Away W All':'awayWAll','Away D All':'awayDAll','Away L All':'awayLAll',
+  'Home W':'homeW','Home D':'homeD','Home L':'homeL',
+  'Away W':'awayW','Away D':'awayD','Away L':'awayL',
+  'Home GF L6':'homeGFL6','Home GA L6':'homeGAL6','Away GF L6':'awayGFL6','Away GA L6':'awayGAL6',
+  'Home W L6':'homeWL6','Home D L6':'homeDL6','Home L L6':'homeLL6',
+  'Away W L6':'awayWL6','Away D L6':'awayDL6','Away L L6':'awayLL6',
+  'Home Form':'homeForm','Away Form':'awayForm',
+  'HT Home GF All':'homeHTGFAll','HT Home GA All':'homeHTGAAll','HT Away GF All':'awayHTGFAll','HT Away GA All':'awayHTGAAll',
+  'HT Home GF':'homeHTGF','HT Home GA':'homeHTGA','HT Away GF':'awayHTGF','HT Away GA':'awayHTGA',
+  'HT Home GF L6':'homeHTGFL6','HT Home GA L6':'homeHTGAL6','HT Away GF L6':'awayHTGFL6','HT Away GA L6':'awayHTGAL6',
+  'HT Home W All':'homeHTWAll','HT Home D All':'homeHTDAll','HT Home L All':'homeHTLAll',
+  'HT Away W All':'awayHTWAll','HT Away D All':'awayHTDAll','HT Away L All':'awayHTLAll',
+  'HT Home W':'homeHTW','HT Home D':'homeHTD','HT Home L':'homeHTL',
+  'HT Away W':'awayHTW','HT Away D':'awayHTD','HT Away L':'awayHTL',
+  'HT Home W L6':'homeHTWL6','HT Home D L6':'homeHTDL6','HT Home L L6':'homeHTLL6',
+  'HT Away W L6':'awayHTWL6','HT Away D L6':'awayHTDL6','HT Away L L6':'awayHTLL6'
+};
+
+function getExcelTemplateRows(){
+  return [{
+    'Match Date':'2024-11-10','Home Team':'Arsenal','Away Team':'Chelsea','Competition':'league',
+    'Home GF All':1.65,'Home GA All':0.95,'Away GF All':1.30,'Away GA All':1.25,
+    'Home GF':1.85,'Home GA':0.80,'Away GF':1.20,'Away GA':1.15,
+    'Home W All':12,'Home D All':7,'Home L All':3,
+    'Away W All':10,'Away D All':9,'Away L All':1,
+    'Home W':3,'Home D':3,'Home L':4,
+    'Away W':2,'Away D':4,'Away L':4,
+    'Home GF L6':1.85,'Home GA L6':0.70,'Away GF L6':1.55,'Away GA L6':1.05,
+    'Home W L6':3,'Home D L6':2,'Home L L6':1,
+    'Away W L6':2,'Away D L6':3,'Away L L6':1,
+    'Home Form':'LWDWW','Away Form':'DLLWW',
+    'HT Home GF All':0.65,'HT Home GA All':0.50,'HT Away GF All':0.55,'HT Away GA All':0.60,
+    'HT Home GF':0.75,'HT Home GA':0.40,'HT Away GF':0.55,'HT Away GA':0.50,
+    'HT Home GF L6':0.80,'HT Home GA L6':0.35,'HT Away GF L6':0.60,'HT Away GA L6':0.45,
+    'HT Home W All':8,'HT Home D All':9,'HT Home L All':5,
+    'HT Away W All':6,'HT Away D All':10,'HT Away L All':6,
+    'HT Home W':4,'HT Home D':3,'HT Home L':3,
+    'HT Away W':3,'HT Away D':3,'HT Away L':4,
+    'HT Home W L6':3,'HT Home D L6':2,'HT Home L L6':1,
+    'HT Away W L6':2,'HT Away D L6':2,'HT Away L L6':2
+  }];
+}
+
+window.downloadExcelTemplate = function(){
+  if(typeof XLSX === 'undefined'){ alert('⚠️ SheetJS library not loaded. Check internet connection.'); return; }
+  const ws = XLSX.utils.json_to_sheet(getExcelTemplateRows());
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template');
+  XLSX.writeFile(wb, 'betiq-template.xlsx');
+};
+
+window.importFromExcel = function(){
+  const fileEl = $('excelFile'), statusEl = $('excelStatus');
+  if(!fileEl || !fileEl.files || !fileEl.files[0]){ statusEl.textContent = '⚠️ Select an Excel or CSV file first.'; return; }
+  if(typeof XLSX === 'undefined'){ statusEl.textContent = '❌ SheetJS library not loaded. Check internet connection.'; return; }
+  statusEl.textContent = '⏳ Reading file...'; statusEl.style.color = 'var(--muted2)';
+  const file = fileEl.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if(!json || json.length === 0){ statusEl.textContent = '❌ No data found in file.'; statusEl.style.color = 'var(--red)'; return; }
+      const row = json[0];
+      let filled = 0;
+      Object.keys(EXCEL_COL_MAP).forEach(col => {
+        const id = EXCEL_COL_MAP[col];
+        const el = $(id);
+        if(el && row[col] !== undefined && row[col] !== '' && row[col] !== null){
+          el.value = String(row[col]);
+          if(el.value !== '' && !isNaN(parseFloat(el.value))){ el.classList.remove('err'); el.classList.add('ok'); }
+          else { el.classList.remove('err','ok'); }
+          filled++;
+        }
+      });
+      const htFields = ['homeHTGF','homeHTGA','awayHTGF','awayHTGA','homeHTGFAll','homeHTGAAll',
+        'awayHTGFAll','awayHTGAAll','homeHTGFL6','homeHTGAL6','awayHTGFL6','awayHTGAL6',
+        'homeHTW','homeHTD','homeHTL','awayHTW','awayHTD','awayHTL',
+        'homeHTWAll','homeHTDAll','homeHTLAll','awayHTWAll','awayHTDAll','awayHTLAll',
+        'homeHTWL6','homeHTDL6','homeHTLL6','awayHTWL6','awayHTDL6','awayHTLL6'];
+      const hasHtData = htFields.some(id => { const el=$(id); return el && el.value !== ''; });
+      if(hasHtData){
+        const htBody=$('htBody'),htChev=$('htChevron');
+        if(htBody && htBody.style.display==='none'){ htBody.style.display='block'; if(htChev) htChev.classList.add('open'); }
+      }
+      statusEl.textContent = '✅ Imported ' + filled + ' fields from "' + (row['Home Team']||'') + ' vs ' + (row['Away Team']||'') + '"';
+      statusEl.style.color = 'var(--green)';
+      window.runAnalysis();
+    } catch(err){
+      statusEl.textContent = '❌ Error: ' + err.message;
+      statusEl.style.color = 'var(--red)';
+    }
+  };
+  reader.readAsArrayBuffer(file);
 };
 
 document.addEventListener('keydown',e=>{
