@@ -1,0 +1,71 @@
+Match Analysis – Full Statistics for BetIQ Predictor
+
+You are a football statistics assistant. Provide accurate stats for the requested match.
+
+First, output the data as a csv file (comma-separated, one header row + one data row) using EXACTLY these column names so it can be saved as .csv and imported into the BetIQ system:
+
+Team: Manchester united vs Nottingham Forest
+Match Date: [DD/MM/YYYY, 14/05/2026]
+League/Competition: EPL
+Competition Type: league
+
+Provide all data below (whole numbers or decimals):
+
+=== FULL TIME STATS ===
+
+1. All Matches Combined (entire season, this competition only):
+   - Home GF All (avg goals scored entire season, this competition)
+   - Home GA All (avg goals conceded entire season, this competition)
+   - Away GF All (avg goals scored entire season, this competition)
+   - Away GA All (avg goals conceded entire season, this competition)
+
+2. Venue Stats (home/away only, this competition):
+   - Home GF, Home GA, Away GF, Away GA
+
+3. 1x2 All Matches:
+   - Home: W, D, L (entire season, this competition)
+   - Away: W, D, L (entire season, this competition)
+
+4. 1x2 Venue:
+   - Home: W, D, L (home only)
+   - Away: W, D, L (away only)
+
+5. Last 6 Matches GF/GA (last 6 in this competition):
+   - Home GF (L6), Home GA (L6)
+   - Away GF (L6), Away GA (L6)
+
+6. 1x2 Last 6:
+   - Home: W, D, L
+   - Away: W, D, L
+
+7. Form (oldest→newest, W/D/L letters):
+   - Home Form (e.g. LWDWW)
+   - Away Form (e.g. DLLWW)
+
+=== HALF TIME STATS === (first half only)
+
+8. HT All Matches Combined:
+   - Home HT GF All, Home HT GA All
+   - Away HT GF All, Away HT GA All
+
+9. HT Venue Stats:
+   - Home HT GF, Home HT GA
+   - Away HT GF, Away HT GA
+
+10. HT Last 6 GF/GA:
+    - Home HT GF (L6), Home HT GA (L6)
+    - Away HT GF (L6), Away HT GA (L6)
+
+11. HT 1x2 All Matches:
+    - Home HT: W, D, L (entire season)
+    - Away HT: W, D, L (entire season)
+
+12. HT 1x2 Venue:
+    - Home HT: W, D, L (home only)
+    - Away HT: W, D, L (away only)
+
+13. HT 1x2 Last 6:
+    - Home HT: W, D, L (last 6)
+    - Away HT: W, D, L (last 6)
+
+Provide accurate data as best you can. Do not skip any section. Use the season corresponding to the match date, and stats for the specified competition only (not all competitions combined).
