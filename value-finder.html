@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BetIQ - Value Finder Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+.vf-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.vf-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+@media(max-width:600px){.vf-grid,.vf-grid2{grid-template-columns:1fr}}
+.vf-table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+.vf-table th{background:var(--surface2);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:8px;border-bottom:1px solid var(--border);text-align:center}
+.vf-table td{padding:7px 8px;border-bottom:1px solid rgba(28,37,64,0.5);text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px}
+.vf-table tr:last-child td{border-bottom:none}
+.vf-table td:first-child{text-align:left;font-weight:600;color:var(--muted2);font-family:'Inter',sans-serif}
+.pos{color:var(--green)}.neg{color:var(--red)}.neu{color:var(--muted2)}
+.conv-bar{display:flex;height:28px;border-radius:4px;overflow:hidden;margin:10px 0}
+.conv-bar .seg{display:flex;align-items:center;justify-content:center;transition:width 0.6s ease;font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff}
+.pred-badge{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.pred-badge.hm{background:rgba(0,229,160,0.12);color:var(--green);border:1px solid rgba(0,229,160,0.3)}
+.pred-badge.drw{background:rgba(245,200,66,0.12);color:var(--draw);border:1px solid rgba(245,200,66,0.3)}
+.pred-badge.aw{background:rgba(255,77,109,0.12);color:var(--red);border:1px solid rgba(255,77,109,0.3)}
+.verdict-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-top:12px}
+.verdict-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.verdict-row:last-child{border-bottom:none}
+.vlbl{font-size:10px;font-weight:700;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-transform:uppercase}
+.vtag{font-size:9px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.kelly-frac{font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.interp-box{margin-top:14px;padding:10px 14px;border-radius:6px;font-size:11px;line-height:1.6}
+.interp-box.high{background:rgba(0,229,160,0.06);border-left:3px solid var(--green);color:var(--muted2)}
+.interp-box.slight{background:rgba(245,200,66,0.06);border-left:3px solid var(--draw);color:var(--muted2)}
+.interp-box.none{background:rgba(107,116,148,0.06);border-left:3px solid var(--muted2);color:var(--muted2)}
+.vf-note{font-size:10px;color:var(--muted);line-height:1.7;margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:5px}
+.conv-label{font-size:10px;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px}
+.arb-badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.arb-yes{background:rgba(0,229,160,0.12);color:var(--green);border:1px solid rgba(0,229,160,0.3)}
+.arb-no{background:rgba(107,116,148,0.10);color:var(--muted2);border:1px solid rgba(107,116,148,0.3)}
+.conf-ring{display:inline-flex;align-items:center;gap:6px}
+.conf-ring svg{flex-shrink:0}
+.poisson-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
+.poisson-item{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:8px;text-align:center}
+.poisson-score{font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.poisson-prob{font-size:10px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.poisson-odds{font-size:10px;color:var(--cyan);font-weight:600;font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="header"></div>
+
+<div class="app-body">
+<main class="main">
+  <div class="stack">
+    <div class="panel">
+      <div class="panel-hd">
+        <div class="panel-title">Value Finder Pro</div>
+        <div class="panel-sub">Convergence &middot; Poisson-Derived Markets &middot; Multi-Bookmaker &middot; Arbitrage &middot; Kelly Staking</div>
+      </div>
+      <div class="panel-bd">
+
+        <div class="slabel">Match Details</div>
+        <div class="g2" style="margin-bottom:18px">
+          <div class="field"><label>Home Team</label><input id="homeTeam" type="text" placeholder="e.g. Arsenal"></div>
+          <div class="field"><label>Away Team</label><input id="awayTeam" type="text" placeholder="e.g. Chelsea"></div>
+        </div>
+
+        <div class="slabel">Your Model Probabilities <span style="color:var(--muted);font-weight:400;font-size:9px">(percentages or decimals)</span></div>
+        <div class="vf-grid">
+          <div class="field"><label>Home (1) %</label><input id="modH" type="number" step="any" min="0" placeholder="e.g. 28"></div>
+          <div class="field"><label>Draw (X) %</label><input id="modD" type="number" step="any" min="0" placeholder="e.g. 32"></div>
+          <div class="field"><label>Away (2) %</label><input id="modA" type="number" step="any" min="0" placeholder="e.g. 40"></div>
+        </div>
+
+        <div class="slabel">Bookmaker Odds <span style="color:var(--muted);font-weight:400;font-size:9px">(decimal &mdash; enter at least Bookmaker 1)</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="font-size:10px;font-weight:700;color:var(--cyan);font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px">Bookmaker 1</div>
+            <div class="vf-grid" style="margin:0">
+              <div class="field"><label>Home</label><input id="b1h" type="number" step="0.01" min="1.01" placeholder="3.00"></div>
+              <div class="field"><label>Draw</label><input id="b1d" type="number" step="0.01" min="1.01" placeholder="3.60"></div>
+              <div class="field"><label>Away</label><input id="b1a" type="number" step="0.01" min="1.01" placeholder="2.05"></div>
+            </div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="font-size:10px;font-weight:700;color:var(--draw);font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px">Bookmaker 2 <span style="color:var(--muted);font-weight:400;text-transform:none">(optional)</span></div>
+            <div class="vf-grid" style="margin:0">
+              <div class="field"><label>Home</label><input id="b2h" type="number" step="0.01" min="1.01" placeholder="2.95"></div>
+              <div class="field"><label>Draw</label><input id="b2d" type="number" step="0.01" min="1.01" placeholder="3.50"></div>
+              <div class="field"><label>Away</label><input id="b2a" type="number" step="0.01" min="1.01" placeholder="2.10"></div>
+            </div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="font-size:10px;font-weight:700;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px">Bookmaker 3 <span style="color:var(--muted);font-weight:400;text-transform:none">(optional)</span></div>
+            <div class="vf-grid" style="margin:0">
+              <div class="field"><label>Home</label><input id="b3h" type="number" step="0.01" min="1.01" placeholder="3.10"></div>
+              <div class="field"><label>Draw</label><input id="b3d" type="number" step="0.01" min="1.01" placeholder="3.55"></div>
+              <div class="field"><label>Away</label><input id="b3a" type="number" step="0.01" min="1.01" placeholder="2.00"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="err-box" id="errBox"></div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="runAnalysis()">Analyze</button>
+          <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+          <button class="btn btn-secondary btn-outline" onclick="loadExample()">Load Example</button>
+        </div>
+
+        <div id="results" style="display:none;margin-top:28px"></div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+  <!-- HISTORY -->
+  <div class="history-wrap">
+    <div class="hist-panel">
+      <div class="panel-hd">
+        <div class="panel-title">Prediction History <span class="hist-count" id="histCount">(0)</span></div>
+        <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">Clear All</button>
+      </div>
+      <div class="hist-table-wrap">
+        <table class="htbl">
+          <thead>
+            <tr>
+              <th style="text-align:left;width:90px">Date</th>
+              <th style="text-align:left">Match</th>
+              <th style="text-align:left;width:200px">1x2 Probabilities</th>
+              <th style="text-align:left">Convergence Weights</th>
+              <th style="text-align:center;width:80px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+  <div id="footer"></div>
+</div>
+
+<script src="footer.js"></script>
+<script>
+(function(){
+
+function $(id) { return document.getElementById(id); }
+function fp(p) { return (p * 100).toFixed(1) + '%'; }
+function fo(p) { return p > 0.001 ? (1 / p).toFixed(2) : '-'; }
+
+function poisson(lam, k) {
+  if (lam <= 0) return k === 0 ? 1 : 0;
+  var logP = -lam + k * Math.log(lam);
+  for (var i = 1; i <= k; i++) logP -= Math.log(i);
+  return Math.exp(logP);
+}
+
+function solveXG(pH, pD, pA) {
+  var best = { lh: 0, la: 0, err: 999, pH: 0, pD: 0, pA: 0 };
+  for (var lh = 0.1; lh <= 4.01; lh += 0.05) {
+    for (var la = 0.1; la <= 4.01; la += 0.05) {
+      var h = 0, d = 0, a = 0;
+      for (var i = 0; i <= 12; i++) {
+        for (var j = 0; j <= 12; j++) {
+          var p = poisson(lh, i) * poisson(la, j);
+          if (i > j) h += p; else if (i === j) d += p; else a += p;
+        }
+      }
+      var t = h + d + a;
+      var err = Math.abs(h/t - pH) + Math.abs(d/t - pD) + Math.abs(a/t - pA);
+      if (err < best.err) best = { lh: lh, la: la, err: err, pH: h/t, pD: d/t, pA: a/t };
+    }
+  }
+  return best;
+}
+
+function getScorelines(lh, la, n) {
+  var arr = [];
+  for (var i = 0; i <= 10; i++) {
+    for (var j = 0; j <= 10; j++) {
+      arr.push({ h: i, a: j, p: poisson(lh, i) * poisson(la, j) });
+    }
+  }
+  return arr.sort(function(a,b){return b.p-a.p}).slice(0, n || 10);
+}
+
+function overUnder(lh, la, line) {
+  var o = 0, u = 0;
+  for (var i = 0; i <= 15; i++) {
+    for (var j = 0; j <= 15; j++) {
+      var p = poisson(lh, i) * poisson(la, j);
+      if (i + j > line) o += p; else u += p;
+    }
+  }
+  return { over: o / (o + u), under: u / (o + u) };
+}
+
+function bttsProb(lh, la) {
+  var y = 0;
+  for (var i = 1; i <= 15; i++) for (var j = 1; j <= 15; j++) y += poisson(lh, i) * poisson(la, j);
+  return y;
+}
+
+function asianHcp(lh, la, line) {
+  var h = 0, a = 0;
+  for (var i = 0; i <= 15; i++) {
+    for (var j = 0; j <= 15; j++) {
+      var p = poisson(lh, i) * poisson(la, j), d = i - j;
+      if (d > line) h += p; else if (d < line) a += p;
+    }
+  }
+  return { home: h / (h + a), away: a / (h + a) };
+}
+
+function parseBk(id) {
+  var el = $(id);
+  if (!el || el.value === '') return null;
+  var v = parseFloat(el.value);
+  return (!isNaN(v) && v >= 1.01) ? v : null;
+}
+
+function parseBkSet(prefix) {
+  var h = parseBk(prefix + 'h'), d = parseBk(prefix + 'd'), a = parseBk(prefix + 'a');
+  if (h === null || d === null || a === null) return null;
+  return { h: h, d: d, a: a };
+}
+
+function kellyVal(odds, prob) {
+  if (odds <= 1.01 || prob <= 0) return 0;
+  return Math.max(0, ((odds - 1) * prob - (1 - prob)) / (odds - 1));
+}
+
+function edgePct(modelProb, bookProb) {
+  return ((modelProb - bookProb) / bookProb) * 100;
+}
+
+function colorScale(v, threshPos, threshNeg) {
+  if (v > threshPos) return 'var(--green)';
+  if (v < threshNeg) return 'var(--red)';
+  if (v > 0) return 'var(--draw)';
+  return 'var(--muted2)';
+}
+
+window.runAnalysis = function() {
+  var errBox = $('errBox');
+  errBox.classList.remove('show');
+
+  var mh = parseFloat($('modH').value);
+  var md = parseFloat($('modD').value);
+  var ma = parseFloat($('modA').value);
+
+  if (isNaN(mh) || isNaN(md) || isNaN(ma)) {
+    errBox.textContent = 'Enter model probabilities for Home, Draw, and Away.';
+    errBox.classList.add('show'); return;
+  }
+
+  var sumMod = mh + md + ma;
+  if (sumMod <= 0) {
+    errBox.textContent = 'Model probabilities must sum to more than 0.';
+    errBox.classList.add('show'); return;
+  }
+
+  var modH = mh / sumMod;
+  var modD = md / sumMod;
+  var modA = ma / sumMod;
+
+  // Collect all bookmakers
+  var bkSets = [parseBkSet('b1'), parseBkSet('b2'), parseBkSet('b3')];
+  var b1 = bkSets[0];
+  if (!b1) {
+    errBox.textContent = 'Enter at least Bookmaker 1 odds for Home, Draw, and Away.';
+    errBox.classList.add('show'); return;
+  }
+
+  // Primary book (b1) for convergence
+  var iH = 1 / b1.h, iD = 1 / b1.d, iA = 1 / b1.a;
+  var iSum = iH + iD + iA;
+  var margin = (iSum - 1) * 100;
+  var bpH = iH / iSum, bpD = iD / iSum, bpA = iA / iSum;
+
+  // Convergence
+  var cH = (modH + bpH) / 2, cD = (modD + bpD) / 2, cA = (modA + bpA) / 2;
+  var dH = bpH - cH, dD = bpD - cD, dA = bpA - cA;
+  var aH = Math.abs(dH), aD = Math.abs(dD), aA = Math.abs(dA), aSum = aH + aD + aA;
+  var cpH = aSum - aH, cpD = aSum - aD, cpA = aSum - aA, cpSum = cpH + cpD + cpA;
+  var wH = 0, wD = 0, wA = 0;
+  if (cpSum > 0 && aSum > 0) {
+    wH = ((cpH / cpSum) + (aH / aSum)) / 2;
+    wD = ((cpD / cpSum) + (aD / aSum)) / 2;
+    wA = ((cpA / cpSum) + (aA / aSum)) / 2;
+  }
+  var totalW = wH + wD + wA;
+  var maxW = Math.max(wH, wD, wA);
+  var pred = wH === maxW ? 'HM' : wD === maxW ? 'DRW' : 'AW';
+
+  // Primary outcomes with Kelly
+  var outcomes = [
+    { side:'h', label:'Home', color:'var(--green)', mp:modH, bp:bpH, odds:b1.h },
+    { side:'d', label:'Draw', color:'var(--draw)', mp:modD, bp:bpD, odds:b1.d },
+    { side:'a', label:'Away', color:'var(--red)',  mp:modA, bp:bpA, odds:b1.a }
+  ];
+  var kellyRec = [];
+  outcomes.forEach(function(v) {
+    v.fairOdds = 1 / v.mp;
+    v.edge = edgePct(v.mp, v.bp);
+    v.kelly = kellyVal(v.odds, v.mp);
+    if (v.kelly > 0) kellyRec.push(v);
+    v.ec = v.edge > 3 ? 'pos' : v.edge > 0 ? 'pos' : v.edge > -5 ? 'neu' : 'neg';
+  });
+  kellyRec.sort(function(a,b){return b.kelly-a.kelly});
+
+  // Poisson solver
+  var xg = solveXG(modH, modD, modA);
+  var hasPoisson = xg.err < 0.05;
+
+  // Scorelines
+  var scores = hasPoisson ? getScorelines(xg.lh, xg.la, 10) : [];
+
+  // OU lines
+  var ouLines = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5];
+  var ouResults = hasPoisson ? ouLines.map(function(l) {
+    var r = overUnder(xg.lh, xg.la, l);
+    return { line: l, over: r.over, under: r.under };
+  }) : [];
+
+  // BTTS
+  var btts = hasPoisson ? bttsProb(xg.lh, xg.la) : 0;
+
+  // AH lines
+  var ahLines = [-2.5, -1.5, -0.5, 0, 0.5, 1.5, 2.5];
+  var ahResults = hasPoisson ? ahLines.map(function(l) {
+    var r = asianHcp(xg.lh, xg.la, l);
+    return { line: l, home: r.home, away: r.away };
+  }) : [];
+
+  // Multi-bookmaker analysis
+  var bkNames = ['Bookmaker 1', 'Bookmaker 2', 'Bookmaker 3'];
+  var bkData = [];
+  var bestOdds = { h: 0, d: 0, a: 0 };
+  var bestBk = { h: '', d: '', a: '' };
+  bkSets.forEach(function(bk, idx) {
+    if (!bk) return;
+    var sum = 1/bk.h + 1/bk.d + 1/bk.a;
+    var m = (sum - 1) * 100;
+    bkData.push({
+      name: bkNames[idx],
+      h: bk.h, d: bk.d, a: bk.a,
+      pH: (1/bk.h)/sum, pD: (1/bk.d)/sum, pA: (1/bk.a)/sum,
+      margin: m
+    });
+    if (bk.h > bestOdds.h) { bestOdds.h = bk.h; bestBk.h = bkNames[idx]; }
+    if (bk.d > bestOdds.d) { bestOdds.d = bk.d; bestBk.d = bkNames[idx]; }
+    if (bk.a > bestOdds.a) { bestOdds.a = bk.a; bestBk.a = bkNames[idx]; }
+  });
+
+  // Arbitrage detection across all books
+  var arb = null;
+  var allH = bkSets.filter(function(b){return b}).map(function(b){return b.h});
+  var allD = bkSets.filter(function(b){return b}).map(function(b){return b.d});
+  var allA = bkSets.filter(function(b){return b}).map(function(b){return b.a});
+  if (allH.length > 0 && allD.length > 0 && allA.length > 0) {
+    var bestH = Math.max.apply(null, allH);
+    var bestD = Math.max.apply(null, allD);
+    var bestA = Math.max.apply(null, allA);
+    var arbSum = 1/bestH + 1/bestD + 1/bestA;
+    if (arbSum < 1) {
+      arb = {
+        hOdds: bestH, dOdds: bestD, aOdds: bestA,
+        pct: (1 - arbSum) * 100,
+        stakeH: 1/bestH / arbSum, stakeD: 1/bestD / arbSum, stakeA: 1/bestA / arbSum
+      };
+    }
+  }
+
+  // Convergence score (0-100) — how much model agrees with market
+  var convScore = Math.round((1 - aSum) * 100);
+  convScore = Math.max(0, Math.min(100, convScore));
+
+  // ── RENDER ──
+  var html = '<div class="panel anim"><div class="panel-hd"><div class="panel-title">Analysis Results</div></div><div class="panel-bd">';
+
+  // ── HEADER BANNER ──
+  var predLbl = { HM:'Home', DRW:'Draw', AW:'Away' };
+  var predCls = { HM:'hm', DRW:'drw', AW:'aw' };
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">';
+  html += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">';
+  html += '<div class="pred-badge ' + predCls[pred] + '">' + predLbl[pred] + ' Convergence Pick</div>';
+  html += '<span style="font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">Edge: ' + (outcomes.filter(function(v){return v.edge>0}).length > 0 ? 'YES' : 'NONE') + '</span>';
+  html += '</div>';
+  html += '<div style="text-align:right"><div style="font-size:10px;color:var(--muted2);font-weight:700;font-family:\'JetBrains Mono\',monospace">Book Margin</div><div style="font-size:20px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:' + (margin > 5 ? 'var(--red)' : margin > 3 ? 'var(--draw)' : 'var(--green)') + '">' + margin.toFixed(2) + '%</div></div></div>';
+
+  // ── CONVERGENCE BARS (individual, readable) ──
+  html += '<div class="conv-label" style="margin-bottom:10px">Convergence &mdash; Weighted Scores</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">';
+  var barData = [
+    { label:'1 Home', pct: totalW>0 ? wH/totalW*100 : 0, raw: wH*100, color:'var(--green)', bg:'rgba(0,229,160,0.08)', border:'rgba(0,229,160,0.2)', isMax: wH === maxW },
+    { label:'X Draw', pct: totalW>0 ? wD/totalW*100 : 0, raw: wD*100, color:'var(--draw)', bg:'rgba(245,200,66,0.08)', border:'rgba(245,200,66,0.2)', isMax: wD === maxW },
+    { label:'2 Away', pct: totalW>0 ? wA/totalW*100 : 0, raw: wA*100, color:'var(--red)', bg:'rgba(255,77,109,0.08)', border:'rgba(255,77,109,0.2)', isMax: wA === maxW }
+  ];
+  barData.forEach(function(b) {
+    var arrow = b.isMax ? '<span style="margin-left:4px;font-size:10px">&#9660;</span>' : '';
+    var borderStyle = b.isMax ? ';border-width:2px' : '';
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:' + b.bg + ';border:1px solid ' + b.border + ';border-radius:6px' + borderStyle + '">';
+    html += '<div style="width:68px;font-size:12px;font-weight:' + (b.isMax ? '800' : '600') + ';color:' + b.color + ';font-family:\'Inter\',sans-serif;flex-shrink:0">' + b.label + arrow + '</div>';
+    html += '<div style="flex:1;height:22px;background:var(--surface2);border-radius:4px;overflow:hidden"><div style="width:' + b.pct.toFixed(1) + '%;height:100%;background:' + b.color + ';border-radius:4px;transition:width 0.6s ease"></div></div>';
+    html += '<div style="width:56px;text-align:right;font-size:14px;font-weight:700;color:' + b.color + ';font-family:\'JetBrains Mono\',monospace;flex-shrink:0">' + b.raw.toFixed(1) + '%</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // ── CONVERGENCE TABLE ──
+  html += '<div style="overflow-x:auto">';
+  html += '<table class="vf-table"><thead><tr><th>Metric</th><th style="color:var(--green)">Home (1)</th><th style="color:var(--draw)">Draw (X)</th><th style="color:var(--red)">Away (2)</th><th>Note</th></tr></thead><tbody>';
+  html += '<tr><td>Model Prob</td><td>' + fp(modH) + '</td><td>' + fp(modD) + '</td><td>' + fp(modA) + '</td><td>' + fp(1) + '</td></tr>';
+  html += '<tr><td>Book Prob (no vig)</td><td>' + fp(bpH) + '</td><td>' + fp(bpD) + '</td><td>' + fp(bpA) + '</td><td>' + fp(1) + '</td></tr>';
+  html += '<tr><td>Convergence Avg</td><td>' + fp(cH) + '</td><td>' + fp(cD) + '</td><td>' + fp(cA) + '</td><td>' + fp(cH+cD+cA) + '</td></tr>';
+  html += '<tr><td>Delta Model-Market</td><td style="color:' + (dH>0?'var(--green)':dH<0?'var(--red)':'var(--muted2)') + '">' + (dH > 0 ? '+' : '') + (dH*100).toFixed(2) + '%</td><td style="color:' + (dD>0?'var(--green)':dD<0?'var(--red)':'var(--muted2)') + '">' + (dD > 0 ? '+' : '') + (dD*100).toFixed(2) + '%</td><td style="color:' + (dA>0?'var(--green)':dA<0?'var(--red)':'var(--muted2)') + '">' + (dA > 0 ? '+' : '') + (dA*100).toFixed(2) + '%</td><td style="font-size:10px">+ = model higher</td></tr>';
+  html += '<tr><td>Weighted Score</td><td><strong>' + (wH*100).toFixed(1) + '%</strong></td><td><strong>' + (wD*100).toFixed(1) + '%</strong></td><td><strong>' + (wA*100).toFixed(1) + '%</strong></td><td>' + (totalW*100).toFixed(1) + '%</td></tr>';
+  var kh = outcomes[0].kelly, kd = outcomes[1].kelly, ka = outcomes[2].kelly;
+  html += '<tr><td>Kelly Ratio</td><td style="color:' + colorScale(kh,0,0) + '">' + (kh>0?'+':'') + kh.toFixed(4) + '</td><td style="color:' + colorScale(kd,0,0) + '">' + (kd>0?'+':'') + kd.toFixed(4) + '</td><td style="color:' + colorScale(ka,0,0) + '">' + (ka>0?'+':'') + ka.toFixed(4) + '</td><td style="font-size:10px">Full Kelly fraction</td></tr>';
+  html += '<tr><td>Fair Odds</td><td style="color:var(--cyan)">' + outcomes[0].fairOdds.toFixed(2) + '</td><td style="color:var(--cyan)">' + outcomes[1].fairOdds.toFixed(2) + '</td><td style="color:var(--cyan)">' + outcomes[2].fairOdds.toFixed(2) + '</td><td style="font-size:10px">Based on model prob</td></tr>';
+  html += '</tbody></table></div>';
+
+  // ── VALUE TABLE ──
+  html += '<div style="margin-top:16px">';
+  html += '<div class="conv-label">Value Detection &mdash; Model vs Market</div>';
+  html += '<table class="vf-table"><thead><tr><th>Outcome</th><th>Model %</th><th>Book %</th><th>Book Odds</th><th>Fair Odds</th><th>Edge %</th><th>Kelly %</th><th>Verdict</th></tr></thead><tbody>';
+  outcomes.forEach(function(v) {
+    var verdict = '';
+    if (v.edge > 10) verdict = '<span style="color:var(--green);font-weight:700">STRONG VALUE</span>';
+    else if (v.edge > 3) verdict = '<span style="color:var(--draw);font-weight:700">Slight Value</span>';
+    else if (v.edge > 0) verdict = '<span style="color:var(--muted2);font-weight:600">Marginal</span>';
+    else if (v.edge > -5) verdict = '<span style="color:var(--muted)">Fair</span>';
+    else verdict = '<span style="color:var(--red);font-weight:600">No Value</span>';
+    html += '<tr><td style="text-align:left;font-weight:700;color:' + v.color + '">' + v.label + '</td>';
+    html += '<td>' + fp(v.mp) + '</td><td>' + fp(v.bp) + '</td>';
+    html += '<td style="font-weight:600">' + v.odds.toFixed(2) + '</td>';
+    html += '<td style="color:var(--cyan)">' + v.fairOdds.toFixed(2) + '</td>';
+    html += '<td class="' + v.ec + '"><strong>' + (v.edge > 0 ? '+' : '') + v.edge.toFixed(2) + '%</strong></td>';
+    html += '<td class="' + v.ec + '">' + (v.kelly > 0 ? (v.kelly * 100).toFixed(2) + '%' : '-') + '</td>';
+    html += '<td>' + verdict + '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // ── POISSON-DERIVED MARKETS ──
+  if (hasPoisson) {
+    html += '<div style="margin-top:16px;padding:12px;background:rgba(0,212,255,0.03);border:1px solid rgba(0,212,255,0.1);border-radius:8px">';
+    html += '<div class="conv-label" style="margin-bottom:8px">Poisson Model &mdash; Derived from Your Probabilities</div>';
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-size:11px;font-family:\'JetBrains Mono\',monospace">';
+    html += '<span>Home xG: <strong style="color:var(--cyan)">' + xg.lh.toFixed(2) + '</strong></span>';
+    html += '<span>Away xG: <strong style="color:var(--cyan)">' + xg.la.toFixed(2) + '</strong></span>';
+    html += '<span>Total xG: <strong>' + (xg.lh + xg.la).toFixed(2) + '</strong></span>';
+    html += '<span>Fit Error: <strong style="color:' + (xg.err < 0.01 ? 'var(--green)' : 'var(--draw)') + '">' + (xg.err * 100).toFixed(2) + '%</strong></span>';
+    html += '<span>Reconstructed: ' + fp(xg.pH) + ' / ' + fp(xg.pD) + ' / ' + fp(xg.pA) + '</span>';
+    html += '</div>';
+
+    // Scorelines
+    html += '<div class="conv-label">Top Scorelines</div>';
+    html += '<div class="poisson-grid">';
+    scores.forEach(function(s) {
+      var c = s.h > s.a ? 'var(--green)' : s.h === s.a ? 'var(--draw)' : 'var(--red)';
+      html += '<div class="poisson-item"><div class="poisson-score" style="color:' + c + '">' + s.h + '-' + s.a + '</div>';
+      html += '<div class="poisson-prob">' + fp(s.p) + '</div><div class="poisson-odds">' + fo(s.p) + '</div></div>';
+    });
+    html += '</div>';
+
+    // OU
+    html += '<div class="conv-label" style="margin-top:10px">Over / Under Probabilities</div>';
+    html += '<table class="vf-table"><thead><tr><th>Line</th><th>Over %</th><th>Under %</th><th>Fair O</th><th>Fair U</th><th>Signal</th></tr></thead><tbody>';
+    ouResults.forEach(function(r) {
+      var sig = r.over > 0.55 ? '<span class="pos" style="font-weight:700">OVER</span>' : r.under > 0.55 ? '<span class="neg" style="font-weight:700">UNDER</span>' : '<span style="color:var(--muted)">EVEN</span>';
+      html += '<tr><td style="font-weight:700">' + (r.line % 1 === 0 ? r.line + '.0' : r.line) + '</td><td>' + fp(r.over) + '</td><td>' + fp(r.under) + '</td><td style="color:var(--cyan)">' + fo(r.over) + '</td><td style="color:var(--cyan)">' + fo(r.under) + '</td><td>' + sig + '</td></tr>';
+    });
+    html += '</tbody></table>';
+
+    // BTTS
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:5px;font-size:11px;font-family:\'JetBrains Mono\',monospace">';
+    html += '<span>BTTS Yes: <strong style="color:var(--draw)">' + fp(btts) + '</strong> (Fair: ' + fo(btts) + ')</span>';
+    html += '<span>BTTS No: <strong>' + fp(1 - btts) + '</strong> (Fair: ' + fo(1 - btts) + ')</span>';
+    html += '</div>';
+
+    // AH
+    html += '<div class="conv-label" style="margin-top:10px">Asian Handicap</div>';
+    html += '<table class="vf-table"><thead><tr><th>Line</th><th>Home Cover</th><th>Away Cover</th><th>Fair H</th><th>Fair A</th><th>Best Side</th></tr></thead><tbody>';
+    ahResults.forEach(function(r) {
+      var fmtLine = r.line === 0 ? '0' : (r.line > 0 ? '+' : '') + r.line.toFixed(1);
+      var best = r.home > r.away + 0.05 ? 'Home' : r.away > r.home + 0.05 ? 'Away' : 'Even';
+      var bestColor = best === 'Home' ? 'var(--green)' : best === 'Away' ? 'var(--red)' : 'var(--muted2)';
+      html += '<tr><td style="font-weight:700">' + fmtLine + '</td><td style="color:var(--green)">' + fp(r.home) + '</td><td style="color:var(--red)">' + fp(r.away) + '</td><td style="color:var(--cyan)">' + fo(r.home) + '</td><td style="color:var(--cyan)">' + fo(r.away) + '</td><td style="font-weight:700;color:' + bestColor + '">' + best + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  // ── MULTI-BOOKMAKER COMPARISON ──
+  if (bkData.length >= 2) {
+    html += '<div style="margin-top:16px;padding:12px;background:rgba(0,212,255,0.03);border:1px solid rgba(0,212,255,0.1);border-radius:8px">';
+    html += '<div class="conv-label" style="margin-bottom:8px">Multi-Bookmaker Comparison</div>';
+    html += '<table class="vf-table"><thead><tr><th>Bookmaker</th><th>Home</th><th>Draw</th><th>Away</th><th>Margin</th></tr></thead><tbody>';
+    bkData.forEach(function(b) {
+      var mc = b.margin > 5 ? 'var(--red)' : b.margin > 3 ? 'var(--draw)' : 'var(--green)';
+      html += '<tr><td style="text-align:left;font-weight:700">' + b.name + '</td>';
+      html += '<td>' + b.h.toFixed(2) + '</td><td>' + b.d.toFixed(2) + '</td><td>' + b.a.toFixed(2) + '</td>';
+      html += '<td style="color:' + mc + ';font-weight:600">' + b.margin.toFixed(2) + '%</td></tr>';
+    });
+    html += '</tbody></table>';
+
+    // Best odds
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:11px;font-family:\'JetBrains Mono\',monospace">';
+    html += '<span>Best Home: <strong style="color:var(--green)">' + bestOdds.h.toFixed(2) + '</strong> (' + bestBk.h + ')</span>';
+    html += '<span>Best Draw: <strong style="color:var(--draw)">' + bestOdds.d.toFixed(2) + '</strong> (' + bestBk.d + ')</span>';
+    html += '<span>Best Away: <strong style="color:var(--red)">' + bestOdds.a.toFixed(2) + '</strong> (' + bestBk.a + ')</span>';
+    html += '</div>';
+
+    // Value using best odds
+    var bestOutcomes = [
+      { label:'Home', color:'var(--green)', mp:modH, odds:bestOdds.h, bp: 1/bestOdds.h },
+      { label:'Draw', color:'var(--draw)', mp:modD, odds:bestOdds.d, bp: 1/bestOdds.d },
+      { label:'Away', color:'var(--red)',  mp:modA, odds:bestOdds.a, bp: 1/bestOdds.a }
+    ];
+    // Normalize best odds implied probs
+    var bestISum = bestOutcomes.reduce(function(s,o){return s + 1/o.odds}, 0);
+    bestOutcomes.forEach(function(o){ o.bp = (1/o.odds) / bestISum; });
+    var bestHasValue = false;
+    bestOutcomes.forEach(function(o) {
+      o.edge = edgePct(o.mp, o.bp);
+      o.fairOdds = 1 / o.mp;
+      o.kelly = kellyVal(o.odds, o.mp);
+      if (o.edge > 0) bestHasValue = true;
+    });
+
+    if (bestHasValue) {
+      html += '<div style="margin-top:8px;padding:8px 12px;background:rgba(0,229,160,0.06);border-radius:5px;font-size:11px;font-family:\'JetBrains Mono\',monospace">';
+      html += '<span style="font-weight:700;color:var(--green)">Best-odds value bets:</span> ';
+      bestOutcomes.forEach(function(o) {
+        if (o.edge > 0) html += '<span style="margin-left:12px">' + o.label + ' <strong style="color:' + o.color + '">' + (o.edge > 0 ? '+' : '') + o.edge.toFixed(2) + '%</strong> @ ' + o.odds.toFixed(2) + '</span>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // ── ARBITRAGE ──
+  if (arb) {
+    html += '<div style="margin-top:12px;padding:12px;background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.2);border-radius:8px">';
+    html += '<div class="conv-label" style="margin-bottom:6px">Arbitrage Opportunity</div>';
+    html += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px;font-size:12px;font-family:\'JetBrains Mono\',monospace">';
+    html += '<span class="arb-badge arb-yes">Guaranteed Profit: ' + arb.pct.toFixed(2) + '%</span>';
+    html += '</div>';
+    html += '<div style="font-size:11px;color:var(--muted2);line-height:1.6">';
+    html += 'Bet Home @ ' + arb.hOdds.toFixed(2) + ' (' + (arb.stakeH*100).toFixed(1) + '% stake), ';
+    html += 'Draw @ ' + arb.dOdds.toFixed(2) + ' (' + (arb.stakeD*100).toFixed(1) + '% stake), ';
+    html += 'Away @ ' + arb.aOdds.toFixed(2) + ' (' + (arb.stakeA*100).toFixed(1) + '% stake).';
+    html += '</div></div>';
+  }
+
+  // ── BLENDED PROBABILITIES (Convergence × Poisson Reconstructed) ──
+  if (hasPoisson) {
+    var bH = (wH + xg.pH) / 2, bD = (wD + xg.pD) / 2, bA = (wA + xg.pA) / 2;
+    html += '<div style="margin-top:16px;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:8px">';
+    html += '<div class="conv-label" style="margin-bottom:10px">Blended Probabilities &mdash; Convergence &times; Poisson Reconstructed</div>';
+    html += '<table class="vf-table"><thead><tr><th>Source</th><th style="color:var(--green)">Home (1)</th><th style="color:var(--draw)">Draw (X)</th><th style="color:var(--red)">Away (2)</th><th>Total</th></tr></thead><tbody>';
+    html += '<tr><td>Convergence Weighted</td><td>' + fp(wH) + '</td><td>' + fp(wD) + '</td><td>' + fp(wA) + '</td><td>' + fp(wH + wD + wA) + '</td></tr>';
+    html += '<tr><td>Poisson Reconstructed</td><td>' + fp(xg.pH) + '</td><td>' + fp(xg.pD) + '</td><td>' + fp(xg.pA) + '</td><td>' + fp(xg.pH + xg.pD + xg.pA) + '</td></tr>';
+    html += '<tr style="font-weight:700;background:var(--surface2)"><td>Blended Average</td><td style="color:var(--green);font-size:13px"><strong>' + fp(bH) + '</strong></td><td style="color:var(--draw);font-size:13px"><strong>' + fp(bD) + '</strong></td><td style="color:var(--red);font-size:13px"><strong>' + fp(bA) + '</strong></td><td>' + fp(bH + bD + bA) + '</td></tr>';
+    html += '</tbody></table>';
+    html += '<div style="margin-top:8px;font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;line-height:1.6">Blend = (Convergence Weighted + Poisson Reconstructed) / 2 &mdash; combines model-market alignment with Poisson-implied distribution.</div>';
+    html += '</div>';
+  }
+
+  // ── CONFIDENCE & INTERPRETATION ──
+  var me = Math.max(outcomes[0].edge, outcomes[1].edge, outcomes[2].edge);
+  var ic = 'none', it = '';
+  if (convScore >= 70 && me > 3) { ic = 'high'; it = 'High-conviction setup. Strong model-market agreement AND positive edge. This is a prime betting opportunity. Consider 1/4 Kelly stakes.'; }
+  else if (me > 10) { ic = 'high'; it = 'Strong edge detected. The model sees significant mispricing. However, model-market disagreement is high, suggesting uncertainty. Use smaller stakes (1/8 Kelly) to manage risk.'; }
+  else if (me > 3) { ic = 'slight'; it = 'Moderate edge found. Model disagrees with the market on this outcome. Worth a small stake at 1/4 Kelly. Monitor line movements.'; }
+  else if (me > 0) { ic = 'none'; it = 'Marginal edge. The model is closely aligned with the market. Only bet if you have high conviction in your model inputs.'; }
+  else { ic = 'none'; it = 'No edge found. The market has already priced in your model probabilities. Wait for better opportunities.'; }
+  html += '<div class="interp-box ' + ic + '"><strong>Verdict:</strong> ' + it + '</div>';
+
+  // ── FOOTNOTES ──
+  html += '<div class="vf-note">';
+  html += '<strong>Methodology:</strong> ';
+  html += 'Poisson solver fits expected goals (xG) to your 1X2 probabilities via grid search. ';
+  html += 'Convergence analysis strips bookmaker margin and averages your model with the market. ';
+  html += 'Kelly staking = (odds*prob - 1)/(odds - 1). ';
+  html += 'Arbitrage detected when combined implied probability &lt; 100% across bookmakers. ';
+  html += 'Model-market convergence score ranges 0-100 (higher = more agreement).';
+  html += '</div>';
+
+  html += '</div></div>';
+  $('results').style.display = 'block';
+  $('results').innerHTML = html;
+  $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Save history
+  window._predictionHistory.push({
+    date: new Date().toLocaleDateString('en-GB'),
+    homeTeam: $('homeTeam').value || 'Home',
+    awayTeam: $('awayTeam').value || 'Away',
+    inputs: {
+      mh: $('modH').value, md: $('modD').value, ma: $('modA').value,
+      b1h: $('b1h').value, b1d: $('b1d').value, b1a: $('b1a').value,
+      b2h: $('b2h').value, b2d: $('b2d').value, b2a: $('b2a').value,
+      b3h: $('b3h').value, b3d: $('b3d').value, b3a: $('b3a').value,
+      homeTeam: $('homeTeam').value, awayTeam: $('awayTeam').value
+    },
+    prbs: { h: modH, d: modD, a: modA },
+    weights: {
+      wH: (wH * 100).toFixed(1) + '%',
+      wD: (wD * 100).toFixed(1) + '%',
+      wA: (wA * 100).toFixed(1) + '%'
+    }
+  });
+  if (window._predictionHistory.length > MAX_HISTORY) window._predictionHistory.shift();
+  saveHistory();
+  renderHistory();
+};
+
+window.clearAll = function() {
+  ['modH','modD','modA','b1h','b1d','b1a','b2h','b2d','b2a','b3h','b3d','b3a','homeTeam','awayTeam'].forEach(function(id) {
+    var el = $(id); if (el) el.value = '';
+  });
+  $('results').style.display = 'none';
+  $('errBox').classList.remove('show');
+};
+
+window.loadExample = function() {
+  $('homeTeam').value = 'Lens';
+  $('awayTeam').value = 'PSG';
+  $('modH').value = '28';
+  $('modD').value = '32';
+  $('modA').value = '40';
+  $('b1h').value = '3.00';
+  $('b1d').value = '3.60';
+  $('b1a').value = '2.05';
+  $('b2h').value = '2.95';
+  $('b2d').value = '3.50';
+  $('b2a').value = '2.10';
+  $('b3h').value = '3.10';
+  $('b3d').value = '3.55';
+  $('b3a').value = '2.00';
+  window.runAnalysis();
+};
+
+// ── Prediction History ─────────────────────────────────────────
+var MAX_HISTORY = 20;
+var STORAGE_KEY = 'betiqpro_history_value_finder';
+
+function loadHistory() {
+  try { var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e) { return []; }
+}
+function saveHistory() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window._predictionHistory)); }
+  catch(e) {}
+}
+
+window._predictionHistory = loadHistory();
+
+function renderHistory() {
+  var el = $('historyBody'), cnt = $('histCount');
+  if (!el) return;
+  var h = window._predictionHistory;
+  if (cnt) cnt.textContent = '(' + h.length + ')';
+  if (h.length === 0) {
+    el.innerHTML = '<tr><td colspan="5" class="h-empty" style="text-align:center"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = h.length - 1; i >= 0; i--) {
+    var e = h[i];
+    var idx = h.length - 1 - i;
+    var ws = e.weights || {};
+    html += '<tr>';
+    html += '<td><span class="h-date">' + e.date + '</span></td>';
+    html += '<td><span class="h-match">' + titleCase(escHtml(e.homeTeam)) + '<span class="vs">vs</span>' + titleCase(escHtml(e.awayTeam)) + '</span></td>';
+    html += '<td><div class="h-probs"><span class="h-prob h">H ' + fp(e.prbs.h) + '</span><span class="h-prob d">D ' + fp(e.prbs.d) + '</span><span class="h-prob a">A ' + fp(e.prbs.a) + '</span></div></td>';
+    html += '<td><div class="h-probs"><span class="h-prob h">H ' + e.weights.wH + '</span><span class="h-prob d">D ' + e.weights.wD + '</span><span class="h-prob a">A ' + e.weights.wA + '</span></div></td>';
+    html += '<td><div class="h-actions">' +
+      '<span class="h-btn reload" onclick="reloadEntry(' + idx + ')" title="Re-run">&#8635;</span>' +
+      '<span class="h-btn delete" onclick="deleteEntry(' + idx + ')" title="Delete">&#10005;</span>' +
+    '</div></td>';
+    html += '</tr>';
+  }
+  el.innerHTML = html;
+}
+
+window.clearHistory = function() {
+  window._predictionHistory = [];
+  saveHistory();
+  renderHistory();
+};
+
+window.deleteEntry = function(idx) {
+  var h = window._predictionHistory;
+  var realIdx = h.length - 1 - idx;
+  if (realIdx >= 0 && realIdx < h.length) h.splice(realIdx, 1);
+  saveHistory();
+  renderHistory();
+};
+
+window.reloadEntry = function(idx) {
+  var h = window._predictionHistory;
+  var realIdx = h.length - 1 - idx;
+  var e = h[realIdx];
+  if (!e || !e.inputs) return;
+  var inp = e.inputs;
+  if (inp.homeTeam !== undefined) $('homeTeam').value = inp.homeTeam;
+  if (inp.awayTeam !== undefined) $('awayTeam').value = inp.awayTeam;
+  if (inp.mh !== undefined) $('modH').value = inp.mh;
+  if (inp.md !== undefined) $('modD').value = inp.md;
+  if (inp.ma !== undefined) $('modA').value = inp.ma;
+  if (inp.b1h !== undefined) $('b1h').value = inp.b1h;
+  if (inp.b1d !== undefined) $('b1d').value = inp.b1d;
+  if (inp.b1a !== undefined) $('b1a').value = inp.b1a;
+  if (inp.b2h !== undefined) $('b2h').value = inp.b2h;
+  if (inp.b2d !== undefined) $('b2d').value = inp.b2d;
+  if (inp.b2a !== undefined) $('b2a').value = inp.b2a;
+  if (inp.b3h !== undefined) $('b3h').value = inp.b3h;
+  if (inp.b3d !== undefined) $('b3d').value = inp.b3d;
+  if (inp.b3a !== undefined) $('b3a').value = inp.b3a;
+  $('results').style.display = 'none';
+  $('errBox').classList.remove('show');
+  window.runAnalysis();
+};
+
+function escHtml(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function titleCase(s) { return (s || '').replace(/\w\S*/g, function(t){ return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase(); }); }
+
+renderHistory();
+
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); window.runAnalysis(); }
+});
+
+})();
+</script>
+<script src="header.js"></script>
+<script src="back-to-top.js"></script>
+</body>
+</html>

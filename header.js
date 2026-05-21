@@ -11,6 +11,7 @@
     '    <a href="betiq-stats.html">BetIQ Stats</a>' +
     '    <a href="match-prediction.html">Match Prediction</a>' +
     '    <a href="odds-calculator.html">Odds Calculator</a>' +
+    '    <a href="value-finder.html">Value Finder</a>' +
     '  </nav>' +
     '  <div class="header-right">' +
     '    <div class="live-badge">' +

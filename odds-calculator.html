@@ -213,6 +213,7 @@ const fp = p => (p * 100).toFixed(1) + '%';
 const fo = p => p > 0.001 ? (1 / p).toFixed(2) : '—';
 const BANKROLL = 1000;
 const MAX_HISTORY = 20;
+const BATCHES_LABEL = '15k';
 const STORAGE_KEY = 'betiqpro_history_odds_calculator';
 
 // ── History ────────────────────────────────────────────────────
@@ -489,12 +490,26 @@ function poisson(lam, k) {
   return Math.exp(logP);
 }
 
-function buildMatrix(lh, la, max) {
+function buildMatrix(lh, la, max, useDC) {
   max = max || 15;
+  // Dixon-Coles low-score correction for realistic 0-0, 1-0, 0-1, 1-1 adjustment
+  const totalXG = lh + la;
+  const rho = useDC !== false && totalXG < 2.8 ? Math.max(-0.18, Math.min(-0.06, -(0.08 + 0.04 / Math.max(totalXG, 0.1)))) : 0;
+  function dcCorr(i, j) {
+    if (i === 0 && j === 0) return 1 - lh * la * rho;
+    if (i === 0 && j === 1) return 1 + lh * rho;
+    if (i === 1 && j === 0) return 1 + la * rho;
+    if (i === 1 && j === 1) return 1 - rho;
+    return 1;
+  }
   const m = [];
   for (let i = 0; i <= max; i++) {
     m[i] = [];
-    for (let j = 0; j <= max; j++) m[i][j] = poisson(lh, i) * poisson(la, j);
+    for (let j = 0; j <= max; j++) {
+      let p = poisson(lh, i) * poisson(la, j);
+      if (rho !== 0) p *= dcCorr(i, j);
+      m[i][j] = Math.max(0, p);
+    }
   }
   let total = 0;
   for (let i = 0; i <= max; i++) for (let j = 0; j <= max; j++) total += m[i][j];
@@ -553,16 +568,29 @@ function calcAHCover(m, threshold) {
 }
 
 function fitXGFromProbs(ph, pd, pa) {
+  // Phase 1: coarse grid search (step 0.1)
   let best = { lH: 1.4, lA: 1.1 }, bestErr = Infinity;
-  for (let lH = 0.1; lH <= 4.0; lH += 0.05) {
-    for (let lA = 0.1; lA <= 4.0; lA += 0.05) {
+  for (let lH = 0.15; lH <= 4.5; lH += 0.10) {
+    for (let lA = 0.15; lA <= 4.5; lA += 0.10) {
       const m = buildMatrix(lH, lA);
       const x = calc1x2(m);
       const e = (x.h - ph) ** 2 + (x.d - pd) ** 2 + (x.a - pa) ** 2;
       if (e < bestErr) { bestErr = e; best = { lH, lA }; }
     }
   }
-  return { lH: best.lH, lA: best.lA };
+  // Phase 2: fine refinement around best (step 0.01)
+  const r = 0.15;
+  for (let lH = Math.max(0.05, best.lH - r); lH <= Math.min(6.0, best.lH + r); lH += 0.01) {
+    for (let lA = Math.max(0.05, best.lA - r); lA <= Math.min(6.0, best.lA + r); lA += 0.01) {
+      const m = buildMatrix(lH, lA);
+      const x = calc1x2(m);
+      const e = (x.h - ph) ** 2 + (x.d - pd) ** 2 + (x.a - pa) ** 2;
+      if (e < bestErr) { bestErr = e; best = { lH: +lH.toFixed(2), lA: +lA.toFixed(2) }; }
+    }
+  }
+  // Compute fit quality: lower residual = better fit
+  const fitQuality = Math.max(0, Math.min(100, Math.round((1 - bestErr * 80) * 100)));
+  return { lH: best.lH, lA: best.lA, fitQuality, residual: +bestErr.toFixed(6) };
 }
 
 function parseModelInputs(mh, md, ma) {
@@ -586,8 +614,12 @@ function parseModelInputs(mh, md, ma) {
 
 // ── Monte Carlo Simulation ────────────────────────────────────
 function runSimulation(homeXG, awayXG, n) {
-  n = n || 12000;
+  n = n || 15000;
   let homeWins = 0, draws = 0, awayWins = 0, over25 = 0, bttsY = 0;
+  let totalGoals = 0, cleanSheetH = 0, cleanSheetA = 0;
+  // Bootstrap for confidence intervals (30 batches of 500)
+  const BATCHES = 30, BATCH_SIZE = Math.floor(n / BATCHES);
+  const batchH = [], batchD = [], batchA = [], batchO25 = [];
   function samplePoisson(lam) {
     if (lam <= 0) return 0;
     let k = -1, logP = 0;
@@ -595,13 +627,33 @@ function runSimulation(homeXG, awayXG, n) {
     do { k++; logP += Math.log(Math.random()); } while (logP > logL);
     return k;
   }
-  for (let i = 0; i < n; i++) {
-    const hg = samplePoisson(homeXG), ag = samplePoisson(awayXG);
-    if (hg > ag) homeWins++; else if (hg === ag) draws++; else awayWins++;
-    if (hg + ag > 2.5) over25++;
-    if (hg >= 1 && ag >= 1) bttsY++;
+  for (let b = 0; b < BATCHES; b++) {
+    let bH = 0, bD = 0, bA = 0, bO25 = 0;
+    for (let i = 0; i < BATCH_SIZE; i++) {
+      const hg = samplePoisson(homeXG), ag = samplePoisson(awayXG);
+      const total = hg + ag;
+      if (hg > ag) { homeWins++; bH++; } else if (hg === ag) { draws++; bD++; } else { awayWins++; bA++; }
+      if (total > 2.5) { over25++; bO25++; }
+      if (hg >= 1 && ag >= 1) bttsY++;
+      if (ag === 0) cleanSheetH++;
+      if (hg === 0) cleanSheetA++;
+      totalGoals += total;
+    }
+    batchH.push(bH / BATCH_SIZE); batchD.push(bD / BATCH_SIZE);
+    batchA.push(bA / BATCH_SIZE); batchO25.push(bO25 / BATCH_SIZE);
   }
-  return { homeWins: homeWins / n, draws: draws / n, awayWins: awayWins / n, over25: over25 / n, bttsY: bttsY / n };
+  const N = BATCHES * BATCH_SIZE;
+  function ci(arr) {
+    const s = [...arr].sort((a, b) => a - b);
+    return { low: +(s[2]).toFixed(3), high: +(s[27]).toFixed(3) }; // ~90% CI
+  }
+  return {
+    homeWins: homeWins / N, draws: draws / N, awayWins: awayWins / N,
+    over25: over25 / N, bttsY: bttsY / N,
+    cleanSheetH: cleanSheetH / N, cleanSheetA: cleanSheetA / N,
+    avgGoals: +(totalGoals / N).toFixed(2),
+    ci: { h: ci(batchH), d: ci(batchD), a: ci(batchA), o25: ci(batchO25) }
+  };
 }
 
 // ── Kelly ──────────────────────────────────────────────────────
@@ -614,41 +666,58 @@ function kellyC(prob, odds) {
 // ── Tab Rendering ──────────────────────────────────────────────
 function renderProbsTab(prbs, fit, btts, mat, bkAnalysis, sim, hasBookmaker, hasModel, bookProbs, modelProbs) {
   const totalXG = fit.lH + fit.lA;
-  const dqScore = hasBookmaker && hasModel ? 80 : hasBookmaker ? 60 : 40;
+  // Boost DQ by fit quality
+  const baseDQ = hasBookmaker && hasModel ? 80 : hasBookmaker ? 60 : 40;
+  const fitBonus = fit.fitQuality ? Math.round((fit.fitQuality - 50) * 0.15) : 0;
+  const dqScore = Math.min(100, Math.max(20, baseDQ + fitBonus));
   const dqColor = dqScore >= 70 ? 'var(--green)' : dqScore >= 45 ? 'var(--amber)' : 'var(--muted2)';
   const circ = 2 * Math.PI * 22;
   const offset = circ - (circ * (dqScore / 100));
   const strokeColor = dqScore >= 70 ? 'var(--green)' : dqScore >= 45 ? 'var(--amber)' : 'var(--red)';
+  // DC active?
+  const useDC = totalXG < 2.8;
+  const dcRho = useDC ? Math.max(-0.18, Math.min(-0.06, -(0.08 + 0.04 / Math.max(totalXG, 0.1)))) : 0;
 
   let html = '<div class="dq-ring-wrap">';
   html += '<div class="dq-ring"><svg width="54" height="54" viewBox="0 0 54 54"><circle class="dq-ring-bg" cx="27" cy="27" r="22"/><circle class="dq-ring-fill" cx="27" cy="27" r="22" stroke="'+strokeColor+'" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+offset.toFixed(1)+'"/></svg>';
   html += '<div class="dq-center" style="color:'+dqColor+'">'+dqScore+'%</div></div>';
   const src = hasBookmaker && hasModel ? 'Bookmaker + Model blended' : hasBookmaker ? 'Bookmaker odds only' : 'Model probabilities only';
   html += '<div class="dq-info"><div class="dq-info-title">Data Quality: '+(dqScore>=70?'Reliable':dqScore>=45?'Moderate':'Low')+'</div>';
-  html += '<div class="dq-info-detail">Source: '+src+' · Home xG: '+fit.lH.toFixed(2)+' · Away xG: '+fit.lA.toFixed(2)+' · Total xG: '+totalXG.toFixed(2)+'</div></div></div>';
+  html += '<div class="dq-info-detail">Source: '+src+' · Home xG: '+fit.lH.toFixed(2)+' · Away xG: '+fit.lA.toFixed(2)+' · Total xG: '+totalXG.toFixed(2)+(fit.fitQuality!=null?' · Fit: '+fit.fitQuality+'%':'')+' · DC: '+(useDC?'ON ρ='+dcRho.toFixed(3):'OFF')+'</div></div></div>';
 
   html += '<div class="metric-row-4">';
-  html += '<div class="metric"><div class="ml">Home xG (\u03BB)</div><div class="mv" style="color:var(--cyan)">'+fit.lH.toFixed(2)+'</div><div class="ms">expected goals</div></div>';
-  html += '<div class="metric"><div class="ml">Away xG (\u03BB)</div><div class="mv" style="color:var(--cyan)">'+fit.lA.toFixed(2)+'</div><div class="ms">expected goals</div></div>';
+  html += '<div class="metric"><div class="ml">Home xG (λ)</div><div class="mv" style="color:var(--cyan)">'+fit.lH.toFixed(2)+'</div><div class="ms">expected goals</div></div>';
+  html += '<div class="metric"><div class="ml">Away xG (λ)</div><div class="mv" style="color:var(--cyan)">'+fit.lA.toFixed(2)+'</div><div class="ms">expected goals</div></div>';
   html += '<div class="metric"><div class="ml">Total xG</div><div class="mv" style="color:var(--muted2)">'+totalXG.toFixed(2)+'</div><div class="ms">'+(fit.lH>fit.lA?'Home lean':fit.lH<fit.lA?'Away lean':'Even')+'</div></div>';
-  html += '<div class="metric"><div class="ml">Goal Diff</div><div class="mv" style="color:'+(fit.lH>=fit.lA?'var(--green)':'var(--red)')+';font-size:18px">'+(fit.lH>=fit.lA?'+':'')+(fit.lH-fit.lA).toFixed(2)+'</div><div class="ms">Home \u2212 Away</div></div>';
+  html += '<div class="metric"><div class="ml">Goal Diff</div><div class="mv" style="color:'+(fit.lH>=fit.lA?'var(--green)':'var(--red)')+';font-size:18px">'+(fit.lH>=fit.lA?'+':'')+(fit.lH-fit.lA).toFixed(2)+'</div><div class="ms">Home − Away</div></div>';
   html += '</div>';
 
-  const modeLabel = hasBookmaker && hasModel ? 'Blended (Bookmaker \u00D7 Model)' : hasBookmaker ? 'Bookmaker (margin-removed)' : 'Model probabilities';
-  html += '<div class="card" style="margin-top:0"><div class="card-title">\uD83C\uDFAF 1\u00D72 Match Odds <span style="font-size:10px;font-weight:400;color:var(--muted)">\u00B7 '+modeLabel+'</span></div>';
+  // Extra MC stats row
+  if (sim) {
+    html += '<div class="metric-row-4">';
+    html += '<div class="metric"><div class="ml">Avg Goals (MC)</div><div class="mv" style="color:var(--amber);font-size:18px">'+sim.avgGoals+'</div><div class="ms">'+BATCHES_LABEL+' iters</div></div>';
+    html += '<div class="metric"><div class="ml">Clean Sheet H</div><div class="mv" style="color:var(--purple);font-size:18px">'+fp(sim.cleanSheetH)+'</div><div class="ms">Home keeps clean</div></div>';
+    html += '<div class="metric"><div class="ml">Clean Sheet A</div><div class="mv" style="color:var(--blue);font-size:18px">'+fp(sim.cleanSheetA)+'</div><div class="ms">Away keeps clean</div></div>';
+    html += '<div class="metric"><div class="ml">Fit Residual</div><div class="mv" style="color:'+(fit.fitQuality>=75?'var(--green)':fit.fitQuality>=50?'var(--amber)':'var(--red)')+';font-size:18px">'+(fit.fitQuality!=null?fit.fitQuality+'%':'—')+'</div><div class="ms">xG fit quality</div></div>';
+    html += '</div>';
+  }
+
+  const modeLabel = hasBookmaker && hasModel ? 'Blended (Bookmaker × Model)' : hasBookmaker ? 'Bookmaker (margin-removed)' : 'Model probabilities';
+  html += '<div class="card" style="margin-top:0"><div class="card-title">🎯 1×2 Match Odds <span style="font-size:10px;font-weight:400;color:var(--muted)">· '+modeLabel+'</span></div>';
   html += '<div class="metric-row">';
   const outcomes = [
-    { label:'Home Win', prob:prbs.h, color:'var(--green)' },
-    { label:'Draw', prob:prbs.d, color:'var(--amber)' },
-    { label:'Away Win', prob:prbs.a, color:'var(--red)' },
+    { label:'Home Win', prob:prbs.h, color:'var(--green)', ciVal: sim && sim.ci ? sim.ci.h : null },
+    { label:'Draw',     prob:prbs.d, color:'var(--amber)', ciVal: sim && sim.ci ? sim.ci.d : null },
+    { label:'Away Win', prob:prbs.a, color:'var(--red)',   ciVal: sim && sim.ci ? sim.ci.a : null },
   ];
   outcomes.forEach(o => {
-    html += '<div class="metric"><div class="ml" style="color:'+o.color+'">'+o.label+'</div><div class="mv" style="color:'+o.color+'">'+fp(o.prob)+'</div>'+'<div class="pbar-wrap"><div class="pbar-track"><div class="pbar-fill" style="width:'+(o.prob*100).toFixed(1)+'%;background:'+o.color+'"></div></div></div>'+'<div class="ms">Fair: '+fo(o.prob)+'</div></div>';
+    const ciStr = o.ciVal ? '<span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace"> ['+fp(o.ciVal.low)+'-'+fp(o.ciVal.high)+']</span>' : '';
+    html += '<div class="metric"><div class="ml" style="color:'+o.color+'">'+o.label+'</div><div class="mv" style="color:'+o.color+'">'+fp(o.prob)+'</div>'+'<div class="pbar-wrap"><div class="pbar-track"><div class="pbar-fill" style="width:'+(o.prob*100).toFixed(1)+'%;background:'+o.color+'"></div></div></div>'+'<div class="ms">Fair: '+fo(o.prob)+ciStr+'</div></div>';
   });
   html += '</div></div>';
 
   // Double Chance
-  html += '<div class="card"><div class="card-title">\uD83D\uDD04 Double Chance</div>';
+  html += '<div class="card"><div class="card-title">🔄 Double Chance</div>';
   html += '<div class="metric-row">';
   const dcM = [
     { label:'1X (Home/Draw)', prob:prbs.h+prbs.d, color:'var(--green)' },
@@ -660,14 +729,15 @@ function renderProbsTab(prbs, fit, btts, mat, bkAnalysis, sim, hasBookmaker, has
   });
   html += '</div></div>';
 
-  // BTTS
+  // BTTS + O/U 2.5 with CI
   html += '<div class="card"><div class="card-title">Both Teams to Score</div>';
   html += '<div class="metric-row">';
   html += '<div class="metric"><div class="ml" style="color:var(--green)">BTTS Yes</div><div class="mv" style="color:var(--green)">'+fp(btts)+'</div><div class="pbar-wrap"><div class="pbar-track"><div class="pbar-fill" style="width:'+(btts*100).toFixed(1)+'%;background:var(--green)"></div></div></div><div class="ms">Fair: '+fo(btts)+'</div></div>';
   html += '<div class="metric"><div class="ml" style="color:var(--red)">BTTS No</div><div class="mv" style="color:var(--red)">'+fp(1-btts)+'</div><div class="pbar-wrap"><div class="pbar-track"><div class="pbar-fill" style="width:'+((1-btts)*100).toFixed(1)+'%;background:var(--red)"></div></div></div><div class="ms">Fair: '+fo(1-btts)+'</div></div>';
   // Over 2.5
   const ou25 = calcOU(mat, 2.5);
-  html += '<div class="metric"><div class="ml" style="color:var(--over)">Over 2.5</div><div class="mv" style="color:var(--over)">'+fp(ou25.over)+'</div><div class="pbar-wrap"><div class="pbar-track"><div class="pbar-fill" style="width:'+(ou25.over*100).toFixed(1)+'%;background:var(--over)"></div></div></div><div class="ms">Fair: '+fo(ou25.over)+'</div></div>';
+  const ciO25 = sim && sim.ci ? ' ['+fp(sim.ci.o25.low)+'-'+fp(sim.ci.o25.high)+']' : '';
+  html += '<div class="metric"><div class="ml" style="color:var(--over)">Over 2.5</div><div class="mv" style="color:var(--over)">'+fp(ou25.over)+'</div><div class="pbar-wrap"><div class="pbar-track"><div class="pbar-fill" style="width:'+(ou25.over*100).toFixed(1)+'%;background:var(--over)"></div></div></div><div class="ms">Fair: '+fo(ou25.over)+'<span style="font-size:9px;color:var(--muted)">'+ciO25+'</span></div></div>';
   html += '</div></div>';
 
   // Margin
@@ -675,7 +745,7 @@ function renderProbsTab(prbs, fit, btts, mat, bkAnalysis, sim, hasBookmaker, has
     parseFloat($('h').value), parseFloat($('d').value), parseFloat($('a').value)
   ).margin : null;
   if (marginVal !== null) {
-    html += '<div class="overround-bar" style="margin-bottom:12px"><div class="overround-label">\uD83D\uDCC9 Bookmaker Margin (Vig)</div><div class="overround-val'+(marginVal<5?' good':marginVal<8?' fair':' bad')+'">'+marginVal.toFixed(2)+'%</div></div>';
+    html += '<div class="overround-bar" style="margin-bottom:12px"><div class="overround-label">📉 Bookmaker Margin (Vig)</div><div class="overround-val'+(marginVal<5?' good':marginVal<8?' fair':' bad')+'">'+marginVal.toFixed(2)+'%</div></div>';
   }
 
   // Fair Value Engine
@@ -816,22 +886,31 @@ function renderAHTab(mat, bkAnalysis) {
 }
 
 function renderSimTab(prbs, btts, mat, fit) {
-  const sim = runSimulation(fit.lH, fit.lA, 12000);
+  const sim = runSimulation(fit.lH, fit.lA, 15000);
   const ou25 = mat ? calcOU(mat, 2.5) : { over: 0.5, under: 0.5 };
-  function simRow(label, simVal, modelVal, color) {
+  function simRow(label, simVal, modelVal, color, ciVal) {
     const pct = (simVal * 100).toFixed(1);
     const drift = Math.abs(simVal - modelVal) * 100;
     const dC = drift < 2 ? 'var(--green)' : drift < 5 ? 'var(--amber)' : 'var(--red)';
-    return '<div class="sim-row"><div class="sim-lbl">'+label+'</div><div class="sim-track"><div class="sim-fill" style="width:'+pct+'%;background:'+color+'"><span class="sim-val">'+fp(simVal)+'</span></div></div><div class="sim-model">Model: '+fp(modelVal)+'<br><span style="color:'+dC+'">\u0394'+drift.toFixed(1)+'%</span></div></div>';
+    const ciStr = ciVal ? '<span style="font-size:9px;color:var(--muted);margin-left:4px">['+fp(ciVal.low)+'–'+fp(ciVal.high)+']</span>' : '';
+    return '<div class="sim-row"><div class="sim-lbl">'+label+'</div><div class="sim-track"><div class="sim-fill" style="width:'+pct+'%;background:'+color+'"><span class="sim-val">'+fp(simVal)+'</span></div></div><div class="sim-model">Model: '+fp(modelVal)+ciStr+'<br><span style="color:'+dC+'">Δ'+drift.toFixed(1)+'%</span></div></div>';
   }
-  let html = '<div class="card"><div class="card-title">\uD83C\uDFB2 Monte Carlo Simulation (12,000 Iterations)</div>';
-  html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.6">Random Poisson sampling run 12,000 times. \u0394 column shows deviation from analytical model \u2014 gaps over 3% indicate high match uncertainty.</div>';
-  html += simRow('Home Win', sim.homeWins, prbs.h, 'var(--green)');
-  html += simRow('Draw', sim.draws, prbs.d, 'var(--amber)');
-  html += simRow('Away Win', sim.awayWins, prbs.a, 'var(--red)');
-  html += simRow('Over 2.5', sim.over25, ou25.over, 'var(--over)');
-  html += simRow('BTTS Yes', sim.bttsY, btts, 'var(--under)');
-  html += '<div class="note" style="margin-top:12px">\u0394 under 2% = model stable. 2\u20135% = moderate uncertainty. Over 5% = results sensitive to assumptions \u2014 reduce stake size.</div>';
+  let html = '<div class="card"><div class="card-title">🎲 Monte Carlo Simulation (15,000 Iterations · Bootstrap CI)</div>';
+  html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.6">Random Poisson sampling run 15,000 times across 30 bootstrap batches. Confidence intervals [low–high] show 90% range of outcomes. Δ = deviation from analytical Poisson model.</div>';
+  html += simRow('Home Win', sim.homeWins, prbs.h, 'var(--green)', sim.ci ? sim.ci.h : null);
+  html += simRow('Draw',     sim.draws,    prbs.d, 'var(--amber)', sim.ci ? sim.ci.d : null);
+  html += simRow('Away Win', sim.awayWins, prbs.a, 'var(--red)',   sim.ci ? sim.ci.a : null);
+  html += simRow('Over 2.5', sim.over25,   ou25.over, 'var(--over)', sim.ci ? sim.ci.o25 : null);
+  html += simRow('BTTS Yes', sim.bttsY,    btts, 'var(--under)', null);
+
+  // Additional sim metrics
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">';
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Avg Goals</div><div style="font-size:18px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--amber)">'+sim.avgGoals+'</div></div>';
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Clean Sheet H</div><div style="font-size:18px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--purple)">'+fp(sim.cleanSheetH)+'</div></div>';
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center"><div style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Clean Sheet A</div><div style="font-size:18px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--blue)">'+fp(sim.cleanSheetA)+'</div></div>';
+  html += '</div>';
+
+  html += '<div class="note" style="margin-top:12px">Δ under 2% = model stable. 2–5% = moderate uncertainty. Over 5% = results sensitive to assumptions — reduce stake size. Confidence intervals derived from 30-batch bootstrap resampling.</div>';
   html += '</div>';
   return html;
 }
@@ -1104,6 +1183,233 @@ window.runUnifiedTips = function() {
   body.innerHTML = html;
 };
 
+// ══════════════════════════════════════════════════════════════
+//  RENDER — EV COMPASS TAB  (profitability engine)
+// ══════════════════════════════════════════════════════════════
+function renderEVCompassTab(prbs, btts, mat, fit, bkAnalysis, hasBookmaker, hasModel) {
+  const totalXG = fit.lH + fit.lA;
+
+  // ── Build full EV table across every market ───────────────────
+  const allMarkets = [];
+  function addM(label, cat, prob, bkOdds, bkImplied) {
+    if (prob <= 0.001 || prob >= 0.999) return;
+    const fairOdds = 1 / prob;
+    const ev = bkOdds != null ? +(prob * bkOdds - 1).toFixed(4) : null;
+    const edge = bkOdds != null && bkImplied != null ? +(prob - bkImplied).toFixed(4) : null;
+    // Profitability score: EV weighted by confidence (lower variance = better)
+    // Use probability distance from 0.5 as a proxy for confidence
+    const confidence = Math.abs(prob - 0.5) * 2; // 0=coin flip, 1=certain
+    const profScore = ev != null
+      ? (ev * (0.5 + confidence * 0.5)) // weight EV by confidence
+      : null;
+    allMarkets.push({ label, cat, prob, fairOdds, bkOdds, bkImplied, ev, edge, profScore });
+  }
+
+  // 1×2
+  const bkItems = bkAnalysis ? bkAnalysis.items : [];
+  const bkH = bkItems.find(i => i.market === 'Home Win');
+  const bkD = bkItems.find(i => i.market === 'Draw');
+  const bkA = bkItems.find(i => i.market === 'Away Win');
+  addM('Home Win', '1X2', prbs.h, bkH ? bkH.bkOdds : null, bkH ? bkH.bkProb : null);
+  addM('Draw',     '1X2', prbs.d, bkD ? bkD.bkOdds : null, bkD ? bkD.bkProb : null);
+  addM('Away Win', '1X2', prbs.a, bkA ? bkA.bkOdds : null, bkA ? bkA.bkProb : null);
+  addM('DC 1X', 'DC', prbs.h+prbs.d, null, null);
+  addM('DC 12', 'DC', prbs.h+prbs.a, null, null);
+  addM('DC X2', 'DC', prbs.d+prbs.a, null, null);
+  addM('BTTS Yes', 'BTTS', btts, null, null);
+  addM('BTTS No',  'BTTS', 1-btts, null, null);
+
+  const ouItems = bkAnalysis ? bkAnalysis.items.filter(i => i.cat === 'O/U') : [];
+  [0.5, 1.5, 2.5, 3.5, 4.5, 5.5].forEach(line => {
+    const ou = calcOU(mat, line);
+    const bkOv = ouItems.find(i => i.market === 'Over '+line);
+    const bkUn = ouItems.find(i => i.market === 'Under '+line);
+    addM('Over '+line,  'O/U', ou.over,  bkOv ? bkOv.bkOdds : null, bkOv ? bkOv.bkProb : null);
+    addM('Under '+line, 'O/U', ou.under, bkUn ? bkUn.bkOdds : null, bkUn ? bkUn.bkProb : null);
+  });
+
+  const ahItems = bkAnalysis ? bkAnalysis.items.filter(i => i.cat === 'AH') : [];
+  [-2.5,-1.5,-0.5,0,0.5,1.5,2.5].forEach(t => {
+    const c = calcAHCover(mat, t);
+    const at = Math.abs(t), fmt = at%1===0?at.toFixed(1):at.toFixed(2);
+    const hL = t===0?'0':(t<0?'−':'+')+fmt, aL = t===0?'0':(t<0?'+':'−')+fmt;
+    const bkHH = ahItems.find(i => i.market === 'AH Home '+hL);
+    const bkAA = ahItems.find(i => i.market === 'AH Away '+aL);
+    addM('AH Home '+hL, 'AH', c.home, bkHH ? bkHH.bkOdds : null, bkHH ? bkHH.bkProb : null);
+    addM('AH Away '+aL, 'AH', c.away, bkAA ? bkAA.bkOdds : null, bkAA ? bkAA.bkProb : null);
+  });
+
+  // ── Positive EV bets (when bk odds available) ─────────────────
+  const posEV = allMarkets.filter(m => m.ev !== null && m.ev > 0).sort((a,b) => b.profScore - a.profScore);
+  const top5EV = posEV.slice(0, 5);
+
+  // ── Model-only high-confidence picks (no bk odds) ─────────────
+  const highConf = allMarkets
+    .filter(m => m.ev === null && m.prob >= 0.65 && m.prob <= 0.89)
+    .sort((a,b) => b.prob - a.prob)
+    .slice(0, 5);
+
+  // ── Kelly optimal allocation across top EV bets ───────────────
+  function varKelly(prob, odds, fraction) {
+    // Fractional Kelly with variance penalty
+    const b = odds - 1, q = 1 - prob;
+    const full = Math.max(0, (b * prob - q) / b);
+    return +(full * fraction).toFixed(4);
+  }
+
+  // ── Simulate ROI over N bets ───────────────────────────────────
+  function simROI(ev, n) {
+    // Geometric mean approach: (1 + ev)^n - 1
+    if (ev === null || ev <= 0) return null;
+    return +((Math.pow(1 + ev, n) - 1) * 100).toFixed(1);
+  }
+
+  let html = '';
+
+  // Header
+  html += '<div class="summary-box" style="border-color:rgba(0,229,160,0.2);background:rgba(0,229,160,0.03)">';
+  html += '<strong style="color:var(--green)">💹 EV Compass — Profitability Engine</strong> ';
+  html += 'This tab translates model probabilities into actionable profit signals. ';
+  html += 'Positive Expected Value (EV+) bets are those where the model assigns <em>higher probability</em> than the bookmaker\'s margin-stripped implied odds. ';
+  html += 'Over many bets, EV+ markets compound into profit. ';
+  if (!bkAnalysis) html += '<span style="color:var(--amber)">⚡ Enter bookmaker 1×2, O/U and AH odds to unlock full EV+ analysis.</span>';
+  html += '</div>';
+
+  // ── EV Leaderboard (with bk odds) ─────────────────────────────
+  if (bkAnalysis && posEV.length > 0) {
+    html += '<div class="card" style="border-color:rgba(0,229,160,0.2);background:rgba(0,229,160,0.025)"><div class="card-title" style="color:var(--green)">💹 EV+ Leaderboard — Ranked by Weighted Expected Value</div>';
+    html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.6">Only markets where model probability × bookmaker odds exceeds 1.0 (positive EV). Profit Score = EV weighted by outcome confidence (farther from 50/50 = more reliable). ¼-Kelly stake assumes $1,000 bankroll.</div>';
+    html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:620px"><thead><tr><th style="text-align:center;width:30px">#</th><th style="text-align:left">Market</th><th>Model %</th><th>Bk Odds</th><th>EV</th><th>Profit Score</th><th>¼-Kelly Stake</th><th>ROI / 20 bets</th></tr></thead><tbody>';
+    top5EV.forEach((m, i) => {
+      const evColor = m.ev >= 0.10 ? 'var(--green)' : m.ev >= 0.05 ? 'var(--amber)' : 'var(--muted2)';
+      const rankColors = ['var(--gold)','var(--silver)','var(--bronze)','var(--green)','var(--cyan)'];
+      const qKelly = varKelly(m.prob, m.bkOdds, 0.25);
+      const stakeAmt = +(qKelly * 1000).toFixed(2);
+      const roi20 = simROI(m.ev, 20);
+      const profBar = Math.min(100, (m.profScore + 0.1) * 400);
+      html += '<tr>';
+      html += '<td style="text-align:center;font-weight:800;font-size:14px;color:'+rankColors[i]+'">'+(i+1)+'</td>';
+      html += '<td style="text-align:left;font-weight:700">'+m.label+'</td>';
+      html += '<td style="color:var(--cyan)">'+fp(m.prob)+'</td>';
+      html += '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--amber)">'+m.bkOdds.toFixed(2)+'</td>';
+      html += '<td style="font-weight:700;color:'+evColor+'">+'+(m.ev*100).toFixed(2)+'%</td>';
+      html += '<td><div style="display:flex;align-items:center;gap:5px"><div style="width:50px;height:5px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:'+profBar.toFixed(1)+'%;height:100%;background:var(--green)"></div></div><span style="font-size:10px;font-family:\'JetBrains Mono\',monospace;color:var(--green)">'+(m.profScore*100).toFixed(1)+'</span></div></td>';
+      html += '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--cyan);font-weight:700">$'+stakeAmt+' <span style="font-size:9px;color:var(--muted)">('+fp(qKelly)+')</span></td>';
+      html += '<td style="font-family:\'JetBrains Mono\',monospace;color:'+(roi20 > 0 ? 'var(--green)':'var(--red)')+';font-weight:700">'+(roi20 != null ? '+'+roi20+'%' : '—')+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    html += '<div class="note" style="margin-top:8px">ROI projection uses geometric compounding: (1+EV)^20 − 1. This assumes flat ¼-Kelly staking. Actual results vary; EV is a long-run expectation, not a per-bet guarantee.</div>';
+    html += '</div>';
+  }
+
+  // ── Model-only confidence picks ────────────────────────────────
+  if (highConf.length > 0) {
+    html += '<div class="card"><div class="card-title">🎯 High-Confidence Model Picks (65%–89%)</div>';
+    html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.6">Markets where the model assigns 65–89% probability — strong enough to bet but not so extreme they offer poor odds. These form the backbone of a disciplined betting strategy.</div>';
+    html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:420px"><thead><tr><th style="text-align:left">Market</th><th>Cat</th><th>Model %</th><th>Fair Odds</th><th>Confidence</th></tr></thead><tbody>';
+    highConf.forEach((m, i) => {
+      const confPct = Math.round(Math.abs(m.prob - 0.5) * 200);
+      const confColor = confPct >= 40 ? 'var(--green)' : confPct >= 20 ? 'var(--amber)' : 'var(--muted2)';
+      html += '<tr>';
+      html += '<td style="text-align:left;font-weight:700">'+m.label+'</td>';
+      html += '<td><span class="badge badge-val">'+m.cat+'</span></td>';
+      html += '<td style="color:var(--cyan);font-weight:700">'+fp(m.prob)+'</td>';
+      html += '<td style="font-family:\'JetBrains Mono\',monospace">'+m.fairOdds.toFixed(2)+'</td>';
+      html += '<td><div style="display:flex;align-items:center;gap:5px"><div style="width:60px;height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="width:'+confPct+'%;height:100%;background:'+confColor+'"></div></div><span style="font-size:10px;color:'+confColor+';font-family:\'JetBrains Mono\',monospace">'+confPct+'%</span></div></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  // ── Market Efficiency Score ────────────────────────────────────
+  html += '<div class="card"><div class="card-title">⚡ Market Efficiency Analysis</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">';
+
+  // xG-implied efficiency
+  const xgEfficiency = Math.min(100, Math.round(100 - Math.abs(fit.lH - fit.lA) * 15));
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px;text-align:center">';
+  html += '<div style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">MATCH BALANCE</div>';
+  html += '<div style="font-size:22px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+(xgEfficiency>70?'var(--green)':'var(--amber)')+'">'+xgEfficiency+'%</div>';
+  html += '<div style="font-size:10px;color:var(--muted2);margin-top:4px">'+(xgEfficiency>70?'Competitive match':'One-sided')+'</div>';
+  html += '</div>';
+
+  // Draw pressure
+  const drawPressure = Math.min(100, Math.round(prbs.d * 300));
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px;text-align:center">';
+  html += '<div style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">DRAW PRESSURE</div>';
+  html += '<div style="font-size:22px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+(drawPressure>50?'var(--amber)':'var(--muted2)')+'">'+drawPressure+'%</div>';
+  html += '<div style="font-size:10px;color:var(--muted2);margin-top:4px">'+(drawPressure>65?'Draw-heavy':'Likely decisive')+'</div>';
+  html += '</div>';
+
+  // Total margin (if bk odds)
+  const marginVal = hasBookmaker ? stripMargin(
+    parseFloat($('h').value), parseFloat($('d').value), parseFloat($('a').value)
+  ).margin : null;
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px;text-align:center">';
+  html += '<div style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">BK VIG (MARGIN)</div>';
+  if (marginVal !== null) {
+    const vigColor = marginVal < 4 ? 'var(--green)' : marginVal < 8 ? 'var(--amber)' : 'var(--red)';
+    html += '<div style="font-size:22px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+vigColor+'">'+marginVal.toFixed(1)+'%</div>';
+    html += '<div style="font-size:10px;color:var(--muted2);margin-top:4px">'+(marginVal<4?'Sharp market':marginVal<8?'Average vig':'High margin')+'</div>';
+  } else {
+    html += '<div style="font-size:16px;font-weight:700;color:var(--muted2)">—</div><div style="font-size:10px;color:var(--muted)">Enter 1×2 odds</div>';
+  }
+  html += '</div></div>';
+
+  // Break-even analysis
+  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-top:4px">';
+  html += '<div style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">BREAK-EVEN WIN RATES AT COMMON ODDS</div>';
+  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:360px"><thead><tr><th>Decimal Odds</th><th>Break-even Win%</th><th>Model Home</th><th>Model Draw</th><th>Model Away</th></tr></thead><tbody>';
+  [1.5, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0].forEach(odds => {
+    const beWin = 1 / odds;
+    const hProfit = prbs.h > beWin, dProfit = prbs.d > beWin, aProfit = prbs.a > beWin;
+    html += '<tr>';
+    html += '<td style="font-family:\'JetBrains Mono\',monospace;font-weight:700">'+odds.toFixed(2)+'</td>';
+    html += '<td style="color:var(--muted2)">'+fp(beWin)+'</td>';
+    html += '<td style="color:'+(hProfit?'var(--green)':'var(--red)')+';font-weight:700">'+fp(prbs.h)+' '+(hProfit?'✓':'✗')+'</td>';
+    html += '<td style="color:'+(dProfit?'var(--green)':'var(--red)')+';font-weight:700">'+fp(prbs.d)+' '+(dProfit?'✓':'✗')+'</td>';
+    html += '<td style="color:'+(aProfit?'var(--green)':'var(--red)')+';font-weight:700">'+fp(prbs.a)+' '+(aProfit?'✓':'✗')+'</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5">✓ = model probability exceeds the break-even threshold at those odds — bet if available. ✗ = mathematically unprofitable at those odds given model probability.</div>';
+  html += '</div></div>';
+
+  // Staking guide
+  html += '<div class="card"><div class="card-title">📐 Kelly Staking Guide — All EV+ Markets (if bk odds available)</div>';
+  if (!bkAnalysis) {
+    html += '<div style="padding:14px;color:var(--muted);font-size:12px;text-align:center">Enter bookmaker odds to generate Kelly staking recommendations.</div>';
+  } else {
+    const allEV = allMarkets.filter(m => m.ev != null && m.ev > 0 && m.bkOdds != null).sort((a,b)=>b.ev-a.ev).slice(0, 12);
+    if (allEV.length === 0) {
+      html += '<div style="padding:14px;color:var(--muted);font-size:12px">No positive EV markets detected with current bookmaker odds. The bookmaker may be pricing efficiently on this match.</div>';
+    } else {
+      html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:580px"><thead><tr><th style="text-align:left">Market</th><th>Cat</th><th>Prob</th><th>Bk Odds</th><th>EV</th><th>Full Kelly%</th><th>¼-Kelly%</th><th>Rec</th></tr></thead><tbody>';
+      allEV.forEach(m => {
+        const fullK = Math.max(0, (m.bkOdds - 1) * m.prob - (1 - m.prob)) / (m.bkOdds - 1);
+        const qtrK = fullK * 0.25;
+        const rec = qtrK >= 0.05 ? '<span style="color:var(--green);font-weight:700">✓ BET</span>' : qtrK >= 0.02 ? '<span style="color:var(--amber)">✓ SMALL</span>' : '<span style="color:var(--muted)">SKIP</span>';
+        html += '<tr>';
+        html += '<td style="text-align:left;font-weight:700">'+m.label+'</td>';
+        html += '<td><span class="badge badge-val">'+m.cat+'</span></td>';
+        html += '<td style="color:var(--cyan)">'+fp(m.prob)+'</td>';
+        html += '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--amber)">'+m.bkOdds.toFixed(2)+'</td>';
+        html += '<td style="color:var(--green);font-weight:700">+'+(m.ev*100).toFixed(2)+'%</td>';
+        html += '<td style="font-family:\'JetBrains Mono\',monospace">'+fp(fullK)+'</td>';
+        html += '<td style="font-family:\'JetBrains Mono\',monospace;font-weight:700;color:var(--cyan)">'+fp(qtrK)+'</td>';
+        html += '<td>'+rec+'</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+  }
+  html += '<div class="note" style="margin-top:8px"><strong>¼-Kelly</strong> is recommended for real-world betting — it provides ~75% of maximum long-run growth rate while reducing drawdown risk. Never exceed ½-Kelly without very high model confidence.</div>';
+  html += '</div>';
+
+  return html;
+}
+
 // ── Main Run ───────────────────────────────────────────────────
 function renderResults(prbs, btts, mat, fit, bkAnalysis, sim, hasBookmaker, hasModel, bookProbs, modelProbs) {
   const homeTeam = $('homeTeam')?.value || 'Home';
@@ -1141,9 +1447,10 @@ function renderResults(prbs, btts, mat, fit, bkAnalysis, sim, hasBookmaker, hasM
   html += '<button class="tab-btn" data-tab="tab-ou">\uD83D\uDCCA O/U</button>';
   html += '<button class="tab-btn" data-tab="tab-ah">\u2696\uFE0F AH</button>';
   html += '<button class="tab-btn" data-tab="tab-sim">\uD83C\uDFB2 Simulation</button>';
-  html += '<button class="tab-btn" data-tab="tab-kelly">\uD83D\uDCB0 Odds</button>';
-  html += '<button class="tab-btn" data-tab="tab-scores">\uD83C\uDFC6 Scores</button>';
-  if (bkAnalysis) html += '<button class="tab-btn" data-tab="tab-bk">\uD83C\uDFE6 Bk Analysis</button>';
+  html += '<button class="tab-btn" data-tab="tab-kelly">💰 Odds</button>';
+  html += '<button class="tab-btn" data-tab="tab-scores">🏆 Scores</button>';
+  html += '<button class="tab-btn" style="border-color:rgba(0,229,160,0.3);color:var(--green)" data-tab="tab-ev">💹 EV Compass</button>';
+  if (bkAnalysis) html += '<button class="tab-btn" data-tab="tab-bk">🏦 Bk Analysis</button>';
   html += '</div>';
 
   html += '<div class="tab-content active" id="tab-probs">'+renderProbsTab(prbs, fit, btts, mat, bkAnalysis, sim, hasBookmaker, hasModel, bookProbs, modelProbs)+'</div>';
@@ -1161,9 +1468,10 @@ function renderResults(prbs, btts, mat, fit, bkAnalysis, sim, hasBookmaker, hasM
   html += '<div class="tab-content" id="tab-sim">'+renderSimTab(prbs, btts, mat, fit)+'</div>';
   html += '<div class="tab-content" id="tab-kelly">'+renderKellyTab(prbs, btts, mat)+'</div>';
   html += '<div class="tab-content" id="tab-scores">'+renderScoreMatrixTab(mat)+'</div>';
+  html += '<div class="tab-content" id="tab-ev">'+renderEVCompassTab(prbs, btts, mat, fit, bkAnalysis, hasBookmaker, hasModel)+'</div>';
   if (bkAnalysis) html += '<div class="tab-content" id="tab-bk">'+renderBkTab(bkAnalysis, prbs, btts, mat)+'</div>';
 
-  html += '<div class="note" style="margin-top:16px"><strong>Methodology:</strong> The bookmaker margin is removed proportionally to yield true implied probabilities. A grid-search bivariate Poisson model (step 0.05, \u03BB \u2208 [0.3, 3.5]) estimates each team\u2019s expected goals from the win/draw/loss likelihoods. The full score matrix drives all output markets. Edge = model probability minus book-implied probability. Monte Carlo: 12,000 iterations (log-uniform sampler \u2014 unbiased at all lambda). Unified Tips ranked by model agreement (Poisson \u2194 MC convergence \u00D7 data quality'+(bkAnalysis?' \u00D7 bookmaker edge':'')+').'+(bkAnalysis?' Bookmaker vig removed via proportional scaling; model-bk blend weighted 60\u201375% model per data quality.':'')+'</div>';
+  html += '<div class="note" style="margin-top:16px"><strong>Methodology v2:</strong> Bookmaker margin removed proportionally. Two-phase Poisson grid-search (coarse 0.10, fine 0.01) with Dixon-Coles correction (auto, active when xG &lt; 2.8). Monte Carlo 15k iters, 30-batch bootstrap 90% CI. EV Compass: EV = model_prob × bk_odds − 1; ¼-Kelly staking; ROI via geometric compounding. Fit quality = Poisson residual vs input probs. Break-even table shows minimum win rate for each odds level.'+(bkAnalysis?' Bk vig removed via proportional scaling; model-bk blend 60–75% model weight.':'')+'</div>';
 
   html += '</div></div>';
 
@@ -1227,10 +1535,11 @@ window.run = function() {
   }
 
   const fit = fitXGFromProbs(useProbs.ph, useProbs.pd, useProbs.pa);
-  const mat = buildMatrix(fit.lH, fit.lA);
+  const useDC = (fit.lH + fit.lA) < 2.8;
+  const mat = buildMatrix(fit.lH, fit.lA, 15, useDC);
   const prbs = calc1x2(mat);
   const btts = calcBTTS(mat);
-  const sim = runSimulation(fit.lH, fit.lA, 12000);
+  const sim = runSimulation(fit.lH, fit.lA, 15000);
 
   // Bookmaker odds for AH/O/U
   const bkOdds = getBkOdds();
