@@ -296,7 +296,7 @@ window.reloadEntry = function(idx) {
   }
   $('results').style.display = 'none';
   $('errBox').classList.remove('show');
-  run();
+  run(realIdx);
 };
 
 window._predictionHistory = loadHistoryFromStorage();
@@ -1495,7 +1495,7 @@ function renderResults(prbs, btts, mat, fit, bkAnalysis, sim, hasBookmaker, hasM
   rd.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-window.run = function() {
+window.run = function(overwriteIdx) {
   const errBox = $('errBox');
   errBox.classList.remove('show');
 
@@ -1588,7 +1588,7 @@ window.run = function() {
   renderResults(prbs, btts, mat, fit, bkAnalysis, sim, hasBookmaker, hasModel, bookProbs, modelProbs);
 
   // History
-  window._predictionHistory.push({
+  const entry = {
     date: new Date().toLocaleDateString('en-GB'),
     homeTeam: $('homeTeam')?.value || 'Home Team',
     awayTeam: $('awayTeam')?.value || 'Away Team',
@@ -1601,8 +1601,18 @@ window.run = function() {
     },
     prbs: { h: prbs.h, d: prbs.d, a: prbs.a },
     unifiedTips: unifiedTips
-  });
-  if (window._predictionHistory.length > MAX_HISTORY) window._predictionHistory.shift();
+  };
+  if (overwriteIdx !== undefined && overwriteIdx >= 0 && overwriteIdx < window._predictionHistory.length) {
+    window._predictionHistory[overwriteIdx] = entry;
+  } else {
+    const ht = $('homeTeam')?.value || '', at = $('awayTeam')?.value || '';
+    let existingIdx = -1;
+    for (let i = 0; i < window._predictionHistory.length; i++) {
+      if (window._predictionHistory[i].homeTeam === ht && window._predictionHistory[i].awayTeam === at) { existingIdx = i; break; }
+    }
+    if (existingIdx >= 0) { window._predictionHistory[existingIdx] = entry; }
+    else { window._predictionHistory.push(entry); if (window._predictionHistory.length > MAX_HISTORY) window._predictionHistory.shift(); }
+  }
   saveHistoryToStorage();
   renderHistory();
 }

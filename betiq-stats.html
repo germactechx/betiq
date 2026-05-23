@@ -555,7 +555,7 @@ window.reloadEntry=function(idx){
   set('bkOULine',inp.bkOULine||'');set('bkOver',inp.bkOver||'');set('bkUnder',inp.bkUnder||'');
   set('bkAHLine',inp.bkAHLine||'');set('bkAHHome',inp.bkAHHome||'');set('bkAHAway',inp.bkAHAway||'');
   $('results').style.display='none';
-  window.runAnalysis();
+  window.runAnalysis(realIdx);
 };
 
 function escHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
@@ -1992,7 +1992,7 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
 // ══════════════════════════════════════════════════════════════
 //  RUN ANALYSIS
 // ══════════════════════════════════════════════════════════════
-window.runAnalysis=function(){
+window.runAnalysis=function(overwriteIdx){
   const errBox=$('errBox');errBox.classList.remove('show');
   const homeGF=getNum('homeGF'),homeGA=getNum('homeGA'),awayGF=getNum('awayGF'),awayGA=getNum('awayGA');
   const homeGFAll=getNum('homeGFAll'),homeGAAll=getNum('homeGAAll'),awayGFAll=getNum('awayGFAll'),awayGAAll=getNum('awayGAAll');
@@ -2025,7 +2025,7 @@ window.runAnalysis=function(){
 
     const homeTeam=getStr('homeTeam')||'Home';
     const awayTeam=getStr('awayTeam')||'Away';
-    window._predictionHistory.push({
+    const entry={
       date:new Date().toLocaleDateString('en-GB'),
       homeTeam,awayTeam,
       inputs:{
@@ -2044,15 +2044,23 @@ window.runAnalysis=function(){
         awayWL6:$('awayWL6')?.value||'',awayDL6:$('awayDL6')?.value||'',awayLL6:$('awayLL6')?.value||'',
         homeForm:$('homeForm')?.value||'',awayForm:$('awayForm')?.value||'',
         compType:$('compType')?.value||'league',
-        // bookmaker odds
         bkHome:$('bkHome')?.value||'',bkDraw:$('bkDraw')?.value||'',bkAway:$('bkAway')?.value||'',
         bkOULine:$('bkOULine')?.value||'',bkOver:$('bkOver')?.value||'',bkUnder:$('bkUnder')?.value||'',
         bkAHLine:$('bkAHLine')?.value||'',bkAHHome:$('bkAHHome')?.value||'',bkAHAway:$('bkAHAway')?.value||''
       },
       prbs:{h:prbs.h,d:prbs.d,a:prbs.a},
       unifiedTips:[]
-    });
-    if(window._predictionHistory.length>MAX_HISTORY) window._predictionHistory.shift();
+    };
+    if(overwriteIdx!==undefined&&overwriteIdx>=0&&overwriteIdx<window._predictionHistory.length){
+      window._predictionHistory[overwriteIdx]=entry;
+    }else{
+      let existingIdx=-1;
+      for(let i=0;i<window._predictionHistory.length;i++){
+        if(window._predictionHistory[i].homeTeam===homeTeam&&window._predictionHistory[i].awayTeam===awayTeam){existingIdx=i;break;}
+      }
+      if(existingIdx>=0){window._predictionHistory[existingIdx]=entry;}
+      else{window._predictionHistory.push(entry);if(window._predictionHistory.length>MAX_HISTORY)window._predictionHistory.shift();}
+    }
     saveHistoryToStorage();
     renderHistory();
   } catch(err){errBox.textContent='Analysis error: '+err.message;errBox.classList.add('show');console.error(err);}

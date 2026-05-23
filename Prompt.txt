@@ -1,0 +1,72 @@
+
+
+
+Uchambuzi wa Mechi ya Soka – Takwimu Kamili za BetIQ Predictor
+
+Nipe takwimu za mechi hii kwa ajili ya kuzijaza kwenye mfumo wa utabiri wa BetIQ:
+
+Timu: [JINA LA TIMU YA NYUMBANI] vs [JINA LA TIMU YA UGENI]
+Tarehe ya Mechi: [SIKU/MWEZI/MWAKA, e.g. 10/11/2024]
+Ligi/Shindano: [e.g. Premier League, Champions League, FA Cup, Friendly]
+Aina ya Mashindano: [league / cup / playoff / friendly]  (chagua moja)
+
+Nataka data zifuatazo zote (nambari kamili au desimali):
+
+=== FULL TIME STATS ===
+
+1. All Matches Combined (msimu mzima, mechi za shindano hili tu):
+   - Home GF All (wastani wa mabao waliyofunga nyumbani)
+   - Home GA All (wastani wa mabao waliyofungwa nyumbani)
+   - Away GF All (wastani wa mabao waliyofunga ugeni)
+   - Away GA All (wastani wa mabao waliyofungwa ugeni)
+
+2. Venue Stats (nyumbani/ugeni pekee katika shindano hili):
+   - Home GF, Home GA, Away GF, Away GA
+
+3. 1x2 All Matches:
+   - Home: W, D, L (msimu mzima, shindano hili)
+   - Away: W, D, L (msimu mzima, shindano hili)
+
+4. 1x2 Venue:
+   - Home: W, D, L (nyumbani pekee)
+   - Away: W, D, L (ugeni pekee)
+
+5. Last 6 Matches GF/GA (mechi 6 za mwisho katika shindano hili):
+   - Home GF (L6), Home GA (L6)
+   - Away GF (L6), Away GA (L6)
+
+6. 1x2 Last 6:
+   - Home: W, D, L
+   - Away: W, D, L
+
+7. Form (oldest→newest, W/D/L):
+   - Home Form (mfano: LWDWW)
+   - Away Form (mfano: DLLWW)
+
+=== HALF TIME STATS === (nusu ya kwanza pekee)
+
+8. HT All Matches Combined:
+   - Home HT GF All, Home HT GA All
+   - Away HT GF All, Away HT GA All
+
+9. HT Venue Stats:
+   - Home HT GF, Home HT GA
+   - Away HT GF, Away HT GA
+
+10. HT Last 6 GF/GA:
+    - Home HT GF (L6), Home HT GA (L6)
+    - Away HT GF (L6), Away HT GA (L6)
+
+11. HT 1x2 All Matches:
+    - Home HT: W, D, L (msimu mzima)
+    - Away HT: W, D, L (msimu mzima)
+
+12. HT 1x2 Venue:
+    - Home HT: W, D, L (nyumbani)
+    - Away HT: W, D, L (ugeni)
+
+13. HT 1x2 Last 6:
+    - Home HT: W, D, L (mechi 6 za mwisho)
+    - Away HT: W, D, L (mechi 6 za mwisho)
+
+Tafadhali toa data sahihi kwa kadri uwezavyo. Kama huna uhakika, weka "approx". Usiruke sehemu yoyote. Tumia msimu unaolingana na tarehe ya mechi, na takwimu za shindano husika pekee (si msimu mzima kwa pamoja).

@@ -720,7 +720,7 @@ window.reloadEntry=function(idx){
     if(bkBody&&bkBody.style.display==='none'){bkBody.style.display='block';if(bkChev)bkChev.classList.add('open');}
   }
   $('results').style.display='none';
-  window.runAnalysis();
+  window.runAnalysis(realIdx);
 };
 
 function escHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
@@ -1979,7 +1979,7 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
 // ══════════════════════════════════════════════════════════════
 //  RUN ANALYSIS
 // ══════════════════════════════════════════════════════════════
-window.runAnalysis=function(){
+window.runAnalysis=function(overwriteIdx){
   const errBox=$('errBox');errBox.classList.remove('show');
   const homeGF=getNum('homeGF'),homeGA=getNum('homeGA'),awayGF=getNum('awayGF'),awayGA=getNum('awayGA');
   const homeGFAll=getNum('homeGFAll'),homeGAAll=getNum('homeGAAll'),awayGFAll=getNum('awayGFAll'),awayGAAll=getNum('awayGAAll');
@@ -2024,7 +2024,8 @@ window.runAnalysis=function(){
 
     const homeTeam=getStr('homeTeam')||'Home';
     const awayTeam=getStr('awayTeam')||'Away';
-    window._predictionHistory.push({
+    const ht=$('homeTeam')?.value||'',at=$('awayTeam')?.value||'';
+    const entry={
       date:new Date().toLocaleDateString('en-GB'),
       homeTeam,awayTeam,
       inputs:{
@@ -2063,8 +2064,17 @@ window.runAnalysis=function(){
       },
       prbs:{h:prbs.h,d:prbs.d,a:prbs.a},
       unifiedTips:[]
-    });
-    if(window._predictionHistory.length>MAX_HISTORY) window._predictionHistory.shift();
+    };
+    if(overwriteIdx!==undefined&&overwriteIdx>=0&&overwriteIdx<window._predictionHistory.length){
+      window._predictionHistory[overwriteIdx]=entry;
+    }else{
+      let existingIdx=-1;
+      for(let i=0;i<window._predictionHistory.length;i++){
+        if(window._predictionHistory[i].homeTeam===ht&&window._predictionHistory[i].awayTeam===at){existingIdx=i;break;}
+      }
+      if(existingIdx>=0){window._predictionHistory[existingIdx]=entry;}
+      else{window._predictionHistory.push(entry);if(window._predictionHistory.length>MAX_HISTORY)window._predictionHistory.shift();}
+    }
     saveHistoryToStorage();
     renderHistory();
   } catch(err){errBox.textContent='Analysis error: '+err.message;errBox.classList.add('show');console.error(err);}
