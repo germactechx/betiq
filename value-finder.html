@@ -239,7 +239,7 @@ function poisson(lam, k) {
 }
 
 window.computeModelFromGoals = function() {
-  var lb = parseFloat($('gsLeagueBase').value) || 1.35;
+  var lb = parseFloat($('gsLeagueBase').value) || 1.30;
   var hGFAll = parseFloat($('gsHomeGFAll').value), hGAAll = parseFloat($('gsHomeGAAll').value);
   var aGFAll = parseFloat($('gsAwayGFAll').value), aGAAll = parseFloat($('gsAwayGAAll').value);
   var hGF = parseFloat($('gsHomeGF').value), hGA = parseFloat($('gsHomeGA').value);
@@ -747,7 +747,7 @@ window.runAnalysis = function(overwriteIdx) {
   }
   html += '</div>';
 
-  // Tab 3: Poisson Markets
+  // Tab 2: Poisson Markets
   html += '<div id="secPoisson" class="tab-content">';
   if (hasPoisson) {
     html += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-family:\'JetBrains Mono\',monospace;font-size:11px">';
@@ -803,7 +803,7 @@ window.runAnalysis = function(overwriteIdx) {
   }
   html += '</div>';
 
-  // Tab 4: Convergence
+  // Tab 3: Convergence
   html += '<div id="secConv" class="tab-content">';
   html += '<div class="conv-label" style="margin-bottom:8px">Model vs Market Delta</div>';
   html += '<table class="vf-table"><thead><tr><th>Outcome</th><th>Model %</th><th>Book (no-vig) %</th><th>Delta</th><th>Convergence Weight</th></tr></thead><tbody>';
@@ -843,7 +843,7 @@ window.runAnalysis = function(overwriteIdx) {
   html += '<div style="margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:5px;font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;line-height:1.6">Delta = Book no-vig % minus Model %. Negative delta (model higher) means the model sees value. The convergence weight blends model probability with book probability, weighted by the delta magnitude.</div>';
   html += '</div>';
 
-  // Tab 5: Signal History
+  // Tab 4: Signal History
   html += '<div id="secSignals" class="tab-content">';
   html += '<div class="conv-label" style="margin-bottom:8px">Brier-Weighted Ensemble</div>';
   html += '<table class="vf-table"><thead><tr><th>Signal</th><th style="color:var(--green)">Home (1)</th><th style="color:var(--draw)">Draw (X)</th><th style="color:var(--red)">Away (2)</th><th>Pick</th><th>Brier</th><th>Samples</th><th>Weight</th></tr></thead><tbody>';
@@ -1173,7 +1173,7 @@ function renderProfitTracker() {
       if (cBest && cBest.odds > 0 && cBest.cp > 0) {
         var cBkP = 1/cBest.odds, cEdge = (cBest.cp - cBkP)/cBkP;
         var ck = cEdge > 0 ? cEdge/(cBest.odds-1) : 0;
-        if (ck <= 0) ck = 0.01; if (ck > 0.25) ck = 0.25;
+        if (ck > 0.25) ck = 0.25;
         var cst = Math.round(1000*ck); cTot += cst;
         var cWin = false;
         if (he.result === '1' && (cBest.l === '1X' || cBest.l === '12')) cWin = true;
@@ -1193,7 +1193,7 @@ function renderProfitTracker() {
       if (bwOdds > 0 && bwProb > 0) {
         var bwEdge = (bwProb - bwBkP)/bwBkP;
         var bwk = bwEdge > 0 ? bwEdge/(bwOdds-1) : 0;
-        if (bwk <= 0) bwk = 0.01; if (bwk > 0.25) bwk = 0.25;
+        if (bwk > 0.25) bwk = 0.25;
         var bwst = Math.round(1000*bwk); bwTot += bwst;
         var bwSideLbl = sm[bwSide];
         if (bwSideLbl === he.result) { bwW++; bwP += Math.round(bwst*(bwOdds-1)); } else { bwL++; bwP -= bwst; }
