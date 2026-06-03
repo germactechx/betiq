@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BetIQ - Stats Based Football Predictor</title>
+<title>BetIQ - Stats Football Predictor</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
@@ -37,6 +37,9 @@
 
 /* ── Edge in pick cards ──────────────────────────────── */
 .pick-edge{margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+
+/* ── Bookmaker note ─────────────────────────────────── */
+.bk-note{font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:14px;padding:10px 14px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.12);border-left:3px solid var(--purple);border-radius:4px;}
 </style>
 </head>
 <body>
@@ -49,7 +52,7 @@
     <div class="stack">
       <div class="panel">
         <div class="panel-hd">
-          <div class="panel-title">⚽ Stats Advanced Prediction Engine</div>
+          <div class="panel-title">Stats Advanced Prediction Engine</div>
           <div class="panel-sub">Poisson · Dixon-Coles (Dynamic ρ) · WDL Strength · Monte Carlo</div>
         </div>
         <div class="panel-bd">
@@ -162,7 +165,7 @@
 
           <!-- BOOKMAKER ODDS -->
           <div class="slabel">🏦 Bookmaker Odds <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — sharpens value detection)</span></div>
-          <div class="bk-note" style="margin-bottom:14px">Enter decimal odds from your bookmaker. The model will cross-reference implied probabilities with Poisson probs to detect edges and calibrate picks.</div>
+          <div class="bk-note">Enter decimal odds from your bookmaker. The model cross-references vig-free implied probabilities with Poisson projections to detect edges and calibrate picks.</div>
 
           <div class="slabel">1X2 Odds <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(decimal, e.g. 1.85 / 3.40 / 4.20)</span></div>
           <div class="g3" style="margin-bottom:14px">
@@ -230,7 +233,12 @@
     <div class="hist-panel">
       <div class="panel-hd">
         <div class="panel-title">📋 Prediction History <span class="hist-count" id="histCount">(0)</span></div>
-        <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="h-btn h-btn-clear" onclick="exportHistory()" title="Export as JSON">↑ JSON</button>
+          <button class="h-btn h-btn-clear" onclick="document.getElementById('importFile').click()" title="Import from JSON">↓ JSON</button>
+          <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importHistory(event)">
+        </div>
       </div>
       <div class="hist-table-wrap">
         <table class="htbl">
@@ -254,7 +262,11 @@
 
   <div id="footer"></div>
 
+</div>
+
+<script src="header.js"></script>
 <script src="footer.js"></script>
+<script src="back-to-top.js"></script>
 <script>
 (function(){
 'use strict';
@@ -461,7 +473,7 @@ function renderBkCompCard(bkAnalysis){
 window._lastBkAnalysis = null;
 
 // ── Prediction History (localStorage) ─────────────────────────
-const MAX_HISTORY=20;
+const MAX_HISTORY=150;
 const STORAGE_KEY='betiqpro_history_betiq_stats';
 
 function loadHistoryFromStorage(){
@@ -501,7 +513,7 @@ function renderHistory(){
       tipsHtml='<span style="color:var(--muted);font-size:11px;font-family:\'JetBrains Mono\',monospace">— run Unified Tips</span>';
     }
     html+='<tr>';
-    html+='<td><span class="h-date">'+e.date+'</span></td>';
+    html+='<td><span class="h-date">'+escHtml(e.date)+'</span></td>';
     html+='<td><span class="h-match">'+escHtml(e.homeTeam)+'<span class="vs">vs</span>'+escHtml(e.awayTeam)+'</span></td>';
     html+='<td><div class="h-probs"><span class="h-prob h">H&nbsp;'+fp(e.prbs.h)+'</span><span class="h-prob d">D&nbsp;'+fp(e.prbs.d)+'</span><span class="h-prob a">A&nbsp;'+fp(e.prbs.a)+'</span></div></td>';
     html+='<td><div class="h-tips">'+tipsHtml+'</div></td>';
@@ -513,6 +525,38 @@ function renderHistory(){
   }
   el.innerHTML=html;
 }
+
+window.exportHistory=async function(){
+  const hist=window._predictionHistory||[];
+  if(hist.length===0){alert('No history to export.');return;}
+  try{
+    const handle=await window.showSaveFilePicker({
+      suggestedName:'betiqpro_history_betiq_stats.json',
+      types:[{description:'JSON',accept:{'application/json':['.json']}}]
+    });
+    const writable=await handle.createWritable();
+    await writable.write(JSON.stringify(hist,null,2));
+    await writable.close();
+  }catch(err){if(err.name!=='AbortError')alert('Save failed: '+err.message);}
+};
+
+window.importHistory=function(evt){
+  const file=evt.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!Array.isArray(data)){alert('Invalid file: expected a JSON array.');return;}
+      window._predictionHistory=data;
+      saveHistoryToStorage();
+      renderHistory();
+      alert('Imported '+data.length+' prediction(s).');
+    }catch(err){alert('Error reading file: '+err.message);}
+  };
+  reader.readAsText(file);
+  evt.target.value='';
+};
 
 window.clearHistory=function(){
   window._predictionHistory=[];
@@ -2124,8 +2168,6 @@ document.addEventListener('keydown',e=>{
 
 })();
 </script>
-<script src="header.js"></script>
-<script src="back-to-top.js"></script>
 </body>
 </html>
 

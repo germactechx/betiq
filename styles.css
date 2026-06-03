@@ -1,5 +1,5 @@
 /* ================================================================
-   BetIQ PRO — Global Stylesheet (Corrected)
+   BetIQ — Global Stylesheet (Corrected)
    ================================================================ */
 
 :root {
@@ -134,17 +134,6 @@ header {
 }
 
 .logo-text span { color: var(--cyan); }
-
-.logo-badge {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: var(--cyan);
-  border: 1px solid rgba(0,212,255,0.3);
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: rgba(0,212,255,0.07);
-}
 
 /* Nav */
 .navbar {
@@ -1620,7 +1609,6 @@ footer {
   .navbar    { margin: 0 -8px; width: calc(100% + 16px); }
 
   .logo-text { font-size: 15px; }
-  .logo-badge{ display: none; }
 
   /* Single column fallback for very narrow screens */
   .grid3, .g3,

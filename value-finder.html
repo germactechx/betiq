@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BetIQ - Value Finder Pro</title>
+<title>BetIQ - Value Finder</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
 .vf-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
-.vf-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-@media(max-width:600px){.vf-grid,.vf-grid2{grid-template-columns:1fr}}
+@media(max-width:600px){.vf-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.vf-grid3{grid-template-columns:1fr!important}}
 .vf-table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
 .vf-table th{background:var(--surface2);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:8px;border-bottom:1px solid var(--border);text-align:center}
@@ -17,10 +16,6 @@
 .vf-table tr:last-child td{border-bottom:none}
 .vf-table td:first-child{text-align:left;font-weight:600;color:var(--muted2);font-family:'Inter',sans-serif}
 .pos{color:var(--green)}.neg{color:var(--red)}.neu{color:var(--muted2)}
-.pred-badge{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace}
-.pred-badge.hm{background:rgba(0,229,160,0.12);color:var(--green);border:1px solid rgba(0,229,160,0.3)}
-.pred-badge.drw{background:rgba(245,200,66,0.12);color:var(--draw);border:1px solid rgba(245,200,66,0.3)}
-.pred-badge.aw{background:rgba(255,77,109,0.12);color:var(--red);border:1px solid rgba(255,77,109,0.3)}
 .vf-note{font-size:10px;color:var(--muted);line-height:1.7;margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:5px}
 .conv-label{font-size:10px;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px}
 
@@ -35,9 +30,8 @@
 .pick-card.none::before{background:var(--muted)}
 .picks-row{display:flex;gap:12px;margin-bottom:12px}
 .picks-row .pick-card{flex:1;min-width:0;margin-bottom:0}
-@media(max-width:600px){.picks-row{flex-direction:column}}.dc-badge{font-size:10px;font-weight:700;color:var(--cyan);font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-transform:uppercase;border:1px solid rgba(0,194,255,0.2);background:rgba(0,194,255,0.06);padding:2px 7px;border-radius:3px;margin-left:8px;display:inline-flex;align-items:center}
+@media(max-width:600px){.picks-row{flex-direction:column}}
 .pick-badge{font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace}
-.pick-badge-small{font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace}
 .pick-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .pick-stat{text-align:center;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;flex:1;min-width:60px}
 .pick-stat-label{font-size:8px;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
@@ -75,7 +69,7 @@
     <div class="panel">
       <div class="panel-hd">
         <div class="panel-title">Value Finder Pro</div>
-        <div class="panel-sub">Poisson · Convergence · Brier-Weighted Ensemble · Kelly Staking</div>
+        <div class="panel-sub">Dixon-Coles · Convergence · Brier-Weighted Blended · BWB Probability (Alt) · Kelly Staking</div>
       </div>
       <div class="panel-bd">
 
@@ -94,31 +88,35 @@
           </div>
         </div>
 
-        <details style="margin-bottom:16px">
-          <summary style="font-size:11px;font-weight:700;color:var(--muted2);cursor:pointer;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;list-style:none;display:flex;align-items:center;justify-content:space-between">
-            <span> Goal Stats <span style="font-size:9px;font-weight:400;color:var(--muted)">(optional — auto-fills Model Probabilities)</span></span>
-            <span style="color:var(--muted);font-size:10px">&#9660;</span>
-          </summary>
-          <div style="padding:14px;background:var(--bg);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px">
-            <div class="slabel" style="margin-bottom:8px">All Competitions (Avg Goals)</div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-              <div class="field"><label>Home GF</label><input id="gsHomeGFAll" type="number" step="0.01" min="0" placeholder="e.g. 1.25" oninput="computeModelFromGoals()"></div>
-              <div class="field"><label>Home GA</label><input id="gsHomeGAAll" type="number" step="0.01" min="0" placeholder="e.g. 1.12" oninput="computeModelFromGoals()"></div>
-              <div class="field"><label>Away GF</label><input id="gsAwayGFAll" type="number" step="0.01" min="0" placeholder="e.g. 2.20" oninput="computeModelFromGoals()"></div>
-              <div class="field"><label>Away GA</label><input id="gsAwayGAAll" type="number" step="0.01" min="0" placeholder="e.g. 0.80" oninput="computeModelFromGoals()"></div>
+        <div style="margin-bottom:16px;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px">
+          <div class="slabel" style="margin-bottom:8px">Goal Stats <span style="font-size:9px;font-weight:400;color:var(--muted)">(optional — auto-fills Model Probabilities)</span></div>
+          <div class="slabel" style="margin-bottom:8px">All Competitions (Avg Goals)</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+            <div class="field"><label>Home GF</label><input id="gsHomeGFAll" type="number" step="0.01" min="0" placeholder="e.g. 1.25" oninput="computeModelFromGoals()"></div>
+            <div class="field"><label>Home GA</label><input id="gsHomeGAAll" type="number" step="0.01" min="0" placeholder="e.g. 1.12" oninput="computeModelFromGoals()"></div>
+            <div class="field"><label>Away GF</label><input id="gsAwayGFAll" type="number" step="0.01" min="0" placeholder="e.g. 2.20" oninput="computeModelFromGoals()"></div>
+            <div class="field"><label>Away GA</label><input id="gsAwayGAAll" type="number" step="0.01" min="0" placeholder="e.g. 0.80" oninput="computeModelFromGoals()"></div>
+          </div>
+          <div class="slabel" style="margin-bottom:8px">Home / Away Venue (Avg Goals)</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+            <div class="field"><label>Home GF</label><input id="gsHomeGF" type="number" step="0.01" min="0" placeholder="e.g. 1.60" oninput="computeModelFromGoals()"></div>
+            <div class="field"><label>Home GA</label><input id="gsHomeGA" type="number" step="0.01" min="0" placeholder="e.g. 0.80" oninput="computeModelFromGoals()"></div>
+            <div class="field"><label>Away GF</label><input id="gsAwayGF" type="number" step="0.01" min="0" placeholder="e.g. 2.10" oninput="computeModelFromGoals()"></div>
+            <div class="field"><label>Away GA</label><input id="gsAwayGA" type="number" step="0.01" min="0" placeholder="e.g. 0.95" oninput="computeModelFromGoals()"></div>
+          </div>
+          <div style="margin-top:8px">
+            <div onclick="var c=this.parentNode.querySelector('.lb-body');var i=this.querySelector('.lb-chevron');c.style.display=c.style.display==='none'?'':'none';i.textContent=c.style.display==='none'?'▶':'▼'" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:4px 0;-webkit-user-select:none;user-select:none">
+              <span class="lb-chevron" style="font-size:10px;color:var(--muted);transition:transform .15s">▶</span>
+              <span style="font-size:11px;font-weight:600;color:var(--muted2)">League Base &amp; Dixon-Coles ρ</span>
             </div>
-            <div class="slabel" style="margin-bottom:8px">Home / Away Venue (Avg Goals)</div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-              <div class="field"><label>Home GF</label><input id="gsHomeGF" type="number" step="0.01" min="0" placeholder="e.g. 1.60" oninput="computeModelFromGoals()"></div>
-              <div class="field"><label>Home GA</label><input id="gsHomeGA" type="number" step="0.01" min="0" placeholder="e.g. 0.80" oninput="computeModelFromGoals()"></div>
-              <div class="field"><label>Away GF</label><input id="gsAwayGF" type="number" step="0.01" min="0" placeholder="e.g. 2.10" oninput="computeModelFromGoals()"></div>
-              <div class="field"><label>Away GA</label><input id="gsAwayGA" type="number" step="0.01" min="0" placeholder="e.g. 0.95" oninput="computeModelFromGoals()"></div>
-            </div>
-            <div class="vf-grid" style="margin-top:8px">
-              <div class="field"><label>League Base (avg G/ match)</label><input id="gsLeagueBase" type="number" step="0.01" min="0.1" value="1.30" oninput="computeModelFromGoals()"></div>
+            <div class="lb-body" style="display:none;padding-top:6px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="field"><label style="font-size:10px">League Base (avg G/match)</label><input id="gsLeagueBase" type="number" step="0.01" min="0.1" value="1.30" oninput="computeModelFromGoals()"></div>
+                <div class="field"><label style="font-size:10px">Dixon-Coles ρ <span style="font-weight:400;color:var(--muted)">(typ. -0.20 to -0.05)</span></label><input id="gsRho" type="number" step="0.01" min="-0.5" max="0.5" value="-0.13" oninput="computeModelFromGoals()"></div>
+              </div>
             </div>
           </div>
-        </details>
+        </div>
 
         <div class="slabel" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           Your Model Probabilities
@@ -148,7 +146,7 @@
               <input id="bankroll" type="number" step="100" min="100" value="10000" style="width:100%">
             </div>
             <span style="font-size:11px;font-weight:700;color:var(--muted2);font-family:'JetBrains Mono',monospace">TZS</span>
-            <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">— Stake = Kelly% × Bankroll (editable)</span>
+            <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">— BWB: Kelly% × Bankroll · BWB-P: Prob-based stake (editable)</span>
           </div>
         </div>
 
@@ -180,8 +178,6 @@
             <option value="50">Last 50</option>
             <option value="100">Last 100</option>
           </select>
-          <button class="h-btn h-btn-clear" onclick="exportHistory('csv')" title="Export as CSV">CSV</button>
-          <button class="h-btn h-btn-clear" onclick="exportHistory('json')" title="Export as JSON">JSON</button>
         </div>
       </div>
       <div class="hist-table-wrap">
@@ -197,7 +193,13 @@
     <div class="hist-panel">
       <div class="panel-hd">
         <div class="panel-title">Prediction History <span class="hist-count" id="histCount">(0)</span></div>
-        <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">Clear All</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="h-btn h-btn-clear" onclick="exportHistory('csv')" title="Export as CSV">CSV</button>
+          <button class="h-btn h-btn-clear" onclick="exportHistory('json')" title="Export as JSON">↑ JSON</button>
+          <button class="h-btn h-btn-clear" onclick="document.getElementById('importFile').click()" title="Import from JSON">↓ JSON</button>
+          <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">Clear All</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importHistory(event)">
+        </div>
       </div>
       <div class="hist-table-wrap">
         <table class="htbl">
@@ -207,12 +209,10 @@
               <th style="text-align:left">Match</th>
               <th style="text-align:center;width:120px">BWB 1X2</th>
               <th style="text-align:center;width:100px">Pick</th>
-              <th style="text-align:center;width:80px">Panic</th>
-              <th style="text-align:center;width:80px">BWB Conf</th>
               <th style="text-align:center;width:50px">Result</th>
               <th style="text-align:center;width:40px">P/L</th>
-              <th style="text-align:center;width:60px">Panic P/L</th>
-              <th style="text-align:center;width:60px">BWB Conf P/L</th>
+              <th style="text-align:center;width:40px">P/L (P)</th>
+              <th style="text-align:center;width:50px">P/L (DC)</th>
               <th style="text-align:center;width:80px">Actions</th>
             </tr>
           </thead>
@@ -227,7 +227,9 @@
   <div id="footer"></div>
 </div>
 
+<script src="header.js"></script>
 <script src="footer.js"></script>
+<script src="back-to-top.js"></script>
 <script>
 (function(){
 
@@ -301,6 +303,32 @@ function poisson(lam, k) {
   return Math.exp(logP);
 }
 
+function getRho() {
+  try {
+    var el = $('gsRho');
+    if (!el) return -0.13;
+    var v = parseFloat(el.value);
+    if (isNaN(v) || v < -0.5 || v > 0.5) return -0.13;
+    return v;
+  } catch(e) { return -0.13; }
+}
+
+function dixonColesProb(lh, la, i, j, rho) {
+  var base = poisson(lh, i) * poisson(la, j);
+  if (rho === 0) return base;
+  // Ensure tau stays non-negative: if rho would make it negative, fall back to base
+  if (rho < 0) {
+    var maxSafeRho = -1 / Math.max(lh, la, 1);
+    if (rho < maxSafeRho) rho = maxSafeRho;
+  }
+  var tau = 1;
+  if (i === 0 && j === 0) tau = 1 - lh * la * rho;
+  else if (i === 0 && j === 1) tau = 1 + lh * rho;
+  else if (i === 1 && j === 0) tau = 1 + la * rho;
+  else if (i === 1 && j === 1) tau = 1 - rho;
+  return base * Math.max(0, tau);
+}
+
 window.computeModelFromGoals = function() {
   var lb = parseFloat($('gsLeagueBase').value) || 1.30;
   var hGFAll = parseFloat($('gsHomeGFAll').value), hGAAll = parseFloat($('gsHomeGAAll').value);
@@ -329,10 +357,11 @@ window.computeModelFromGoals = function() {
   }
   homeXG = Math.max(0.1, Math.min(9, homeXG));
   awayXG = Math.max(0.1, Math.min(9, awayXG));
+  var rho = getRho();
   var h = 0, d = 0, a = 0;
   for (var i = 0; i <= 12; i++) {
     for (var j = 0; j <= 12; j++) {
-      var p = poisson(homeXG, i) * poisson(awayXG, j);
+      var p = dixonColesProb(homeXG, awayXG, i, j, rho);
       if (i > j) h += p; else if (i === j) d += p; else a += p;
     }
   }
@@ -345,14 +374,15 @@ window.computeModelFromGoals = function() {
   }
 };
 
-function solveXG(pH, pD, pA) {
+function solveXG(pH, pD, pA, rho) {
+  rho = rho || 0;
   var best = { lh: 0, la: 0, err: 999, pH: 0, pD: 0, pA: 0 };
   for (var lh = 0.1; lh <= 4.01; lh += 0.05) {
     for (var la = 0.1; la <= 4.01; la += 0.05) {
       var h = 0, d = 0, a = 0;
       for (var i = 0; i <= 12; i++) {
         for (var j = 0; j <= 12; j++) {
-          var p = poisson(lh, i) * poisson(la, j);
+          var p = dixonColesProb(lh, la, i, j, rho);
           if (i > j) h += p; else if (i === j) d += p; else a += p;
         }
       }
@@ -364,44 +394,34 @@ function solveXG(pH, pD, pA) {
   return best;
 }
 
-function getScorelines(lh, la, n) {
+function getScorelines(lh, la, n, rho) {
+  rho = rho || 0;
   var arr = [];
   for (var i = 0; i <= 10; i++) {
     for (var j = 0; j <= 10; j++) {
-      arr.push({ h: i, a: j, p: poisson(lh, i) * poisson(la, j) });
+      arr.push({ h: i, a: j, p: dixonColesProb(lh, la, i, j, rho) });
     }
   }
   return arr.sort(function(a,b){return b.p-a.p}).slice(0, n || 10);
 }
 
-function overUnder(lh, la, line) {
+function overUnder(lh, la, line, rho) {
+  rho = rho || 0;
   var o = 0, u = 0;
   for (var i = 0; i <= 15; i++) {
     for (var j = 0; j <= 15; j++) {
-      var p = poisson(lh, i) * poisson(la, j);
+      var p = dixonColesProb(lh, la, i, j, rho);
       if (i + j > line) o += p; else u += p;
     }
   }
   return { over: o / (o + u), under: u / (o + u) };
 }
 
-function bttsProb(lh, la) {
+function bttsProb(lh, la, rho) {
+  rho = rho || 0;
   var y = 0;
-  for (var i = 1; i <= 15; i++) for (var j = 1; j <= 15; j++) y += poisson(lh, i) * poisson(la, j);
+  for (var i = 1; i <= 15; i++) for (var j = 1; j <= 15; j++) y += dixonColesProb(lh, la, i, j, rho);
   return y;
-}
-
-function drawQuality(lh, la) {
-  var total = 0, btts = 0;
-  for (var i = 0; i <= 12; i++) {
-    for (var j = 0; j <= 12; j++) {
-      if (i !== j) continue;
-      var p = poisson(lh, i) * poisson(la, j);
-      total += p;
-      if (i > 0 && j > 0) btts += p;
-    }
-  }
-  return total > 0 ? btts / total : 0.5;
 }
 
 function parseBk(id) {
@@ -438,6 +458,13 @@ function calcStake(kelly, edge) {
   return 0;
 }
 
+function calcProbStake(prob) {
+  var br = getBankroll();
+  if (prob < 0.20) return 0;
+  var pct = Math.min(Math.max(0, (prob - 0.20) / 0.50), 1) * 0.08;
+  return Math.round(br * pct);
+}
+
 // ── BRIER SCORES ──
 function computeBrierScores() {
   var h = window._predictionHistory || [];
@@ -464,39 +491,13 @@ function computeBrierScores() {
   return result;
 }
 
-// ── DRAW-SPECIFIC BRIER SCORES ──
-function computeDrawBrierScores() {
-  var h = window._predictionHistory || [];
-  var signals = ['market','conv','poisson'];
-  var brierSum = {}, count = {};
-  signals.forEach(function(s) { brierSum[s] = 0; count[s] = 0; });
-  for (var i = 0; i < h.length; i++) {
-    var e = h[i];
-    if (!e.signal_probs || !e.result || e.result === '') continue;
-    var sp = e.signal_probs;
-    var oD = e.result === 'X' ? 1 : 0;
-    signals.forEach(function(s) {
-      var p = sp[s];
-      if (!p) return;
-      var pD = p.d || 0;
-      brierSum[s] += Math.pow(pD - oD, 2);
-      count[s]++;
-    });
-  }
-  var result = {};
-  signals.forEach(function(s) {
-    result[s] = count[s] > 0 ? { brier: brierSum[s] / count[s], count: count[s] } : null;
-  });
-  return result;
-}
-
 // ── BRIER-WEIGHTED ENSEMBLE ──
 function computeEnsemble(modH, modD, modA, wH, wD, wA, bpH, bpD, bpA, xgObj) {
   var brierScores = computeBrierScores();
   var signals = [];
   signals.push({ name:'Market (B1)', probs:{h:bpH,d:bpD,a:bpA}, key:'market' });
   signals.push({ name:'Convergence', probs:{h:wH,d:wD,a:wA}, key:'conv' });
-  if (xgObj) signals.push({ name:'Poisson', probs:{h:xgObj.pH,d:xgObj.pD,a:xgObj.pA}, key:'poisson' });
+  if (xgObj) signals.push({ name:'D-C', probs:{h:xgObj.pH,d:xgObj.pD,a:xgObj.pA}, key:'poisson' });
   var totalWeight = 0;
   signals.forEach(function(s) {
     var bd = brierScores[s.key];
@@ -517,34 +518,6 @@ function computeEnsemble(modH, modD, modA, wH, wD, wA, bpH, bpD, bpA, xgObj) {
   var pick = eH >= eD && eH >= eA ? 'HM' : eD >= eA ? 'DRW' : 'AW';
   var pickLbl = { HM:'Home', DRW:'Draw', AW:'Away' };
   return { probs:{h:eH,d:eD,a:eA}, pick:pick, pickLbl:pickLbl[pick], signals:signals, brierScores:brierScores };
-}
-
-// ── DOUBLE CHANCE PICK ──
-function selectDCPick(bP, b1) {
-  var noVigSum = 1/b1.h + 1/b1.d + 1/b1.a;
-  var nvh = (1/b1.h)/noVigSum, nvd = (1/b1.d)/noVigSum, nva = (1/b1.a)/noVigSum;
-
-  var dcCands = [
-    { label:'1X', prob: bP.h + bP.d, odds: 1 / (1/b1.h + 1/b1.d) },
-    { label:'12', prob: bP.h + bP.a, odds: 1 / (1/b1.h + 1/b1.a) },
-    { label:'X2', prob: bP.d + bP.a, odds: 1 / (1/b1.d + 1/b1.a) }
-  ];
-
-  dcCands.forEach(function(c) {
-    c.ev = c.prob * c.odds - 1;
-    c.kelly = kellyVal(c.odds, c.prob);
-    var dcBP = c.label === '1X' ? nvh + nvd : c.label === '12' ? nvh + nva : nvd + nva;
-    c.edge = edgePct(c.prob, dcBP);
-    c.bp = dcBP;
-  });
-
-  dcCands.sort(function(a,b){return b.prob - a.prob});
-  var dc = dcCands[0];
-
-  dc.actionable = dc.prob >= 0.50;
-  dc.stakePct = dc.actionable ? Math.min(Math.max(0, (dc.prob - 0.50) / 0.30), 1) * 0.06 : 0;
-
-  return dc;
 }
 
 // ── MAIN ANALYSIS ──
@@ -573,7 +546,6 @@ window.runAnalysis = function(overwriteIdx) {
   var bpH = iH / iSum, bpD = iD / iSum, bpA = iA / iSum;
 
   // Convergence
-  var cH = (modH + bpH) / 2, cD = (modD + bpD) / 2, cA = (modA + bpA) / 2;
   var dH = bpH - modH, dD = bpD - modD, dA = bpA - modA;
   var aH = Math.abs(dH), aD = Math.abs(dD), aA = Math.abs(dA), aSum = aH + aD + aA;
   var cpH = aSum - aH, cpD = aSum - aD, cpA = aSum - aA, cpSum = cpH + cpD + cpA;
@@ -591,8 +563,9 @@ window.runAnalysis = function(overwriteIdx) {
   var convScore = Math.round((1 - aSum) * 100);
   convScore = Math.max(0, Math.min(100, convScore));
 
-  // Poisson
-  var xg = solveXG(modH, modD, modA);
+  // Dixon-Coles
+  var rhoVal = getRho();
+  var xg = solveXG(modH, modD, modA, rhoVal);
   var hasPoisson = xg.err < 0.05;
 
   // Ensemble
@@ -602,44 +575,19 @@ window.runAnalysis = function(overwriteIdx) {
   var bP = ensemble.probs;
   var pick = { side: bP.h >= bP.d && bP.h >= bP.a ? 'h' : bP.d >= bP.a ? 'd' : 'a' };
 
-  // Double Chance pick
-  var dc = selectDCPick(ensemble.probs, b1);
-  var dcCoverOutcomes = dc.label === '1X' ? ['h','d'] : dc.label === '12' ? ['h','a'] : ['d','a'];
-  var dcAgreeTmp = 0;
-  for (var _ds = 0; _ds < ensemble.signals.length; _ds++) {
-    var _dsp = ensemble.signals[_ds].probs;
-    var _dss = _dsp.h > _dsp.d && _dsp.h > _dsp.a ? 'h' : _dsp.d > _dsp.a ? 'd' : 'a';
-    if (dcCoverOutcomes.indexOf(_dss) !== -1) dcAgreeTmp++;
-  }
-  var dcAgreement = ensemble.signals.length > 0 ? dcAgreeTmp / ensemble.signals.length : 0;
-  var dcScore = 0;
-  if (dc.actionable) {
-    dcScore += Math.min(25, dc.ev * 125);
-    dcScore += Math.min(15, dc.edge * 1.5);
-    dcScore += Math.min(20, dc.kelly * 100);
-    dcScore += dcAgreement * 20;
-  }
-  dcScore = Math.min(100, Math.round(dcScore));
-  var dcTier = 'none', dcTierLabel = 'No Value', dcTierDesc = 'Does not meet minimum thresholds';
-  if (dcScore >= 80) { dcTier = 'elite'; dcTierLabel = 'ELITE'; dcTierDesc = 'High EV on DC. Strong safety margin.'; }
-  else if (dcScore >= 60) { dcTier = 'high'; dcTierLabel = 'HIGH'; dcTierDesc = 'Good DC value with solid coverage.'; }
-  else if (dcScore >= 40) { dcTier = 'medium'; dcTierLabel = 'MEDIUM'; dcTierDesc = 'Moderate DC value. Accept for coverage.'; }
-  else if (dcScore >= 20) { dcTier = 'low'; dcTierLabel = 'LOW'; dcTierDesc = 'Marginal DC value.'; }
-
   // RENDER
   var html = '<div class="panel anim"><div class="panel-hd"><div class="panel-title">Analysis Results</div></div><div class="panel-bd">';
 
   // ── TOP PICKS ──
   html += '<div style="background:var(--surface1);border:1px solid var(--surface3);border-radius:8px;padding:14px;margin-bottom:16px">';
   html += '<div class="conv-label" style="margin-bottom:12px">Top Picks</div>';
-  html += '<div style="display:flex;flex-direction:column"><div class="picks-row" style="order:2">';
-  var sigNames = ['Market','Conv','Poisson'];
+  html += '<div style="display:flex;flex-direction:column"><div class="picks-row">';
+  var sigNames = ['Market','Conv','D-C'];
 
   // ── Card 1: BRIER-WEIGHTED BLENDED ──
-  var bP2 = ensemble.probs;
-  var bwbSide = bP2.h >= bP2.d && bP2.h >= bP2.a ? 'h' : bP2.d >= bP2.a ? 'd' : 'a';
+  var bwbSide = bP.h >= bP.d && bP.h >= bP.a ? 'h' : bP.d >= bP.a ? 'd' : 'a';
   var bwbLabel = bwbSide === 'h' ? '1' : bwbSide === 'd' ? 'X' : '2';
-  var bwbProb = bwbSide === 'h' ? bP2.h : bwbSide === 'd' ? bP2.d : bP2.a;
+  var bwbProb = bwbSide === 'h' ? bP.h : bwbSide === 'd' ? bP.d : bP.a;
   var bwbOdds = bwbSide === 'h' ? b1.h : bwbSide === 'd' ? b1.d : b1.a;
   var bwbEV = bwbProb * bwbOdds - 1;
   var bwbKelly = kellyVal(bwbOdds, bwbProb);
@@ -702,7 +650,6 @@ window.runAnalysis = function(overwriteIdx) {
       var bsp2 = ensemble.signals[bsi2].probs;
       var bss2 = bsp2.h > bsp2.d && bsp2.h > bsp2.a ? 'h' : bsp2.d > bsp2.a ? 'd' : 'a';
       var bagrees = bss2 === bwbSide;
-      if (bsi2 === 2 && !hasPoisson) continue;
       html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:600;font-family:\'JetBrains Mono\',monospace;background:' + (bagrees ? 'rgba(0,229,160,0.08)' : 'rgba(107,116,148,0.06)') + ';color:' + (bagrees ? 'var(--green)' : 'var(--muted)') + '">' + sigNames[bsi2] + (bagrees ? ' ✓' : ' ✗') + '</span>';
     }
     var bwbFairOdds = bwbProb > 0 ? (1 / bwbProb).toFixed(2) : '-';
@@ -738,397 +685,186 @@ window.runAnalysis = function(overwriteIdx) {
     html += '</div></div>';
   }
 
-  // ── Card 2: BWB DRAW PANIC ──
-  // Draw-tuned Brier weights: signals weighted by draw-specific accuracy
-  var drawBrierScores = computeDrawBrierScores();
-  var totalDrawW = 0, drawSigWs = [];
-  ensemble.signals.forEach(function(s) {
-    var bd = drawBrierScores[s.key];
-    var w = (bd && bd.count >= 1) ? 1 / (bd.brier + 0.01) : 1.0;
-    drawSigWs.push(w);
-    totalDrawW += w;
-  });
-  var drawWeightedD = 0, drawSigNormWs = [];
-  ensemble.signals.forEach(function(s, i) {
-    var nw = totalDrawW > 0 ? drawSigWs[i] / totalDrawW : 1 / ensemble.signals.length;
-    drawSigNormWs.push(nw);
-    drawWeightedD += nw * s.probs.d;
-  });
+  // ── Card 2: BWB PROBABILITY (ALT) ──
+  var bwbAltColor = 'var(--cyan)';
+  var bwbAltBg = 'rgba(0,194,255,0.06)';
+  var bwbAltBorder = 'rgba(0,194,255,0.2)';
+  var bwbAltBadgeBg = 'rgba(0,194,255,0.12)';
+  var bwbAltBadgeBorder = 'rgba(0,194,255,0.35)';
+  var bwbAltProbStake = calcProbStake(bwbProb);
+  var bwbAltActionable = bwbProb >= 0.20;
 
-  var pbProb = drawWeightedD;
-  var pbSide = 'd';
-  var pbLabel = 'X';
-  var pbOdds = b1.d;
-  var noVigD = (1/b1.d) / (1/b1.h + 1/b1.d + 1/b1.a);
-  var pbEV = pbProb * pbOdds - 1;
-  var h2hGap = Math.abs(ensemble.probs.h - ensemble.probs.a);
-  var parityScore = Math.max(0, 1 - h2hGap / 0.30);
-  var pbActionable = pbProb >= 0.30 || (pbProb >= 0.25 && h2hGap < 0.10);
-  var pbEdge = edgePct(pbProb, noVigD);
-  var pbKelly = kellyVal(pbOdds, pbProb);
-
-  // Weighted draw agreement: signals weighted by draw-Brier performance
-  var weightedAgree = 0;
-  for (var dsi = 0; dsi < ensemble.signals.length; dsi++) {
-    var dsp = ensemble.signals[dsi].probs;
-    var agrees = dsp.d >= dsp.h && dsp.d >= dsp.a ? 1 : 0;
-    weightedAgree += drawSigNormWs[dsi] * agrees;
+  var bwbAltScore = 0;
+  if (bwbAltActionable) {
+    bwbAltScore += Math.min(40, bwbProb * 50);
+    bwbAltScore += Math.min(20, bwbAgreement * 20);
+    bwbAltScore += Math.min(20, convScore * 0.3);
+    bwbAltScore += Math.min(20, Math.max(0, bwbEV * 100));
   }
-  var drawAgreement = weightedAgree;
+  bwbAltScore = Math.min(100, Math.round(bwbAltScore));
 
-  // O/U 2.5 context: draws more likely in low-scoring affairs
-  var ou25 = hasPoisson ? overUnder(xg.lh, xg.la, 2.5) : null;
-  var under25Prob = ou25 ? ou25.under : 0.5;
-  var ouBoost = 0;
-  if (under25Prob > 0.65) ouBoost = 10;
-  else if (under25Prob > 0.55) ouBoost = 5;
+  var bwbAltTier = 'none', bwbAltTierLabel = 'No Value', bwbAltTierDesc = 'Does not meet minimum thresholds';
+  if (bwbAltScore >= 80) { bwbAltTier = 'elite'; bwbAltTierLabel = 'ELITE'; bwbAltTierDesc = 'Very high probability. Strong conviction pick.'; }
+  else if (bwbAltScore >= 60) { bwbAltTier = 'high'; bwbAltTierLabel = 'HIGH'; bwbAltTierDesc = 'High probability with solid metrics.'; }
+  else if (bwbAltScore >= 40) { bwbAltTier = 'medium'; bwbAltTierLabel = 'MEDIUM'; bwbAltTierDesc = 'Moderate probability. Acceptable confidence.'; }
+  else if (bwbAltScore >= 20) { bwbAltTier = 'low'; bwbAltTierLabel = 'LOW'; bwbAltTierDesc = 'Low probability. Marginal confidence.'; }
 
-  // Scoreline distribution quality: proportion of draw prob from BTTS draws
-  var drawQual = hasPoisson ? drawQuality(xg.lh, xg.la) : 0.5;
-  var qualBoost = 0;
-  if (drawQual > 0.80) qualBoost = 10;
-  else if (drawQual > 0.70) qualBoost = 5;
-  else if (drawQual > 0.60) qualBoost = 2;
-
-  // XG distance parity: independent blended-H2H parity signal
-  var xgGap = hasPoisson ? Math.abs(xg.lh - xg.la) : 1;
-  var xgParityScore = hasPoisson ? Math.max(0, 1 - xgGap / 0.30) : 0;
-
-  // BWB Double Chance (probability-first, replaces heuristic dcCover)
-  var dcCoverLabel = dc.label;
-  var dcCoverProb = dc.prob;
-  var dcCoverOdds = dc.odds;
-  var dcCoverEV = dc.ev;
-  var dcCoverEdge = dc.edge;
-  var dcCoverStake = Math.round(getBankroll() * (dc.stakePct || 0));
-
-  var pbStake = 0;
-  if (pbProb >= 0.30) {
-    var pbExcess = Math.min(1, Math.max(0, (pbProb - 0.30) / (1 - 0.30)));
-    pbStake = Math.round(getBankroll() * Math.min(pbExcess * 0.12, 0.12));
-  } else if (pbProb >= 0.25 && h2hGap < 0.10) {
-    pbStake = Math.round(getBankroll() * Math.min(parityScore * 0.06, 0.06));
-  }
-
-  var pbScore = 0;
-  if (pbActionable) {
-    pbScore += Math.min(40, pbProb * 80);
-    pbScore += Math.min(20, convScore * 0.25);
-    pbScore += drawAgreement * 20;
-    pbScore += Math.max(0, Math.min(20, pbEV * 100));
-    if (parityScore > 0) pbScore += Math.round(parityScore * 15);
-    pbScore += ouBoost;
-    pbScore += qualBoost;
-    if (xgParityScore > 0) pbScore += Math.round(xgParityScore * 10);
-  }
-  pbScore = Math.min(100, Math.round(pbScore));
-
-  // Confidence-scaled stake
-  pbStake = Math.round(pbStake * (pbActionable ? pbScore / 100 : 0));
-
-  var pbTier = 'none', pbTierLabel = 'No Value', pbTierDesc = 'Does not meet minimum thresholds';
-  if (pbScore >= 80) { pbTier = 'elite'; pbTierLabel = 'PANIC ELITE'; pbTierDesc = 'Extremely high BWB probability. Strong conviction.'; }
-  else if (pbScore >= 60) { pbTier = 'high'; pbTierLabel = 'PANIC HIGH'; pbTierDesc = 'High BWB probability. Confident recommendation.'; }
-  else if (pbScore >= 40) { pbTier = 'medium'; pbTierLabel = 'PANIC'; pbTierDesc = 'Moderate BWB probability. Decent safety margin.'; }
-  else if (pbScore >= 20) { pbTier = 'low'; pbTierLabel = 'LOW PANIC'; pbTierDesc = 'Borderline BWB probability. Proceed with caution.'; }
-
-  var pbColor = 'var(--red)';
-  var pbBg = 'rgba(255,77,109,0.06)';
-  var pbBorder = 'rgba(255,77,109,0.2)';
-  var pbBadgeBg = 'rgba(255,77,109,0.12)';
-  var pbBadgeBorder = 'rgba(255,77,109,0.35)';
-
-  if (pbActionable) {
-    html += '<div class="pick-card ' + pbTier + '" style="background:' + pbBg + ';border-color:' + pbBorder + '">';
+  if (bwbAltActionable) {
+    html += '<div class="pick-card ' + bwbAltTier + '" style="background:' + bwbAltBg + ';border-color:' + bwbAltBorder + '">';
     html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">';
-    html += '<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:' + pbBadgeBg + ';color:' + pbColor + ';border:1px solid ' + pbBadgeBorder + '">PANIC</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">BWB Draw Panic</span></div><span class="pick-badge" style="color:' + pbColor + '">' + pbLabel + '</span>';
-    html += '<span style="font-size:12px;color:var(--muted2);margin-left:8px;font-family:\'JetBrains Mono\',monospace">@ ' + pbOdds.toFixed(2) + '</span></div>';
-    html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:' + (pbTier === 'elite' ? 'rgba(0,229,160,0.12)' : pbTier === 'high' ? 'rgba(0,229,160,0.08)' : pbTier === 'medium' ? 'rgba(245,200,66,0.1)' : 'rgba(107,116,148,0.1)') + ';color:' + (pbTier === 'elite' || pbTier === 'high' ? 'var(--green)' : pbTier === 'medium' ? 'var(--draw)' : 'var(--muted2)') + ';border:1px solid ' + (pbTier === 'elite' || pbTier === 'high' ? 'rgba(0,229,160,0.25)' : pbTier === 'medium' ? 'rgba(245,200,66,0.25)' : 'rgba(107,116,148,0.25)') + '">' + pbTierLabel + '</span>';
+    html += '<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:' + bwbAltBadgeBg + ';color:' + bwbAltColor + ';border:1px solid ' + bwbAltBadgeBorder + '">BWB-P</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">BWB Probability-First</span></div><span class="pick-badge" style="color:' + bwbAltColor + '">' + bwbLabel + '</span>';
+    html += '<span style="font-size:12px;color:var(--muted2);margin-left:8px;font-family:\'JetBrains Mono\',monospace">@ ' + bwbOdds.toFixed(2) + '</span></div>';
+    html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:' + (bwbAltTier === 'elite' ? 'rgba(0,229,160,0.12)' : bwbAltTier === 'high' ? 'rgba(0,229,160,0.08)' : bwbAltTier === 'medium' ? 'rgba(245,200,66,0.1)' : 'rgba(107,116,148,0.1)') + ';color:' + (bwbAltTier === 'elite' || bwbAltTier === 'high' ? 'var(--green)' : bwbAltTier === 'medium' ? 'var(--draw)' : 'var(--muted2)') + ';border:1px solid ' + (bwbAltTier === 'elite' || bwbAltTier === 'high' ? 'rgba(0,229,160,0.25)' : bwbAltTier === 'medium' ? 'rgba(245,200,66,0.25)' : 'rgba(107,116,148,0.25)') + '">' + bwbAltTierLabel + '</span>';
     html += '</div>';
 
     html += '<div class="pick-row" style="margin-bottom:10px">';
-    html += '<div class="pick-stat"><div class="pick-stat-label">Blended %</div><div class="pick-stat-val" style="color:var(--fg)">' + fp(pbProb) + '</div></div>';
-    html += '<div class="pick-stat"><div class="pick-stat-label">EV%</div><div class="pick-stat-val" style="color:' + (pbEV > 0.1 ? 'var(--green)' : 'var(--draw)') + '">' + (pbEV > 0 ? '+' : '') + (pbEV * 100).toFixed(1) + '%</div></div>';
-    html += '<div class="pick-stat"><div class="pick-stat-label">Edge%</div><div class="pick-stat-val" style="color:' + (pbEdge > 5 ? 'var(--green)' : 'var(--draw)') + '">' + (pbEdge > 0 ? '+' : '') + pbEdge.toFixed(1) + '%</div></div>';
-    html += '<div class="pick-stat"><div class="pick-stat-label">Kelly%</div><div class="pick-stat-val" style="color:' + pbColor + '">' + (pbKelly * 100).toFixed(1) + '%</div></div>';
-    html += '<div class="pick-stat"><div class="pick-stat-label">Panic Stake</div><div class="pick-stat-val" style="color:' + pbColor + '">' + pbStake + ' TZS</div></div>';
-    html += '</div>';
-
-    html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">';
-    html += '<span>H2H Gap: <strong>' + (h2hGap * 100).toFixed(1) + '%</strong></span>';
-    html += '<span>Parity: <strong style="color:' + (parityScore > 0.5 ? 'var(--green)' : 'var(--draw)') + '">' + (parityScore * 100).toFixed(0) + '%</strong></span>';
-    if (h2hGap < 0.10 && pbProb >= 0.25 && pbProb < 0.30) {
-      html += '<span style="color:var(--draw);font-weight:700">Balance Trigger</span>';
-    }
-    if (ou25) {
-      html += '<span>U2.5: <strong>' + fp(under25Prob) + '</strong></span>';
-    }
-    if (ouBoost > 0) {
-      html += '<span style="color:var(--green);font-weight:700">OU +' + ouBoost + '</span>';
-    }
-    if (hasPoisson) {
-      html += '<span>Draw Quality: <strong style="color:' + (drawQual > 0.7 ? 'var(--green)' : 'var(--draw)') + '">' + (drawQual * 100).toFixed(0) + '%</strong></span>';
-    }
-    if (xgParityScore > 0) {
-      html += '<span>XG Parity: <strong style="color:var(--green)">' + (xgParityScore * 100).toFixed(0) + '%</strong></span>';
-    }
+    html += '<div class="pick-stat"><div class="pick-stat-label">Blended %</div><div class="pick-stat-val" style="color:var(--fg)">' + fp(bwbProb) + '</div></div>';
+    html += '<div class="pick-stat"><div class="pick-stat-label">EV%</div><div class="pick-stat-val" style="color:' + (bwbEV > 0.1 ? 'var(--green)' : 'var(--draw)') + '">' + (bwbEV > 0 ? '+' : '') + (bwbEV * 100).toFixed(1) + '%</div></div>';
+    html += '<div class="pick-stat"><div class="pick-stat-label">Edge%</div><div class="pick-stat-val" style="color:' + (bwbEdge > 5 ? 'var(--green)' : 'var(--draw)') + '">' + (bwbEdge > 0 ? '+' : '') + bwbEdge.toFixed(1) + '%</div></div>';
+    html += '<div class="pick-stat"><div class="pick-stat-label">Prob Stake</div><div class="pick-stat-val" style="color:' + bwbAltColor + '">' + bwbAltProbStake + ' TZS</div></div>';
     html += '</div>';
 
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
     html += '<span style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.5px;text-transform:uppercase">Signal Agreement:</span>';
-    for (var psi = 0; psi < ensemble.signals.length; psi++) {
-      var psp = ensemble.signals[psi].probs;
-      var pss = psp.h > psp.d && psp.h > psp.a ? 'h' : psp.d > psp.a ? 'd' : 'a';
-      var pagrees = pss === pbSide;
-      if (psi === 2 && !hasPoisson) continue;
-      html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:600;font-family:\'JetBrains Mono\',monospace;background:' + (pagrees ? 'rgba(0,229,160,0.08)' : 'rgba(107,116,148,0.06)') + ';color:' + (pagrees ? 'var(--green)' : 'var(--muted)') + '">' + sigNames[psi] + (pagrees ? ' ✓' : ' ✗') + '</span>';
+    for (var asi = 0; asi < ensemble.signals.length; asi++) {
+      var asp = ensemble.signals[asi].probs;
+      var ass = asp.h > asp.d && asp.h > asp.a ? 'h' : asp.d > asp.a ? 'd' : 'a';
+      var aagrees = ass === bwbSide;
+      html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:600;font-family:\'JetBrains Mono\',monospace;background:' + (aagrees ? 'rgba(0,194,255,0.08)' : 'rgba(107,116,148,0.06)') + ';color:' + (aagrees ? 'var(--cyan)' : 'var(--muted)') + '">' + sigNames[asi] + (aagrees ? ' ✓' : ' ✗') + '</span>';
     }
-    var pbFairOdds = pbProb > 0 ? (1 / pbProb).toFixed(2) : '-';
-    html += '<span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-left:auto">Fair: <strong style="color:' + pbColor + '">' + pbFairOdds + '</strong></span>';
+    var bwbAltFairOdds = bwbProb > 0 ? (1 / bwbProb).toFixed(2) : '-';
+    html += '<span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-left:auto">Fair: <strong style="color:' + bwbAltColor + '">' + bwbAltFairOdds + '</strong></span>';
     html += '</div>';
 
     html += '<div class="conf-strip">';
-    for (var pci = 0; pci < 10; pci++) {
-      var pbSeg = '';
-      if (pci < Math.round(pbScore / 10)) {
-        pbSeg = 'filled';
-        if (pbScore < 40) pbSeg += ' low';
-        else if (pbScore < 60) pbSeg += ' warn';
+    for (var aci = 0; aci < 10; aci++) {
+      var bwbAltSeg = '';
+      if (aci < Math.round(bwbAltScore / 10)) {
+        bwbAltSeg = 'filled';
+        if (bwbAltScore < 40) bwbAltSeg += ' low';
+        else if (bwbAltScore < 60) bwbAltSeg += ' warn';
       }
-      html += '<div class="conf-seg ' + pbSeg + '"></div>';
+      html += '<div class="conf-seg ' + bwbAltSeg + '"></div>';
     }
     html += '</div>';
-    html += '<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + pbTierDesc + '</span><span style="font-size:9px;font-weight:700;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">Confidence: ' + pbScore + '/100</span></div>';
+    html += '<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + bwbAltTierDesc + '</span><span style="font-size:9px;font-weight:700;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">Confidence: ' + bwbAltScore + '/100</span></div>';
     html += '</div>';
   } else {
-    // ── VALUE ALERT: bookmaker mispricing scanner (fires when draw gate is not met) ──
-    // Rank all three 1X2 outcomes by EV; surface the best-value opportunity
-    var vaOuts = [
-      { side: 'h', label: '1', prob: ensemble.probs.h, odds: b1.h, bp: bpH },
-      { side: 'd', label: 'X', prob: ensemble.probs.d, odds: b1.d, bp: bpD },
-      { side: 'a', label: '2', prob: ensemble.probs.a, odds: b1.a, bp: bpA }
-    ];
-    vaOuts.forEach(function(o) {
-      o.ev    = o.prob * o.odds - 1;
-      o.edge  = edgePct(o.prob, o.bp);
-      o.kelly = kellyVal(o.odds, o.prob);
-    });
-    // Sort by EV descending
-    vaOuts.sort(function(a, b) { return b.ev - a.ev; });
-    var vaBest = vaOuts[0];
-
-    // Score: positive EV is the gate; reward edge and convergence alignment
-    var vaHasValue = vaBest.ev > 0;
-    var vaScore = 0;
-    if (vaHasValue) {
-      vaScore += Math.min(40, vaBest.ev * 200);
-      vaScore += Math.min(25, vaBest.edge * 2.5);
-      vaScore += Math.min(20, vaBest.kelly * 100);
-      vaScore += Math.min(15, convScore * 0.18);
-    }
-    vaScore = Math.min(100, Math.round(vaScore));
-
-    var vaTier = 'none', vaTierLabel = 'No Edge', vaTierDesc = 'No positive EV on any outcome';
-    if (vaScore >= 70) { vaTier = 'elite'; vaTierLabel = 'STRONG EDGE'; vaTierDesc = 'Significant market mispricing detected.'; }
-    else if (vaScore >= 45) { vaTier = 'high'; vaTierLabel = 'EDGE'; vaTierDesc = 'Bookmaker price above fair value.'; }
-    else if (vaScore >= 20) { vaTier = 'medium'; vaTierLabel = 'MARGINAL'; vaTierDesc = 'Slight edge — odds barely cover the risk.'; }
-
-    var vaColor = vaHasValue ? (vaScore >= 70 ? 'var(--green)' : vaScore >= 45 ? 'var(--cyan)' : 'var(--draw)') : 'var(--muted2)';
-    var vaBg    = vaHasValue ? (vaScore >= 45 ? 'rgba(0,194,255,0.05)' : 'rgba(245,200,66,0.04)') : 'transparent';
-    var vaBorder = vaHasValue ? (vaScore >= 45 ? 'rgba(0,194,255,0.2)' : 'rgba(245,200,66,0.18)') : 'var(--border)';
-
-    html += '<div class="pick-card ' + vaTier + '" style="background:' + vaBg + ';border-color:' + vaBorder + '">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
-    html += '<div style="display:flex;align-items:center;gap:6px">';
-    html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:rgba(0,194,255,0.1);color:var(--cyan);border:1px solid rgba(0,194,255,0.28)">VALUE</span>';
-    html += '<span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">Market Edge Scanner</span>';
-    html += '</div>';
-    html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;';
-    html += 'background:' + (vaTier === 'elite' ? 'rgba(0,229,160,0.12)' : vaTier === 'high' ? 'rgba(0,194,255,0.1)' : vaTier === 'medium' ? 'rgba(245,200,66,0.1)' : 'rgba(107,116,148,0.08)') + ';';
-    html += 'color:' + (vaTier === 'elite' ? 'var(--green)' : vaTier === 'high' ? 'var(--cyan)' : vaTier === 'medium' ? 'var(--draw)' : 'var(--muted2)') + ';';
-    html += 'border:1px solid ' + (vaTier === 'elite' ? 'rgba(0,229,160,0.25)' : vaTier === 'high' ? 'rgba(0,194,255,0.25)' : vaTier === 'medium' ? 'rgba(245,200,66,0.25)' : 'rgba(107,116,148,0.2)') + '">' + vaTierLabel + '</span>';
-    html += '</div>';
-
-    // EV table — all three outcomes ranked
-    html += '<table class="vf-table" style="margin:0 0 10px 0"><thead><tr>';
-    html += '<th>Pick</th><th>Model %</th><th>Fair Odds</th><th>Bookie</th><th>EV%</th><th>Edge%</th>';
-    html += '</tr></thead><tbody>';
-    vaOuts.forEach(function(o) {
-      var evPos  = o.ev > 0;
-      var fairOd = o.prob > 0 ? (1 / o.prob).toFixed(2) : '-';
-      var evStr  = (o.ev > 0 ? '+' : '') + (o.ev * 100).toFixed(1) + '%';
-      var edgeStr = (o.edge > 0 ? '+' : '') + o.edge.toFixed(1) + '%';
-      var rowHighlight = (o === vaBest && vaHasValue) ? 'background:rgba(0,194,255,0.04)' : '';
-      html += '<tr style="' + rowHighlight + '">';
-      var sideColor = o.side === 'h' ? 'var(--green)' : o.side === 'd' ? 'var(--draw)' : 'var(--red)';
-      html += '<td><span class="pick-badge-small" style="color:' + sideColor + '">' + o.label + '</span>';
-      if (o === vaBest && vaHasValue) html += ' <span style="font-size:8px;color:var(--cyan);font-family:\'JetBrains Mono\',monospace">★ best</span>';
-      html += '</td>';
-      html += '<td>' + fp(o.prob) + '</td>';
-      html += '<td style="color:' + sideColor + '">' + fairOd + '</td>';
-      html += '<td>' + o.odds.toFixed(2) + '</td>';
-      html += '<td style="color:' + (evPos ? 'var(--green)' : 'var(--muted2)') + ';font-weight:' + (evPos ? '700' : '400') + '">' + evStr + '</td>';
-      html += '<td style="color:' + (o.edge > 5 ? 'var(--green)' : o.edge > 0 ? 'var(--draw)' : 'var(--muted2)') + '">' + edgeStr + '</td>';
-      html += '</tr>';
-    });
-    html += '</tbody></table>';
-
-    if (vaHasValue) {
-      // Best pick detail strip
-      var vaStake = Math.round(getBankroll() * Math.min(vaBest.kelly * 0.5, 0.06));
-      var vaSideColor = vaBest.side === 'h' ? 'var(--green)' : vaBest.side === 'd' ? 'var(--draw)' : 'var(--red)';
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:5px;background:rgba(0,194,255,0.06);border:1px solid rgba(0,194,255,0.18);margin-bottom:8px">';
-      html += '<span class="pick-badge" style="color:' + vaSideColor + ';font-size:22px">' + vaBest.label + '</span>';
-      html += '<span style="font-size:11px;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">@ ' + vaBest.odds.toFixed(2) + '</span>';
-      html += '<span style="margin-left:auto;font-size:10px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">Kelly%: <strong style="color:' + vaColor + '">' + (vaBest.kelly * 100).toFixed(1) + '%</strong></span>';
-      html += '<span style="font-size:10px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">Suggest: <strong style="color:var(--cyan)">' + vaStake + ' TZS</strong></span>';
-      html += '</div>';
-    }
-
-    // Confidence bar
-    html += '<div class="conf-strip">';
-    for (var vci = 0; vci < 10; vci++) {
-      var vaSeg = '';
-      if (vci < Math.round(vaScore / 10)) {
-        vaSeg = 'filled';
-        if (vaScore < 40) vaSeg += ' low';
-        else if (vaScore < 60) vaSeg += ' warn';
-      }
-      html += '<div class="conf-seg ' + vaSeg + '"></div>';
-    }
-    html += '</div>';
-    html += '<div style="display:flex;justify-content:space-between;margin-top:3px">';
-    html += '<span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + vaTierDesc + '</span>';
-    html += '<span style="font-size:9px;font-weight:700;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">Score: ' + vaScore + '/100</span>';
-    html += '</div>';
-    html += '</div>';
-  }
-
-  html += '</div>'; // end row 1 (BWB + Draw Panic)
-  html += '<div class="picks-row" style="order:1">'; // start row 1 (Confidence)
-
-  // ── Card 3: BWB CONFIDENCE ──
-  var confProb = bwbProb;
-  var confOdds = bwbOdds;
-  var confLabel = bwbLabel;
-  var confEV = bwbEV;
-  var confEdge = bwbEdge;
-  var confActionable = confProb >= 0.35;
-  var confStakePct = confActionable ? Math.min(Math.max(0, (confProb - 0.30) / 0.40), 1) * 0.08 : 0;
-  var confStake = Math.round(getBankroll() * confStakePct);
-
-  var confScore = 0;
-  if (confActionable) {
-    var es = confEV > 0 ? Math.min(35, confEV * 175) : Math.max(0, 35 + confEV * 175);
-    confScore += es;
-    confScore += Math.min(10, Math.max(0, confEdge * 1.0));
-    confScore += Math.min(20, confProb * 30);
-    confScore += Math.min(20, convScore * 0.3);
-    confScore += bwbAgreement * 20;
-  }
-  confScore = Math.min(100, Math.round(confScore));
-
-  var confTier = 'none', confTierLabel = 'No Value', confTierDesc = 'Does not meet minimum thresholds';
-  if (confScore >= 80) { confTier = 'elite'; confTierLabel = 'CONFIDENCE ELITE'; confTierDesc = 'Very high prob. Premium confidence play.'; }
-  else if (confScore >= 60) { confTier = 'high'; confTierLabel = 'CONFIDENCE HIGH'; confTierDesc = 'Strong prob. Solid confidence pick.'; }
-  else if (confScore >= 40) { confTier = 'medium'; confTierLabel = 'CONFIDENCE'; confTierDesc = 'Moderate prob. Decent confidence.'; }
-  else if (confScore >= 20) { confTier = 'low'; confTierLabel = 'LOW CONFIDENCE'; confTierDesc = 'Marginal prob. Proceed with caution.'; }
-
-  var confColor = 'var(--green)';
-  var confBg = 'rgba(0,229,160,0.06)';
-  var confBorder = 'rgba(0,229,160,0.2)';
-  var confBadgeBg = 'rgba(0,229,160,0.12)';
-  var confBadgeBorder = 'rgba(0,229,160,0.35)';
-
-  if (confActionable) {
-    html += '<div class="pick-card ' + confTier + '" style="background:' + confBg + ';border-color:' + confBorder + '">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">';
-    html += '<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:' + confBadgeBg + ';color:' + confColor + ';border:1px solid ' + confBadgeBorder + '">CONFIDENCE</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">BWB Probability-First</span></div><span class="pick-badge" style="color:' + confColor + '">' + confLabel + '</span>';
-    html += '<span style="font-size:12px;color:var(--muted2);margin-left:8px;font-family:\'JetBrains Mono\',monospace">@ ' + confOdds.toFixed(2) + '</span></div>';
-    html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:' + (confTier === 'elite' ? 'rgba(0,229,160,0.12)' : confTier === 'high' ? 'rgba(0,229,160,0.08)' : confTier === 'medium' ? 'rgba(245,200,66,0.1)' : 'rgba(107,116,148,0.1)') + ';color:' + (confTier === 'elite' || confTier === 'high' ? 'var(--green)' : confTier === 'medium' ? 'var(--draw)' : 'var(--muted2)') + ';border:1px solid ' + (confTier === 'elite' || confTier === 'high' ? 'rgba(0,229,160,0.25)' : confTier === 'medium' ? 'rgba(245,200,66,0.25)' : 'rgba(107,116,148,0.25)') + '">' + confTierLabel + '</span>';
-    html += '</div>';
-
-    html += '<div class="pick-row" style="margin-bottom:10px">';
-    html += '<div class="pick-stat"><div class="pick-stat-label">Blended %</div><div class="pick-stat-val" style="color:var(--fg)">' + fp(confProb) + '</div></div>';
-    html += '<div class="pick-stat"><div class="pick-stat-label">EV%</div><div class="pick-stat-val" style="color:' + (confEV > 0.1 ? 'var(--green)' : 'var(--draw)') + '">' + (confEV > 0 ? '+' : '') + (confEV * 100).toFixed(1) + '%</div></div>';
-    html += '<div class="pick-stat"><div class="pick-stat-label">Edge%</div><div class="pick-stat-val" style="color:' + (confEdge > 5 ? 'var(--green)' : 'var(--draw)') + '">' + (confEdge > 0 ? '+' : '') + confEdge.toFixed(1) + '%</div></div>';
-    html += '<div class="pick-stat"><div class="pick-stat-label">Prob Stake</div><div class="pick-stat-val" style="color:' + confColor + '">' + confStake + ' TZS</div></div>';
-    html += '</div>';
-
-    // 1X2 market odds
-    html += '<div style="display:flex;gap:8px;margin-bottom:8px">';
-    html += '<div style="flex:1;text-align:center;padding:6px 8px;border-radius:4px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)"><div style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:3px">1 (H)</div><div style="font-size:11px;font-weight:700;color:var(--fg);font-family:\'JetBrains Mono\',monospace">' + b1.h.toFixed(2) + '</div></div>';
-    html += '<div style="flex:1;text-align:center;padding:6px 8px;border-radius:4px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)"><div style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:3px">X (D)</div><div style="font-size:11px;font-weight:700;color:var(--fg);font-family:\'JetBrains Mono\',monospace">' + b1.d.toFixed(2) + '</div></div>';
-    html += '<div style="flex:1;text-align:center;padding:6px 8px;border-radius:4px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)"><div style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:3px">2 (A)</div><div style="font-size:11px;font-weight:700;color:var(--fg);font-family:\'JetBrains Mono\',monospace">' + b1.a.toFixed(2) + '</div></div>';
-    html += '</div>';
-
-    // Top DC pick
-    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:6px 10px;border-radius:4px;background:rgba(255,167,38,0.06);border:1px solid rgba(255,167,38,0.15)">';
-    html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:rgba(255,167,38,0.12);color:var(--amber);border:1px solid rgba(255,167,38,0.35)">BWB DC</span>';
-    html += '<span style="font-size:12px;font-weight:700;color:var(--amber);font-family:\'JetBrains Mono\',monospace">' + dc.label + ' @ ' + dc.odds.toFixed(2) + '</span>';
-    html += '<span style="font-size:10px;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">Blended: ' + fp(dc.prob) + '</span>';
-    html += '<span style="font-size:10px;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">EV: <strong style="color:' + (dc.ev > 0 ? 'var(--green)' : 'var(--muted)') + '">' + (dc.ev > 0 ? '+' : '') + (dc.ev * 100).toFixed(1) + '%</strong></span>';
-    html += '<span style="font-size:10px;color:var(--cyan);font-family:\'JetBrains Mono\',monospace">Stake: <strong>' + Math.round(getBankroll() * (dc.stakePct || 0)) + ' TZS</strong></span>';
-    html += '</div>';
-    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-    html += '<span style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.5px;text-transform:uppercase">Signal Agreement:</span>';
-    for (var csi = 0; csi < ensemble.signals.length; csi++) {
-      var csp = ensemble.signals[csi].probs;
-      var css = csp.h > csp.d && csp.h > csp.a ? 'h' : csp.d > csp.a ? 'd' : 'a';
-      var cagrees = css === bwbSide;
-      if (csi === 2 && !hasPoisson) continue;
-      html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:600;font-family:\'JetBrains Mono\',monospace;background:' + (cagrees ? 'rgba(0,229,160,0.08)' : 'rgba(107,116,148,0.06)') + ';color:' + (cagrees ? 'var(--green)' : 'var(--muted)') + '">' + sigNames[csi] + (cagrees ? ' ✓' : ' ✗') + '</span>';
-    }
-    var confFairOdds = confProb > 0 ? (1 / confProb).toFixed(2) : '-';
-    html += '<span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-left:auto">Fair: <strong style="color:' + confColor + '">' + confFairOdds + '</strong></span>';
-    html += '</div>';
-
-    html += '<div class="conf-strip">';
-    for (var cci = 0; cci < 10; cci++) {
-      var confSeg = '';
-      if (cci < Math.round(confScore / 10)) {
-        confSeg = 'filled';
-        if (confScore < 40) confSeg += ' low';
-        else if (confScore < 60) confSeg += ' warn';
-      }
-      html += '<div class="conf-seg ' + confSeg + '"></div>';
-    }
-    html += '</div>';
-    html += '<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + confTierDesc + '</span><span style="font-size:9px;font-weight:700;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">Confidence: ' + confScore + '/100</span></div>';
-    html += '</div>';
-  } else {
-    html += '<div class="pick-card none" style="background:' + confBg + ';border-color:' + confBorder + '">';
+    html += '<div class="pick-card none" style="background:' + bwbAltBg + ';border-color:' + bwbAltBorder + '">';
     html += '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px">';
-    html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:rgba(0,229,160,0.1);color:var(--green);border:1px solid rgba(0,229,160,0.25)">CONFIDENCE</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">BWB Probability-First</span></div>';
+    html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:rgba(0,194,255,0.1);color:var(--cyan);border:1px solid rgba(0,194,255,0.25)">BWB-P</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">BWB Probability-First</span></div>';
     html += '<span style="font-size:13px;color:var(--muted2);font-weight:700;font-family:\'JetBrains Mono\',monospace">⚠ Below Threshold</span>';
-    html += '<span style="font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">Blended probability below 30% confidence gate.</span>';
+    html += '<span style="font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">Blended probability too low for a confident pick.</span>';
     html += '<div style="display:flex;gap:16px;margin-top:4px;font-size:10px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">';
-    html += '<span>Best: <strong style="color:' + confColor + '">' + confLabel + ' @ ' + confOdds.toFixed(2) + '</strong></span>';
-    html += '<span>Blended Prob: <strong>' + fp(confProb) + '</strong></span>';
-    html += '<span>EV: <strong style="color:' + (confEV > 0 ? 'var(--green)' : 'var(--muted)') + '">' + (confEV > 0 ? '+' : '') + (confEV * 100).toFixed(1) + '%</strong></span>';
+    html += '<span>Best: <strong style="color:' + bwbAltColor + '">' + bwbLabel + ' @ ' + bwbOdds.toFixed(2) + '</strong></span>';
+    html += '<span>Blended Prob: <strong>' + fp(bwbProb) + '</strong></span>';
+    html += '<span>EV: <strong style="color:' + (bwbEV > 0 ? 'var(--green)' : 'var(--muted)') + '">' + (bwbEV > 0 ? '+' : '') + (bwbEV * 100).toFixed(1) + '%</strong></span>';
     html += '</div>';
-
-    // 1X2 market odds
-    html += '<div style="display:flex;gap:8px;margin-bottom:8px;width:100%">';
-    html += '<div style="flex:1;text-align:center;padding:4px 6px;border-radius:4px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)"><div style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:2px">1 (H)</div><div style="font-size:10px;font-weight:700;color:var(--fg);font-family:\'JetBrains Mono\',monospace">' + b1.h.toFixed(2) + '</div></div>';
-    html += '<div style="flex:1;text-align:center;padding:4px 6px;border-radius:4px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)"><div style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:2px">X (D)</div><div style="font-size:10px;font-weight:700;color:var(--fg);font-family:\'JetBrains Mono\',monospace">' + b1.d.toFixed(2) + '</div></div>';
-    html += '<div style="flex:1;text-align:center;padding:4px 6px;border-radius:4px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)"><div style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:2px">2 (A)</div><div style="font-size:10px;font-weight:700;color:var(--fg);font-family:\'JetBrains Mono\',monospace">' + b1.a.toFixed(2) + '</div></div>';
-    html += '</div>';
-
-    // Top DC pick
-    html += '<div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:4px;background:rgba(255,167,38,0.06);border:1px solid rgba(255,167,38,0.15)">';
-    html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:rgba(255,167,38,0.12);color:var(--amber);border:1px solid rgba(255,167,38,0.35)">BWB DC</span>';
-    html += '<span style="font-size:11px;font-weight:700;color:var(--amber);font-family:\'JetBrains Mono\',monospace">' + dc.label + ' @ ' + dc.odds.toFixed(2) + '</span>';
-    html += '<span style="font-size:9px;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">Blended: ' + fp(dc.prob) + '</span>';
-    html += '<span style="font-size:9px;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">EV: <strong style="color:' + (dc.ev > 0 ? 'var(--green)' : 'var(--muted)') + '">' + (dc.ev > 0 ? '+' : '') + (dc.ev * 100).toFixed(1) + '%</strong></span>';
-    html += '<span style="font-size:9px;color:var(--cyan);font-family:\'JetBrains Mono\',monospace">Stake: <strong>' + Math.round(getBankroll() * (dc.stakePct || 0)) + ' TZS</strong></span>';
-    html += '</div>';
-
-    html += '<div style="margin-top:4px;font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">Requires Prob ≥ 30% — Stakes proportionally to probability</div>';
+    html += '<div style="margin-top:4px;font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">Requires Prob ≥ 20% — Stakes proportionally to probability regardless of EV</div>';
     html += '</div></div>';
   }
 
-  html += '</div>'; // end row 2 (Confidence)
+  html += '</div>'; // end picks-row
+
+  // ── Card 3: DOUBLE CHANCE ──
+  var dc1XProb = bP.h + bP.d;
+  var dc12Prob = bP.h + bP.a;
+  var dcX2Prob = bP.d + bP.a;
+  var dc1XOdds = 1 / (1 / b1.h + 1 / b1.d);
+  var dc12Odds = 1 / (1 / b1.h + 1 / b1.a);
+  var dcX2Odds = 1 / (1 / b1.d + 1 / b1.a);
+
+  var dcPick = dc1XProb >= dc12Prob && dc1XProb >= dcX2Prob ? '1X' : dc12Prob >= dcX2Prob ? '12' : 'X2';
+  var dcProb = dcPick === '1X' ? dc1XProb : dcPick === '12' ? dc12Prob : dcX2Prob;
+  var dcOdds = dcPick === '1X' ? dc1XOdds : dcPick === '12' ? dc12Odds : dcX2Odds;
+  var dcMarketProbNV = dcPick === '1X' ? bpH + bpD : dcPick === '12' ? bpH + bpA : bpD + bpA;
+  var dcFairOdds = dcMarketProbNV > 0 ? 1 / dcMarketProbNV : 0;
+  var dcEV = dcProb * dcFairOdds - 1;
+  var dcEdge = edgePct(dcProb, dcMarketProbNV);
+
+  var dcAgree = 0;
+  for (var dsi = 0; dsi < ensemble.signals.length; dsi++) {
+    var dsp = ensemble.signals[dsi].probs;
+    var dsDC = (dsp.h + dsp.d) >= (dsp.h + dsp.a) && (dsp.h + dsp.d) >= (dsp.d + dsp.a) ? '1X' : (dsp.h + dsp.a) >= (dsp.d + dsp.a) ? '12' : 'X2';
+    if (dsDC === dcPick) dcAgree++;
+  }
+  var dcAgreement = ensemble.signals.length > 0 ? dcAgree / ensemble.signals.length : 0;
+
+  var dcActionable = dcProb >= 0.35 && dcEV > 0.02;
+
+  var dcScore = 0;
+  if (dcProb >= 0.35) {
+    dcScore += Math.min(40, Math.round(dcProb * 40));
+    dcScore += Math.min(30, Math.max(0, Math.round(dcEV * 150)));
+    dcScore += Math.min(20, Math.round(dcAgreement * 30));
+    dcScore += Math.min(10, Math.round(convScore * 0.1));
+  }
+  dcScore = Math.min(100, Math.round(dcScore));
+
+  var dcColor = '#a78bfa';
+  var dcBg = 'rgba(167,139,250,0.06)';
+  var dcBorder = 'rgba(167,139,250,0.2)';
+  var dcBadgeBg = 'rgba(167,139,250,0.12)';
+  var dcBadgeBorder = 'rgba(167,139,250,0.35)';
+
+  var dcTier = 'none', dcTierLabel = 'No Value', dcTierDesc = 'Does not meet minimum thresholds';
+  if (dcScore >= 80) { dcTier = 'elite'; dcTierLabel = 'ELITE'; dcTierDesc = 'Strong double chance indication. High conviction.'; }
+  else if (dcScore >= 60) { dcTier = 'high'; dcTierLabel = 'HIGH'; dcTierDesc = 'Good double chance value with solid agreement.'; }
+  else if (dcScore >= 40) { dcTier = 'medium'; dcTierLabel = 'MEDIUM'; dcTierDesc = 'Moderate double chance confidence.'; }
+  else if (dcScore >= 20) { dcTier = 'low'; dcTierLabel = 'LOW'; dcTierDesc = 'Weak double chance indication.'; }
+
+  var dcKelly = kellyVal(dcOdds, dcProb);
+  var dcEdgePct = edgePct(dcProb, dcMarketProbNV);
+  var dcProbStake = dcActionable ? calcStake(dcKelly, dcEdgePct) : 0;
+
+  html += '<div class="picks-row" style="margin-top:12px">';
+  html += '<div class="pick-card ' + dcTier + '" style="background:' + dcBg + ';border-color:' + dcBorder + '">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">';
+  html += '<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:' + dcBadgeBg + ';color:' + dcColor + ';border:1px solid ' + dcBadgeBorder + '">DC</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">Double Chance</span></div><span class="pick-badge" style="color:' + dcColor + '">' + dcPick + '</span>';
+  html += '<span style="font-size:12px;color:var(--muted2);margin-left:8px;font-family:\'JetBrains Mono\',monospace">@ ' + dcOdds.toFixed(2) + '</span></div>';
+  html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:' + (dcTier === 'elite' ? 'rgba(0,229,160,0.12)' : dcTier === 'high' ? 'rgba(0,229,160,0.08)' : dcTier === 'medium' ? 'rgba(245,200,66,0.1)' : 'rgba(107,116,148,0.1)') + ';color:' + (dcTier === 'elite' || dcTier === 'high' ? 'var(--green)' : dcTier === 'medium' ? 'var(--draw)' : 'var(--muted2)') + ';border:1px solid ' + (dcTier === 'elite' || dcTier === 'high' ? 'rgba(0,229,160,0.25)' : dcTier === 'medium' ? 'rgba(245,200,66,0.25)' : 'rgba(107,116,148,0.25)') + '">' + dcTierLabel + '</span>';
+  html += '</div>';
+
+  html += '<div class="pick-row" style="margin-bottom:10px">';
+  html += '<div class="pick-stat"><div class="pick-stat-label">DC %</div><div class="pick-stat-val" style="color:var(--fg)">' + fp(dcProb) + '</div></div>';
+  html += '<div class="pick-stat"><div class="pick-stat-label">EV%</div><div class="pick-stat-val" style="color:' + (dcEV > 0.1 ? 'var(--green)' : dcEV > 0 ? 'var(--draw)' : 'var(--muted2)') + '">' + (dcEV > 0 ? '+' : '') + (dcEV * 100).toFixed(1) + '%</div></div>';
+  html += '<div class="pick-stat"><div class="pick-stat-label">Edge%</div><div class="pick-stat-val" style="color:' + (dcEdge > 5 ? 'var(--green)' : dcEdge > 0 ? 'var(--draw)' : 'var(--muted2)') + '">' + (dcEdge > 0 ? '+' : '') + dcEdge.toFixed(1) + '%</div></div>';
+  html += '<div class="pick-stat"><div class="pick-stat-label">Covers</div><div class="pick-stat-val" style="color:' + dcColor + '">' + (dcPick === '1X' ? '1+X' : dcPick === '12' ? '1+2' : 'X+2') + '</div></div>';
+  if (dcActionable) {
+    html += '<div class="pick-stat"><div class="pick-stat-label">Stake</div><div class="pick-stat-val" style="color:' + dcColor + '">' + dcProbStake + ' TZS</div></div>';
+  } else {
+    html += '<div class="pick-stat"><div class="pick-stat-label">Stake</div><div class="pick-stat-val" style="color:var(--muted2)">—</div></div>';
+  }
+  html += '</div>';
+
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+  html += '<span style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.5px;text-transform:uppercase">DC Agreement:</span>';
+  for (var dsi2 = 0; dsi2 < ensemble.signals.length; dsi2++) {
+    var dsp2 = ensemble.signals[dsi2].probs;
+    var dsDC2 = (dsp2.h + dsp2.d) >= (dsp2.h + dsp2.a) && (dsp2.h + dsp2.d) >= (dsp2.d + dsp2.a) ? '1X' : (dsp2.h + dsp2.a) >= (dsp2.d + dsp2.a) ? '12' : 'X2';
+    var dsAgree2 = dsDC2 === dcPick;
+    html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:600;font-family:\'JetBrains Mono\',monospace;background:' + (dsAgree2 ? 'rgba(167,139,250,0.08)' : 'rgba(107,116,148,0.06)') + ';color:' + (dsAgree2 ? dcColor : 'var(--muted)') + '">' + sigNames[dsi2] + (dsAgree2 ? ' ⬩' : ' —') + '</span>';
+  }
+  html += '<span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-left:8px">Covers: <strong style="color:' + dcColor + '">' + (dcPick === '1X' ? 'Home or Draw' : dcPick === '12' ? 'Home or Away' : 'Draw or Away') + '</strong></span>';
+  var dcFairStr = dcFairOdds > 0 ? dcFairOdds.toFixed(2) : '-';
+  html += '<span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-left:auto">Fair: <strong style="color:' + dcColor + '">' + dcFairStr + '</strong></span>';
+  html += '</div>';
+
+  html += '<div class="conf-strip">';
+  for (var dci = 0; dci < 10; dci++) {
+    var dcSeg = '';
+    if (dci < Math.round(dcScore / 10)) {
+      dcSeg = 'filled';
+      if (dcScore < 40) dcSeg += ' low';
+      else if (dcScore < 60) dcSeg += ' warn';
+    }
+    html += '<div class="conf-seg ' + dcSeg + '"></div>';
+  }
+  html += '</div>';
+  html += '<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + dcTierDesc + '</span><span style="font-size:9px;font-weight:700;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">Confidence: ' + dcScore + '/100</span></div>';
+  html += '</div>'; // end pick-card
+  html += '</div>'; // end dc row
+
   html += '</div>'; // end flex container
   html += '</div>'; // end top-picks container
 
@@ -1169,49 +905,24 @@ window.runAnalysis = function(overwriteIdx) {
   });
   html += '</tbody></table>';
 
-  // ── DOUBLE CHANCE TABLE ──
-  var dcOutcomes = [
-    { label:'1X', blended: ensemble.probs.h + ensemble.probs.d, model: modH + modD, bp: bpH + bpD, odds: 1 / (1/b1.h + 1/b1.d), color:'var(--green)' },
-    { label:'12', blended: ensemble.probs.h + ensemble.probs.a, model: modH + modA, bp: bpH + bpA, odds: 1 / (1/b1.h + 1/b1.a), color:'var(--red)' },
-    { label:'X2', blended: ensemble.probs.d + ensemble.probs.a, model: modD + modA, bp: bpD + bpA, odds: 1 / (1/b1.d + 1/b1.a), color:'var(--draw)' }
-  ];
-  html += '<table class="vf-table" style="margin-top:16px"><thead><tr><th>DC Outcome</th><th>Blended %</th><th>Model %</th><th>BK %</th><th>BK Odds</th><th>Fair Odds</th><th>EV%</th><th>Edge%</th><th>Kelly%</th></tr></thead><tbody>';
-  dcOutcomes.forEach(function(v) {
-    var bOdds = v.blended > 0 ? 1 / v.blended : 0;
-    var bEv = v.blended * v.odds - 1;
-    var noVigDC = v.bp;
-    var bEdge = edgePct(v.blended, noVigDC);
-    var bKelly = kellyVal(v.odds, v.blended);
-    var isPick = v.label === dc.label;
-    html += '<tr' + (isPick ? ' style="background:rgba(0,194,255,0.06)"' : '') + '>';
-    html += '<td style="text-align:left;font-weight:700;color:' + v.color + '">' + (isPick ? '★ ' : '') + v.label + '</td>';
-    html += '<td><strong>' + fp(v.blended) + '</strong></td>';
-    html += '<td>' + fp(v.model) + '</td><td>' + fp(v.bp) + '</td>';
-    html += '<td style="font-weight:600">' + v.odds.toFixed(2) + '</td>';
-    html += '<td style="color:var(--cyan);font-weight:600">' + bOdds.toFixed(2) + '</td>';
-    html += '<td class="' + (bEv > 0.0005 ? 'pos' : bEv > 0 ? 'pos' : bEv > -0.0005 ? 'neu' : 'neg') + '"><strong>' + (bEv > 0 ? '+' : '') + (bEv * 100).toFixed(1) + '%</strong></td>';
-    html += '<td class="' + (bEdge > 0 ? 'pos' : bEdge > -5 ? 'neu' : 'neg') + '">' + (bEdge > 0 ? '+' : '') + bEdge.toFixed(2) + '%</td>';
-    html += '<td>' + (bKelly > 0 ? (bKelly * 100).toFixed(2) + '%' : '-') + '</td></tr>';
-  });
-  html += '</tbody></table>';
 
   html += '</div>'; // end detailed-tables container
 
   // ── TABS ──
   html += '<div class="sec-tabs">';
   html += '<div class="tabs">';
-  html += '<button class="tab-btn active" data-tab="secPoisson">Poisson Markets</button>';
+  html += '<button class="tab-btn active" data-tab="secPoisson">Dixon-Coles Markets</button>';
   html += '<button class="tab-btn" data-tab="secConv">Convergence</button>';
   html += '<button class="tab-btn" data-tab="secSignals">Signal History</button>';
   html += '</div>';
 
-  // Tab 1: Poisson
+  // Tab 1: Dixon-Coles
   html += '<div id="secPoisson" class="tab-content active">';
-  html += '<div class="conv-label" style="margin-bottom:10px">Poisson Markets</div>';
+  html += '<div class="conv-label" style="margin-bottom:10px">Dixon-Coles Markets <span style="font-weight:400;color:var(--muted);font-size:9px">(ρ=' + rhoVal.toFixed(2) + ')</span></div>';
   if (hasPoisson) {
-    var scores = getScorelines(xg.lh, xg.la, 10);
+    var scores = getScorelines(xg.lh, xg.la, 10, rhoVal);
     var ouLines = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5];
-    var btts = bttsProb(xg.lh, xg.la);
+    var btts = bttsProb(xg.lh, xg.la, rhoVal);
     html += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-family:\'JetBrains Mono\',monospace;font-size:11px">';
     html += '<span>Home xG: <strong style="color:var(--cyan)">' + xg.lh.toFixed(2) + '</strong></span>';
     html += '<span>Away xG: <strong style="color:var(--cyan)">' + xg.la.toFixed(2) + '</strong></span>';
@@ -1230,7 +941,7 @@ window.runAnalysis = function(overwriteIdx) {
     html += '<div class="conv-label" style="margin-top:14px;margin-bottom:6px">Over / Under</div>';
     html += '<table class="vf-table"><thead><tr><th>Line</th><th>Over %</th><th>Under %</th><th>Fair O</th><th>Fair U</th></tr></thead><tbody>';
     ouLines.forEach(function(ol) {
-      var r = overUnder(xg.lh, xg.la, ol);
+      var r = overUnder(xg.lh, xg.la, ol, rhoVal);
       html += '<tr><td style="font-weight:700">' + (ol % 1 === 0 ? ol + '.0' : ol) + '</td>';
       html += '<td>' + fp(r.over) + '</td><td>' + fp(r.under) + '</td>';
       html += '<td style="color:var(--cyan)">' + fo(r.over) + '</td><td style="color:var(--cyan)">' + fo(r.under) + '</td></tr>';
@@ -1241,7 +952,7 @@ window.runAnalysis = function(overwriteIdx) {
     html += '<span>BTTS No: <strong>' + fp(1 - btts) + '</strong> (Fair: ' + fo(1 - btts) + ')</span>';
     html += '</div>';
   } else {
-    html += '<div class="no-value-msg">Poisson model not available. Fit error exceeds 5%.</div>';
+    html += '<div class="no-value-msg">Dixon-Coles model not available. Fit error exceeds 5%.</div>';
   }
   html += '</div>';
 
@@ -1308,7 +1019,7 @@ window.runAnalysis = function(overwriteIdx) {
   if (!hasBrierData) {
     html += '<div style="margin-top:8px;padding:8px;border-radius:6px;text-align:center;color:var(--muted);font-size:10px;font-family:\'JetBrains Mono\',monospace">No Brier data yet. Record match results (1/X/2) to build performance history.</div>';
   } else {
-    html += '<div style="margin-top:8px;font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;line-height:1.6">Brier score ranges 0-2 (lower is better). Signals with better calibration receive higher weight in the blended ensemble. <strong>Note:</strong> Always picks the highest EV outcome (positive or negative). Requires Blended Prob ≥ 20%.</div>';
+    html += '<div style="margin-top:8px;font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;line-height:1.6">Brier score ranges 0-2 (lower is better). Signals with better calibration receive higher weight in the blended ensemble. <strong>Note:</strong> Always picks the highest probability outcome. Requires Blended Prob ≥ 20%.</div>';
   }
   html += '</div>';
 
@@ -1316,9 +1027,11 @@ window.runAnalysis = function(overwriteIdx) {
 
   // Footnote
   html += '<div class="vf-note" style="margin-top:16px">';
-  html += '<strong>Brier-Weighted Blended (BWB):</strong> Primary pick from the Brier-Weighted ensemble (Market + Convergence + Poisson). ';
+  html += '<strong>Brier-Weighted Blended (BWB):</strong> Primary pick from the Brier-Weighted ensemble (Market + Convergence + Dixon-Coles). ';
   html += 'Picks the highest blended probability outcome. Requires Prob &ge; 20%. ';
-  html += '<strong>BWB Draw Panic:</strong> Draw-focused panic bet using Brier-Weighted probabilities. Triggers when blended Draw probability ≥ 30%. Suggests probability-based stake even with -EV.';
+  html += '<strong>BWB Probability (BWB-P):</strong> Alternative with probability-based staking. ';
+  html += 'Stakes proportionally to blended probability regardless of EV. ';
+  html += '<strong>Double Chance (DC):</strong> Evaluates all three double-chance combinations (1X, 12, X2) using Brier-Weighted Blended probabilities. Picks the highest combined probability &ge; 35% with positive EV.';
   html += '</div>';
 
   html += '</div></div>';
@@ -1356,16 +1069,6 @@ window.runAnalysis = function(overwriteIdx) {
       conv: { h: convH, d: convD, a: convA },
       poisson: hasPoisson ? { h: xg.pH, d: xg.pD, a: xg.pA } : null
     },
-    dc: {
-      side: dc.label, label: dc.label, prob: dc.prob,
-      odds: dc.odds, ev: dc.ev, kelly: dc.kelly,
-      edge: dc.edge, score: dcScore, tier: dcTier,
-      actionable: dc.actionable
-    },
-    dcCover: {
-      label: dcCoverLabel, prob: dcCoverProb, odds: dcCoverOdds,
-      ev: dcCoverEV, edge: dcCoverEdge, stake: dcCoverStake
-    },
     // Brier-Weighted Blended: pick highest prob side (not highest EV)
     bwb: (function(){
       var bp_ = ensemble.probs;
@@ -1380,58 +1083,54 @@ window.runAnalysis = function(overwriteIdx) {
         ev: pr_ * od_ - 1,
         kelly: kellyVal(od_, pr_),
         edge: edgePct(pr_, bwbP_),
-        actionable: pr_ >= 0.25,
+        actionable: pr_ >= 0.20,
         score: bwbScore,
         tier: bwbTier
       };
     })(),
-    panic: (function(){
-      var dp_ = drawWeightedD;
-      var gap_ = Math.abs(ensemble.probs.h - ensemble.probs.a);
-      var par_ = Math.max(0, 1 - gap_ / 0.30);
-      var act_ = dp_ >= 0.30 || (dp_ >= 0.25 && gap_ < 0.10);
-      var stk_ = 0;
-      if (dp_ >= 0.30) {
-        var ex_ = Math.min(1, Math.max(0, (dp_ - 0.30) / (1 - 0.30)));
-        stk_ = Math.round(getBankroll() * Math.min(ex_ * 0.12, 0.12));
-      } else if (dp_ >= 0.25 && gap_ < 0.10) {
-        stk_ = Math.round(getBankroll() * Math.min(par_ * 0.06, 0.06));
-      }
-      // Weighted draw agreement
-      var wa_ = 0;
-      for (var wi_ = 0; wi_ < ensemble.signals.length; wi_++) {
-        var wp_ = ensemble.signals[wi_].probs;
-        wa_ += drawSigNormWs[wi_] * (wp_.d >= wp_.h && wp_.d >= wp_.a ? 1 : 0);
-      }
-      var sc_ = 0;
-      if (act_) {
-        sc_ += Math.min(40, dp_ * 80);
-        sc_ += Math.min(20, convScore * 0.25);
-        sc_ += Math.min(20, wa_ * 20);
-        sc_ += Math.max(0, Math.min(20, (dp_ * b1.d - 1) * 100));
-        if (par_ > 0) sc_ += Math.round(par_ * 15);
-        sc_ += ouBoost;
-        var dq_ = hasPoisson ? drawQuality(xg.lh, xg.la) : 0.5;
-        var qb_ = dq_ > 0.80 ? 10 : dq_ > 0.70 ? 5 : dq_ > 0.60 ? 2 : 0;
-        sc_ += qb_;
-        var xgGap_ = hasPoisson ? Math.abs(xg.lh - xg.la) : 1;
-        var xgPar_ = hasPoisson ? Math.max(0, 1 - xgGap_ / 0.30) : 0;
-        if (xgPar_ > 0) sc_ += Math.round(xgPar_ * 10);
-      }
-      sc_ = Math.min(100, Math.round(sc_));
-      stk_ = Math.round(stk_ * (act_ ? sc_ / 100 : 0));
-      var nvd_ = (1/b1.d) / (1/b1.h + 1/b1.d + 1/b1.a);
+    // BWB Probability (Alt): probability-based staking, always stakes if prob >= 20%
+    bwbAlt: (function(){
+      var bp_ = ensemble.probs;
+      var s_ = bp_.h >= bp_.d && bp_.h >= bp_.a ? 'h' : bp_.d >= bp_.a ? 'd' : 'a';
+      var l_ = s_ === 'h' ? '1' : s_ === 'd' ? 'X' : '2';
+      var pr_ = s_ === 'h' ? bp_.h : s_ === 'd' ? bp_.d : bp_.a;
+      var od_ = s_ === 'h' ? b1.h : s_ === 'd' ? b1.d : b1.a;
       return {
-        side: 'd', label: 'X', prob: dp_, odds: b1.d,
-        ev: dp_ * b1.d - 1,
-        kelly: kellyVal(b1.d, dp_),
-        edge: edgePct(dp_, nvd_),
-        stake: stk_,
-        score: sc_,
-        tier: sc_ >= 80 ? 'elite' : sc_ >= 60 ? 'high' : sc_ >= 40 ? 'medium' : sc_ >= 20 ? 'low' : 'none',
-        actionable: act_
+        side: s_, label: l_, prob: pr_, odds: od_,
+        ev: pr_ * od_ - 1,
+        stake: calcProbStake(pr_),
+        actionable: pr_ >= 0.20,
+        score: bwbAltScore,
+        tier: bwbAltTier
       };
-    })()
+    })(),
+    // Double Chance: evaluates all three double-chance combinations using BWB probs
+    doubleChance: (function(){
+      var dcProbs_ = {
+        '1X': ensemble.probs.h + ensemble.probs.d,
+        '12': ensemble.probs.h + ensemble.probs.a,
+        'X2': ensemble.probs.d + ensemble.probs.a
+      };
+      var dcOdds_ = {
+        '1X': 1 / (1/b1.h + 1/b1.d),
+        '12': 1 / (1/b1.h + 1/b1.a),
+        'X2': 1 / (1/b1.d + 1/b1.a)
+      };
+      var dcPick_ = dcProbs_['1X'] >= dcProbs_['12'] && dcProbs_['1X'] >= dcProbs_['X2'] ? '1X' : dcProbs_['12'] >= dcProbs_['X2'] ? '12' : 'X2';
+      var dcProb_ = dcProbs_[dcPick_];
+      var dcOddsVal_ = dcOdds_[dcPick_];
+      var dcMarketNV_ = dcPick_ === '1X' ? bpD + bpH : dcPick_ === '12' ? bpA + bpH : bpA + bpD;
+      var dcFairOdds_ = dcMarketNV_ > 0 ? 1 / dcMarketNV_ : 0;
+      var dcEV_ = dcProb_ * dcFairOdds_ - 1;
+      var dcActionable_ = dcProb_ >= 0.35 && dcEV_ > 0.02;
+      return {
+        pick: dcPick_, prob: dcProb_, odds: dcOddsVal_, ev: dcEV_,
+        actionable: dcActionable_,
+        score: dcScore,
+        tier: dcTier,
+        stake: dcActionable_ ? calcStake(kellyVal(dcOddsVal_, dcProb_), edgePct(dcProb_, dcMarketNV_)) : 0
+      };
+    })(),
   };
   if (overwriteIdx !== undefined && overwriteIdx >= 0 && overwriteIdx < window._predictionHistory.length) {
     var oldEntry = window._predictionHistory[overwriteIdx];
@@ -1464,6 +1163,7 @@ window.clearAll = function() {
     var el = $(id); if (el) el.value = '';
   });
   var gsLB = $('gsLeagueBase'); if (gsLB) gsLB.value = '1.30';
+  var gsRho = $('gsRho'); if (gsRho) gsRho.value = '-0.13';
   var br = $('bankroll'); if (br) br.value = '10000';
   $('results').style.display = 'none';
   $('errBox').classList.remove('show');
@@ -1492,7 +1192,10 @@ var MAX_HISTORY = 150;
 var STORAGE_KEY = 'betiqpro_history_value_finder';
 
 function loadHistory() {
-  try { var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }
   catch(e) { return []; }
 }
 function saveHistory() {
@@ -1508,7 +1211,7 @@ function renderHistory() {
   var h = window._predictionHistory;
   if (cnt) cnt.textContent = '(' + h.length + ')';
   if (h.length === 0) {
-    el.innerHTML = '<tr><td colspan="11" class="h-empty" style="text-align:center"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
+    el.innerHTML = '<tr><td colspan="9" class="h-empty" style="text-align:center"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
     return;
   }
   var html = '';
@@ -1522,19 +1225,12 @@ function renderHistory() {
     var sideColor = side === 'h' ? 'var(--green)' : side === 'd' ? 'var(--draw)' : side === 'a' ? 'var(--red)' : 'var(--muted)';
     var oddsStr = bwb.odds ? bwb.odds.toFixed(2) : '-';
 
-    // Panic Bet data
-    var panicData = e.panic || {};
-    var panicActionable = panicData.actionable;
-    var panicLabel = panicData.label || '';
-    var panicOddsStr = panicData.odds ? panicData.odds.toFixed(2) : '-';
-    var panicColor = 'var(--red)';
-
-    // P/L
+    // BWB P/L
     var stake = 0;
     var pl = 0;
     if (isActionable && (bwb.kelly > 0 || bwb.edge > 0) && e.result) {
       stake = calcStake(bwb.kelly, bwb.edge);
-      if (e.result === sideLabel) {
+      if (e.result === (bwb.label || '')) {
         pl = Math.round(stake * (bwb.odds - 1));
       } else {
         pl = -stake;
@@ -1543,9 +1239,40 @@ function renderHistory() {
     var plStr = pl > 0 ? '+' + pl : pl < 0 ? '' + pl : '-';
     var plCls = pl > 0 ? 'pos' : pl < 0 ? 'neg' : '';
 
+    // BWB Alt P/L
+    var bwbAltEnt = e.bwbAlt || {};
+    var bwbAltStakeVal = bwbAltEnt.stake || 0;
+    var bwbAltPl = 0;
+    if (bwbAltEnt.actionable && bwbAltStakeVal > 0 && e.result) {
+      if (e.result === (bwbAltEnt.label || '')) {
+        bwbAltPl = Math.round(bwbAltStakeVal * (bwbAltEnt.odds - 1));
+      } else {
+        bwbAltPl = -bwbAltStakeVal;
+      }
+    }
+    var bwbAltPlStr = bwbAltPl > 0 ? '+' + bwbAltPl : bwbAltPl < 0 ? '' + bwbAltPl : '-';
+    var bwbAltPlCls = bwbAltPl > 0 ? 'pos' : bwbAltPl < 0 ? 'neg' : '';
+
+    // Double Chance P/L
+    var dcEnt = e.doubleChance || {};
+    var dcStake = dcEnt.stake || 0;
+    var dcPl = 0;
+    if (dcEnt.actionable && dcStake > 0 && e.result) {
+      var dcWon = (dcEnt.pick === '1X' && (e.result === '1' || e.result === 'X')) ||
+                  (dcEnt.pick === '12' && (e.result === '1' || e.result === '2')) ||
+                  (dcEnt.pick === 'X2' && (e.result === 'X' || e.result === '2'));
+      if (dcWon) {
+        dcPl = Math.round(dcStake * (dcEnt.odds - 1));
+      } else {
+        dcPl = -dcStake;
+      }
+    }
+    var dcPlStr = dcPl > 0 ? '+' + dcPl : dcPl < 0 ? '' + dcPl : '-';
+    var dcPlCls = dcPl > 0 ? 'pos' : dcPl < 0 ? 'neg' : '';
+
     html += '<tr>';
-    html += '<td><span class="h-date">' + e.date + '</span></td>';
-    html += '<td><span class="h-match">' + titleCase(escHtml(e.homeTeam)) + '<span class="vs">vs</span>' + titleCase(escHtml(e.awayTeam)) + '</span></td>';
+    html += '<td><span class="h-date">' + escHtml(e.date) + '</span></td>';
+    html += '<td><span class="h-match">' + escHtml(titleCase(e.homeTeam)) + '<span class="vs">vs</span>' + escHtml(titleCase(e.awayTeam)) + '</span></td>';
     // BWB 1X2: show all three blended probabilities
     var comp = e.composite || {};
     var cH = comp.h !== undefined ? Math.round(comp.h * 100) : '-';
@@ -1557,53 +1284,12 @@ function renderHistory() {
     html += '<span style="color:var(--red)">' + cA + '%</span>';
     html += '</td>';
     html += '<td style="text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:' + sideColor + '">' + (isActionable ? sideLabel + '<br><span style="font-size:9px;color:var(--muted2);font-weight:400">@ ' + oddsStr + '</span>' : '<span style="color:var(--muted);font-weight:400">-</span>') + '</td>';
-    html += '<td style="text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:' + (panicActionable ? panicColor : 'var(--muted)') + '">' + (panicActionable ? panicLabel + '<br><span style="font-size:9px;color:var(--muted2);font-weight:400">@ ' + panicOddsStr + '</span>' : '-') + '</td>';
-    // BWB Confidence pick
-    var confProbVal = bwb.prob || 0;
-    var confPickActionable = confProbVal >= 0.35;
-    var confPickColor = bwb.side === 'h' ? 'var(--green)' : bwb.side === 'd' ? 'var(--draw)' : bwb.side === 'a' ? 'var(--red)' : 'var(--muted)';
-    html += '<td style="text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:' + confPickColor + '">';
-    html += confPickActionable && bwb.label ? bwb.label + '<br><span style="font-size:9px;color:var(--muted2);font-weight:400">@ ' + oddsStr + '</span>' : '<span style="color:var(--muted);font-weight:400">-</span>';
-    html += '</td>';
     var resultColor = e.result === '1' ? 'var(--green)' : e.result === 'X' ? 'var(--draw)' : e.result === '2' ? 'var(--red)' : 'var(--muted)';
     var resultBg = e.result === '1' ? 'rgba(0,229,160,0.12)' : e.result === 'X' ? 'rgba(245,200,66,0.12)' : e.result === '2' ? 'rgba(255,77,109,0.12)' : 'transparent';
-    html += '<td style="text-align:center"><span class="h-result" data-r="' + escHtml(e.result || '') + '" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;background:' + resultBg + ';color:' + resultColor + ';border:2px solid ' + resultColor + '">' + (e.result && e.result !== '' ? e.result : '-') + '</span></td>';
+    html += '<td style="text-align:center"><span class="h-result" data-r="' + escHtml(e.result || '') + '" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;background:' + resultBg + ';color:' + resultColor + ';border:2px solid ' + resultColor + '">' + (e.result && e.result !== '' ? escHtml(e.result) : '-') + '</span></td>';
     html += '<td style="text-align:center;font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace" class="' + plCls + '">' + plStr + '</td>';
-    // Panic P/L
-    var panicData = e.panic || {};
-    var panicPL = 0;
-    var panicPLStr = '-';
-    var panicPLCls = '';
-    if (panicData.actionable && panicData.stake > 0 && panicData.odds && e.result) {
-      if (e.result === panicData.label) {
-        panicPL = Math.round(panicData.stake * (panicData.odds - 1));
-      } else {
-        panicPL = -panicData.stake;
-      }
-      panicPLStr = panicPL > 0 ? '+' + panicPL : '' + panicPL;
-      panicPLCls = panicPL > 0 ? 'pos' : panicPL < 0 ? 'neg' : '';
-    }
-    html += '<td style="text-align:center;font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace" class="' + panicPLCls + '">' + panicPLStr + '</td>';
-    // BWB Conf P/L
-    var confPL = 0;
-    var confPLStr = '-';
-    var confPLCls = '';
-    var confProbVal = bwb.prob || 0;
-    var confLabel = bwb.label || '';
-    if (confProbVal >= 0.35 && e.result && confLabel) {
-      var confPct = Math.min(Math.max(0, (confProbVal - 0.30) / 0.40), 1) * 0.08;
-      var confStakeAmt = Math.round(getBankroll() * confPct);
-      if (confStakeAmt > 0) {
-        if (e.result === confLabel) {
-          confPL = Math.round(confStakeAmt * (bwb.odds - 1));
-        } else {
-          confPL = -confStakeAmt;
-        }
-        confPLStr = confPL > 0 ? '+' + confPL : '' + confPL;
-        confPLCls = confPL > 0 ? 'pos' : confPL < 0 ? 'neg' : '';
-      }
-    }
-    html += '<td style="text-align:center;font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace" class="' + confPLCls + '">' + confPLStr + '</td>';
+    html += '<td style="text-align:center;font-size:11px;font-weight:600;font-family:\'JetBrains Mono\',monospace" class="' + bwbAltPlCls + '">' + bwbAltPlStr + '</td>';
+    html += '<td style="text-align:center;font-size:11px;font-weight:600;font-family:\'JetBrains Mono\',monospace" class="' + dcPlCls + '">' + dcPlStr + '</td>';
     html += '<td><div class="h-actions">' +
       '<span class="h-btn reload" onclick="reloadEntry(' + idx + ')" title="Re-run">&#8635;</span>' +
       '<span class="h-btn delete" onclick="deleteEntry(' + idx + ')" title="Delete">&#10005;</span>' +
@@ -1621,30 +1307,15 @@ function renderProfitTracker() {
   var lastN = ptFilterEl ? parseInt(ptFilterEl.value) || 0 : 0;
   if (lastN > 0 && hist.length > lastN) hist = hist.slice(hist.length - lastN);
 
-  // Panic Bet stats
-  var pAllW = 0, pAllL = 0, pValW = 0, pValL = 0, pP = 0, pTot = 0;
   // Brier-Weighted Blended stats
   var bwbAllW = 0, bwbAllL = 0, bwbValW = 0, bwbValL = 0, bwbP = 0, bwbTot = 0;
-  // DC Coverage stats
+  // BWB Probability (Alt) stats
+  var bwbAltAllW = 0, bwbAltAllL = 0, bwbAltValW = 0, bwbAltValL = 0, bwbAltP = 0, bwbAltTot = 0;
+  // Double Chance stats
   var dcAllW = 0, dcAllL = 0, dcValW = 0, dcValL = 0, dcP = 0, dcTot = 0;
-  // BWB Confidence stats (30% floor, prob-based staking)
-  var confAllW = 0, confAllL = 0, confValW = 0, confValL = 0, confP = 0, confTot = 0;
-
   for (var hi = 0; hi < hist.length; hi++) {
     var e = hist[hi];
     if (!e.result || e.result === '') continue;
-
-    // Panic Bet
-    var panic = e.panic || {};
-    if (e.result && panic.label) {
-      if (e.result === panic.label) pAllW++; else pAllL++;
-    }
-    if (panic.actionable && panic.stake > 0) {
-      var pStake = panic.stake;
-      pTot += pStake;
-      if (e.result === panic.label) { pValW++; pP += Math.round(pStake * (panic.odds - 1)); }
-      else { pValL++; pP -= pStake; }
-    }
 
     // Brier-Weighted Blended: pick highest prob side, any EV
     var bwb = e.bwb || {};
@@ -1660,35 +1331,34 @@ function renderProfitTracker() {
       }
     }
 
-    // DC Coverage (BWB Probability-First)
-    var dcCover = e.dcCover || {};
-    var dcWon = (dcCover.label === '1X' && (e.result === '1' || e.result === 'X')) ||
-                (dcCover.label === '12' && (e.result === '1' || e.result === '2')) ||
-                (dcCover.label === 'X2' && (e.result === 'X' || e.result === '2'));
-    if (e.result && dcCover.label) {
-      if (dcWon) dcAllW++; else dcAllL++;
+    // BWB Probability (Alt)
+    var bwbAltEntry = e.bwbAlt || {};
+    if (e.result && bwbAltEntry.label) {
+      if (e.result === bwbAltEntry.label) bwbAltAllW++; else bwbAltAllL++;
     }
-    if ((dcCover.prob || 0) >= 0.50 && dcCover.stake > 0) {
-      dcTot += dcCover.stake;
-      if (dcWon) { dcValW++; dcP += Math.round(dcCover.stake * (dcCover.odds - 1)); }
-      else { dcValL++; dcP -= dcCover.stake; }
+    if (bwbAltEntry.actionable && bwbAltEntry.stake > 0) {
+      bwbAltTot += bwbAltEntry.stake;
+      if (e.result === bwbAltEntry.label) { bwbAltValW++; bwbAltP += Math.round(bwbAltEntry.stake * (bwbAltEntry.odds - 1)); }
+      else { bwbAltValL++; bwbAltP -= bwbAltEntry.stake; }
     }
 
-    // BWB Confidence: probability-first (30% floor, prob-based staking)
-    var confBwb = e.bwb || {};
-    if (e.result && confBwb.label) {
-      if (e.result === confBwb.label) confAllW++; else confAllL++;
+    // Double Chance
+    var dc = e.doubleChance || {};
+    if (e.result && dc.pick) {
+      var dcWon = (dc.pick === '1X' && (e.result === '1' || e.result === 'X')) ||
+                  (dc.pick === '12' && (e.result === '1' || e.result === '2')) ||
+                  (dc.pick === 'X2' && (e.result === 'X' || e.result === '2'));
+      if (dcWon) dcAllW++; else dcAllL++;
     }
-    var confProb = confBwb.prob || 0;
-    if (confProb >= 0.35) {
-      var confPct = Math.min(Math.max(0, (confProb - 0.30) / 0.40), 1) * 0.08;
-      var confStake = Math.round(getBankroll() * confPct);
-      if (confStake > 0) {
-        confTot += confStake;
-        if (e.result === confBwb.label) { confValW++; confP += Math.round(confStake * (confBwb.odds - 1)); }
-        else { confValL++; confP -= confStake; }
-      }
+    if (dc.actionable && dc.stake > 0) {
+      dcTot += dc.stake;
+      var dcWonVal = (dc.pick === '1X' && (e.result === '1' || e.result === 'X')) ||
+                     (dc.pick === '12' && (e.result === '1' || e.result === '2')) ||
+                     (dc.pick === 'X2' && (e.result === 'X' || e.result === '2'));
+      if (dcWonVal) { dcValW++; dcP += Math.round(dc.stake * (dc.odds - 1)); }
+      else { dcValL++; dcP -= dc.stake; }
     }
+
   }
 
   function wrStr(w, l) {
@@ -1700,21 +1370,17 @@ function renderProfitTracker() {
     return tot > 0 ? (p / tot * 100) : 0;
   }
 
-  var pAllWr = wrStr(pAllW, pAllL);
-  var pValWr = wrStr(pValW, pValL);
-  var pRoi = roiStr(pP, pTot);
-
   var bwbAllWr = wrStr(bwbAllW, bwbAllL);
   var bwbValWr = wrStr(bwbValW, bwbValL);
   var bwbRoi = roiStr(bwbP, bwbTot);
 
+  var bwbAltAllWr = wrStr(bwbAltAllW, bwbAltAllL);
+  var bwbAltValWr = wrStr(bwbAltValW, bwbAltValL);
+  var bwbAltRoi = roiStr(bwbAltP, bwbAltTot);
+
   var dcAllWr = wrStr(dcAllW, dcAllL);
   var dcValWr = wrStr(dcValW, dcValL);
   var dcRoi = roiStr(dcP, dcTot);
-
-  var confAllWr = wrStr(confAllW, confAllL);
-  var confValWr = wrStr(confValW, confValL);
-  var confRoi = roiStr(confP, confTot);
 
   function ptCard(title, accent, allWr, valWr, stake, pl, plPct) {
     var plColor = pl > 0 ? 'var(--green)' : pl < 0 ? 'var(--red)' : 'var(--muted2)';
@@ -1732,51 +1398,74 @@ function renderProfitTracker() {
   }
 
   el.innerHTML =
-    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' +
     ptCard('Brier-Weighted Blended', 'var(--amber)', bwbAllWr, bwbValWr, bwbTot, bwbP, bwbRoi) +
-    ptCard('BWB Draw Panic', 'var(--red)', pAllWr, pValWr, pTot, pP, pRoi) +
-    ptCard('DC Coverage', 'var(--draw)', dcAllWr, dcValWr, dcTot, dcP, dcRoi) +
-    ptCard('BWB Confidence', 'var(--green)', confAllWr, confValWr, confTot, confP, confRoi) +
+    ptCard('BWB Probability (Alt)', 'var(--cyan)', bwbAltAllWr, bwbAltValWr, bwbAltTot, bwbAltP, bwbAltRoi) +
+    ptCard('Double Chance', '#a78bfa', dcAllWr, dcValWr, dcTot, dcP, dcRoi) +
     '</div>';
 }
 window.renderProfitTracker = renderProfitTracker;
 
-function exportHistory(fmt) {
+async function exportHistory(fmt) {
   var hist = window._predictionHistory || [];
   if (hist.length === 0) { alert('No history to export.'); return; }
   var content, filename, mime;
   if (fmt === 'csv') {
-    var rows = [['Date','Home','Away','Result','UnifiedPick','UnifiedOdds','EV','Kelly','Tier','Actionable','P/L','PanicPick','PanicOdds','PanicEV','PanicStake','PanicTier','PanicActionable','PanicPL','DCCoverPick','DCCoverOdds','DCCoverStake'].join(',')];
+      var rows = [['Date','Home','Away','Result','BWBPick','BWBOdds','BWBEv','BWBActionable','BWBP/L','BWBAltPick','BWBAltOdds','BWBAltEv','BWBAltActionable','BWBAltStake','BWBAltP/L','DCPick','DCOdds','DCEV','DCActionable','DCStake','DCP/L'].join(',')];
     for (var ei = 0; ei < hist.length; ei++) {
       var e = hist[ei];
-      var un = e.unified || {};
-      var sideLabel = un.side === 'h' ? '1' : un.side === 'd' ? 'X' : un.side === 'a' ? '2' : '';
-      var panicData = e.panic || {};
-      var panicLabel = panicData.label || '';
-      var panicOdds = panicData.odds;
-      var panicEv = panicData.ev;
-      var panicStakeVal = panicData.stake;
-      var panicTier = panicData.tier || '';
-      var panicActionable = panicData.actionable;
+      var bwb = e.bwb || {};
+      var bwbSideLabel = bwb.side === 'h' ? '1' : bwb.side === 'd' ? 'X' : bwb.side === 'a' ? '2' : '';
       var esc = function(s) { return '"' + (s || '').toString().replace(/"/g, '""') + '"'; };
-      var dcCov = e.dcCover || {};
+      var bwbOddsVal = bwb.odds !== undefined ? bwb.odds.toFixed(2) : '';
+      var bwbEvVal = bwb.ev !== undefined ? (bwb.ev*100).toFixed(1)+'%' : '';
+      var bwbPL = '-';
+      if (bwb.actionable && bwb.kelly > 0 && e.result) {
+        var bwbStake = calcStake(bwb.kelly, bwb.edge);
+        if (bwbStake > 0) {
+          if (e.result === bwbSideLabel) bwbPL = Math.round(bwbStake * (bwb.odds - 1));
+          else bwbPL = -bwbStake;
+        }
+      }
+      var bwbAltEnt = e.bwbAlt || {};
+      var bwbAltSideLabel = bwbAltEnt.side === 'h' ? '1' : bwbAltEnt.side === 'd' ? 'X' : bwbAltEnt.side === 'a' ? '2' : '';
+      var bwbAltOddsVal = bwbAltEnt.odds !== undefined ? bwbAltEnt.odds.toFixed(2) : '';
+      var bwbAltEvVal = bwbAltEnt.ev !== undefined ? (bwbAltEnt.ev*100).toFixed(1)+'%' : '';
+      var bwbAltStakeVal = bwbAltEnt.stake || 0;
+      var bwbAltPL = '-';
+      if (bwbAltEnt.actionable && bwbAltEnt.stake > 0 && e.result) {
+        if (e.result === bwbAltSideLabel) bwbAltPL = Math.round(bwbAltEnt.stake * (bwbAltEnt.odds - 1));
+        else bwbAltPL = -bwbAltEnt.stake;
+      }
+      var dcEnt2 = e.doubleChance || {};
+      var dcPickVal = dcEnt2.pick || '';
+      var dcOddsVal2 = dcEnt2.odds !== undefined ? dcEnt2.odds.toFixed(2) : '';
+      var dcEvVal = dcEnt2.ev !== undefined ? (dcEnt2.ev*100).toFixed(1)+'%' : '';
+      var dcStakeVal2 = dcEnt2.stake || 0;
+      var dcPL = '-';
+      if (dcEnt2.actionable && dcEnt2.stake > 0 && e.result) {
+        var dcWonCSV = (dcEnt2.pick === '1X' && (e.result === '1' || e.result === 'X')) ||
+                       (dcEnt2.pick === '12' && (e.result === '1' || e.result === '2')) ||
+                       (dcEnt2.pick === 'X2' && (e.result === 'X' || e.result === '2'));
+        if (dcWonCSV) dcPL = Math.round(dcEnt2.stake * (dcEnt2.odds - 1));
+        else dcPL = -dcEnt2.stake;
+      }
       rows.push([
         esc(e.date), esc(e.homeTeam), esc(e.awayTeam), esc(e.result),
-        esc(sideLabel), esc(un.odds !== undefined ? un.odds.toFixed(2) : ''),
-        esc(un.ev !== undefined ? (un.ev*100).toFixed(1)+'%' : ''),
-        esc(un.kelly !== undefined ? (un.kelly*100).toFixed(1)+'%' : ''),
-        esc(un.tier || ''),
-        un.actionable ? 'Yes' : 'No',
-        '',
-        esc(panicLabel), esc(panicOdds !== undefined ? panicOdds.toFixed(2) : ''),
-        esc(panicEv !== undefined ? (panicEv*100).toFixed(1)+'%' : ''),
-        esc(panicStakeVal !== undefined ? panicStakeVal : ''),
-        esc(panicTier || ''),
-        panicActionable ? 'Yes' : 'No',
-        '',
-        esc(dcCov.label || ''),
-        esc(dcCov.odds !== undefined ? dcCov.odds.toFixed(2) : ''),
-        esc(dcCov.stake !== undefined ? dcCov.stake : '')
+        esc(bwbSideLabel), esc(bwbOddsVal),
+        esc(bwbEvVal),
+        esc(bwb.actionable ? 'Yes' : 'No'),
+        esc(''+bwbPL),
+        esc(bwbAltSideLabel), esc(bwbAltOddsVal),
+        esc(bwbAltEvVal),
+        esc(bwbAltEnt.actionable ? 'Yes' : 'No'),
+        esc(''+bwbAltStakeVal),
+        esc(''+bwbAltPL),
+        esc(dcPickVal), esc(dcOddsVal2),
+        esc(dcEvVal),
+        esc(dcEnt2.actionable ? 'Yes' : 'No'),
+        esc(''+dcStakeVal2),
+        esc(''+dcPL)
       ].join(','));
     }
     content = rows.join('\r\n');
@@ -1787,17 +1476,36 @@ function exportHistory(fmt) {
     filename = 'betiqpro_predictions.json';
     mime = 'application/json';
   }
-  var blob = new Blob([content], { type: mime + ';charset=utf-8' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  try {
+    var handle = await window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [{ description: fmt === 'csv' ? 'CSV' : 'JSON', accept: fmt === 'csv' ? { 'text/csv': ['.csv'] } : { 'application/json': ['.json'] } }]
+    });
+    var writable = await handle.createWritable();
+    await writable.write(content);
+    await writable.close();
+  } catch(err) { if (err.name !== 'AbortError') alert('Save failed: ' + err.message); }
 }
 window.exportHistory = exportHistory;
+
+window.importHistory = function(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) { alert('Invalid file: expected a JSON array.'); return; }
+      window._predictionHistory = data;
+      saveHistory();
+      renderHistory();
+      renderProfitTracker();
+      alert('Imported ' + data.length + ' prediction(s).');
+    } catch(err) { alert('Error reading file: ' + err.message); }
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+};
 
 window.clearHistory = function() {
   window._predictionHistory = [];
@@ -1848,7 +1556,5 @@ document.addEventListener('keydown', function(e) {
 
 })();
 </script>
-<script src="header.js"></script>
-<script src="back-to-top.js"></script>
 </body>
 </html>

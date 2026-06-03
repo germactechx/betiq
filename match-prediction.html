@@ -115,32 +115,6 @@
 .derived-bar .dbv.l { color: var(--lose); }
 .derived-sep { color: var(--border2); margin: 0 2px; }
 
-/* Match count toggle */
-.match-count-toggle {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 3px;
-}
-.mct-btn {
-  padding: 4px 12px;
-  border-radius: 3px;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.mct-btn.active { background: var(--surface2); color: var(--cyan); border: 1px solid var(--border); }
-.mct-btn:hover:not(.active) { color: var(--text); }
-
 /* Team split layout */
 .teams-grid {
   display: grid;
@@ -188,29 +162,25 @@
     <div class="stack">
       <div class="panel">
         <div class="panel-hd">
-          <div class="panel-title">⚽ Stats Advanced Prediction Engine</div>
-          <div class="panel-sub">Poisson · Dixon-Coles (Dynamic ρ) · WDL Strength · Monte Carlo</div>
+          <div class="panel-title">Match Prediction</div>
+          <div class="panel-sub">Home/Away goal distribution · Poisson · 1×2 probabilities + Unified Tips</div>
         </div>
         <div class="panel-bd">
 
-          <!-- TEAM NAMES -->
           <div class="slabel">Match</div>
           <div class="g2" style="margin-bottom:18px">
             <div class="field"><label>Home Team</label><input id="homeTeam" type="text" placeholder="e.g. Arsenal"></div>
             <div class="field"><label>Away Team</label><input id="awayTeam" type="text" placeholder="e.g. Chelsea"></div>
           </div>
 
-          <!-- MATCH COUNT TOGGLE -->
-          <div class="slabel" style="margin-bottom:8px">Last 10 Matches <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(scored · conceded · result)</span></div>
-
-          <!-- LAST MATCHES INPUT — TWO TEAM BLOCKS -->
+          <div class="slabel" style="margin-bottom:8px">Last 10 Matches <span style="color:var(--muted);font-weight:400;font-size:9px">(scored · conceded · result)</span></div>
           <div class="teams-grid" style="margin-bottom:16px">
 
             <!-- HOME TEAM MATCHES -->
             <div class="team-block">
               <div class="team-block-hd">
-                <span class="team-block-label home" id="homeLabelTitle">🏠 Home Team</span>
-                <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">Newest (Top) → Oldest (Bottom)</span>
+                <span class="team-block-label home" id="homeLabelTitle">🏠 Home</span>
+                <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">Newest → Oldest</span>
               </div>
               <div class="team-block-bd">
                 <div class="match-rows-wrap">
@@ -227,7 +197,7 @@
                   </table>
                 </div>
                 <div class="derived-bar" id="homeDerivedBar">
-                  <span style="color:var(--muted);font-size:9px">Enter match data above to see derived stats</span>
+                  <span style="color:var(--muted);font-size:9px">Enter data to see stats</span>
                 </div>
               </div>
             </div>
@@ -235,8 +205,8 @@
             <!-- AWAY TEAM MATCHES -->
             <div class="team-block">
               <div class="team-block-hd">
-                <span class="team-block-label away" id="awayLabelTitle">✈️ Away Team</span>
-                <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">Newest (Top) → Oldest (Bottom)</span>
+                <span class="team-block-label away" id="awayLabelTitle">✈️ Away</span>
+                <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">Newest → Oldest</span>
               </div>
               <div class="team-block-bd">
                 <div class="match-rows-wrap">
@@ -253,41 +223,37 @@
                   </table>
                 </div>
                 <div class="derived-bar" id="awayDerivedBar">
-                  <span style="color:var(--muted);font-size:9px">Enter match data above to see derived stats</span>
+                  <span style="color:var(--muted);font-size:9px">Enter data to see stats</span>
                 </div>
               </div>
             </div>
 
           </div><!-- /teams-grid -->
 
-          <!-- VENUE OVERRIDE (optional) -->
           <details style="margin-bottom:16px">
-            <summary style="font-size:11px;font-weight:700;color:var(--muted2);cursor:pointer;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;list-style:none;display:flex;align-items:center;justify-content:space-between">
-              <span>⚙️ Advanced: Venue-Specific Overrides <span style="font-size:9px;font-weight:400;color:var(--muted)">(optional — use if you have home/away split averages)</span></span>
+            <summary style="font-size:11px;font-weight:700;color:var(--muted2);cursor:pointer;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:space-between">
+              <span>⚙️ Venue Overrides <span style="font-size:9px;font-weight:400;color:var(--muted)">(optional)</span></span>
               <span style="color:var(--muted);font-size:10px">▼</span>
             </summary>
             <div style="padding:14px;background:var(--bg);border:1px solid var(--border);border-top:none;border-radius:0 0 6px 6px">
-              <div style="font-size:10px;color:var(--muted2);margin-bottom:10px;line-height:1.6">These override the averages derived from match rows above. Leave blank to use auto-computed values.</div>
-              <div class="slabel" style="margin-bottom:8px">Home / Away Venue Stats (Avg Goals)</div>
+              <div class="slabel" style="margin-bottom:8px">Venue Split Averages</div>
               <div class="g4" style="margin-bottom:14px">
                 <div class="field"><label>Home GF</label><input id="homeGF" type="number" step="0.01" placeholder="Auto"></div>
                 <div class="field"><label>Home GA</label><input id="homeGA" type="number" step="0.01" placeholder="Auto"></div>
                 <div class="field"><label>Away GF</label><input id="awayGF" type="number" step="0.01" placeholder="Auto"></div>
                 <div class="field"><label>Away GA</label><input id="awayGA" type="number" step="0.01" placeholder="Auto"></div>
               </div>
-              <div class="slabel" style="margin-bottom:8px">All-Competition Averages (Avg Goals)</div>
+              <div class="slabel" style="margin-bottom:8px">All-Comp Averages</div>
               <div class="g4">
-                <div class="field"><label>Home GF All</label><input id="homeGFAll" type="number" step="0.01" placeholder="Auto"></div>
-                <div class="field"><label>Home GA All</label><input id="homeGAAll" type="number" step="0.01" placeholder="Auto"></div>
-                <div class="field"><label>Away GF All</label><input id="awayGFAll" type="number" step="0.01" placeholder="Auto"></div>
-                <div class="field"><label>Away GA All</label><input id="awayGAAll" type="number" step="0.01" placeholder="Auto"></div>
+                <div class="field"><label>Home GF</label><input id="homeGFAll" type="number" step="0.01" placeholder="Auto"></div>
+                <div class="field"><label>Home GA</label><input id="homeGAAll" type="number" step="0.01" placeholder="Auto"></div>
+                <div class="field"><label>Away GF</label><input id="awayGFAll" type="number" step="0.01" placeholder="Auto"></div>
+                <div class="field"><label>Away GA</label><input id="awayGAAll" type="number" step="0.01" placeholder="Auto"></div>
               </div>
             </div>
           </details>
 
-           <div id="dcIndicator" style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:12px;text-align:center">
-             <span style="color:var(--muted)">DC: auto-detect</span>
-           </div>
+           <div id="dcIndicator" style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:12px;text-align:center">DC: auto-detect</div>
            <div class="err-box" id="errBox"></div>
            <div class="btn-group">
             <button class="btn btn-primary" onclick="runAnalysis()" title="Ctrl+Enter">⚡ Analyze Match</button>
@@ -306,7 +272,12 @@
     <div class="hist-panel">
       <div class="panel-hd">
         <div class="panel-title">📋 Prediction History <span class="hist-count" id="histCount">(0)</span></div>
-        <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="h-btn h-btn-clear" onclick="exportHistory()" title="Export as JSON">↑ JSON</button>
+          <button class="h-btn h-btn-clear" onclick="document.getElementById('importFile').click()" title="Import from JSON">↓ JSON</button>
+          <button class="h-btn h-btn-clear" onclick="clearHistory()" title="Clear all history">✕ Clear All</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importHistory(event)">
+        </div>
       </div>
       <div class="hist-table-wrap">
         <table class="htbl">
@@ -330,7 +301,11 @@
 
 <div id="footer"></div>
 
+</div>
+
+<script src="header.js"></script>
 <script src="footer.js"></script>
+<script src="back-to-top.js"></script>
 <script>
 (function(){
 'use strict';
@@ -344,13 +319,7 @@ const MAX = 15;
 // ══════════════════════════════════════════════════════════════
 let matchCount = 10;
 
-window.setMatchCount = function(n) {
-  matchCount = n;
-  document.querySelectorAll('.mct-btn').forEach(b => {
-    b.classList.toggle('active', +b.dataset.n === n);
-  });
-  buildMatchRows();
-};
+window.setMatchCount = function(n) { matchCount = n; buildMatchRows(); };
 
 function buildMatchRows() {
   buildTeamRows('home');
@@ -361,7 +330,6 @@ function buildMatchRows() {
 function buildTeamRows(side) {
   const tbody = $(side + 'MatchBody');
   if (!tbody) return;
-  // Preserve existing values
   const existing = getMatchRowValues(side);
   tbody.innerHTML = '';
   for (let i = matchCount - 1; i >= 0; i--) {
@@ -375,26 +343,17 @@ function buildTeamRows(side) {
       '<td><input class="match-input venue-input" type="text" maxlength="1" placeholder="H/A" data-side="'+side+'" data-idx="'+i+'" data-field="venue" value="'+venue+'"></td>'+
       '<td><input class="match-input" type="number" min="0" step="1" placeholder="0" data-side="'+side+'" data-idx="'+i+'" data-field="scored" value="'+scored+'"></td>'+
       '<td><input class="match-input" type="number" min="0" step="1" placeholder="0" data-side="'+side+'" data-idx="'+i+'" data-field="conceded" value="'+conceded+'"></td>'+
-       '<td>'+
-         '<select class="result-select '+result.toLowerCase()+'" data-side="'+side+'" data-idx="'+i+'" data-field="result">'+
-          '<option value="">—</option>'+
-          '<option value="W"'+(result==='W'?' selected':'')+'>W</option>'+
-          '<option value="D"'+(result==='D'?' selected':'')+'>D</option>'+
-          '<option value="L"'+(result==='L'?' selected':'')+'>L</option>'+
-        '</select>'+
-      '</td>';
+      '<td><select class="result-select '+result.toLowerCase()+'" data-side="'+side+'" data-idx="'+i+'" data-field="result">'+
+        '<option value="">—</option>'+
+        '<option value="W"'+(result==='W'?' selected':'')+'>W</option>'+
+        '<option value="D"'+(result==='D'?' selected':'')+'>D</option>'+
+        '<option value="L"'+(result==='L'?' selected':'')+'>L</option>'+
+      '</select></td>';
     tbody.appendChild(tr);
   }
-  // Attach live listeners
   tbody.querySelectorAll('.match-input').forEach(inp => {
-    inp.addEventListener('input', () => {
-      autoFillResult(inp);
-      updateDerivedBars();
-    });
-    inp.addEventListener('change', () => {
-      autoFillResult(inp);
-      updateDerivedBars();
-    });
+    inp.addEventListener('input', () => { autoFillResult(inp); updateDerivedBars(); });
+    inp.addEventListener('change', () => { autoFillResult(inp); updateDerivedBars(); });
   });
   tbody.querySelectorAll('.result-select').forEach(sel => {
     sel.addEventListener('change', function() {
@@ -584,7 +543,7 @@ function updateDerivedBars() {
     if (!bar) return;
     const prof = deriveTeamProfile(side);
     if (!prof) {
-      bar.innerHTML = '<span style="color:var(--muted);font-size:9px">Enter match data above to see derived stats</span>';
+      bar.innerHTML = '<span style="color:var(--muted);font-size:9px">Enter data to see stats</span>';
       return;
     }
     const parts = [];
@@ -616,8 +575,8 @@ function updateDerivedBars() {
   // Update team name labels
   const hn = ($('homeTeam') || {}).value || 'Home Team';
   const an = ($('awayTeam') || {}).value || 'Away Team';
-  const hl = $('homeLabelTitle'); if(hl) hl.textContent = '🏠 ' + (hn || 'Home Team');
-  const al = $('awayLabelTitle'); if(al) al.textContent = '✈️ ' + (an || 'Away Team');
+  const hl = $('homeLabelTitle'); if(hl) hl.textContent = '🏠 ' + (hn || 'Home');
+  const al = $('awayLabelTitle'); if(al) al.textContent = '✈️ ' + (an || 'Away');
 }
 
 // Update name labels on team name input
@@ -630,7 +589,7 @@ function updateDerivedBars() {
 buildMatchRows();
 
 // ── Prediction History (localStorage) ─────────────────────────
-const MAX_HISTORY = 20;
+const MAX_HISTORY = 150;
 const STORAGE_KEY = 'betiqpro_history_match_prediction';
 
 function loadHistoryFromStorage() {
@@ -666,7 +625,7 @@ function renderHistory() {
       tipsHtml = '<span style="color:var(--muted);font-size:11px;font-family:\'JetBrains Mono\',monospace">— run Unified Tips</span>';
     }
     html += '<tr>';
-    html += '<td><span class="h-date">' + e.date + '</span></td>';
+    html += '<td><span class="h-date">' + escHtml(e.date) + '</span></td>';
     html += '<td><span class="h-match">' + escHtml(e.homeTeam) + '<span class="vs">vs</span>' + escHtml(e.awayTeam) + '</span></td>';
     html += '<td><div class="h-probs"><span class="h-prob h">H&nbsp;' + fp(e.prbs.h) + '</span><span class="h-prob d">D&nbsp;' + fp(e.prbs.d) + '</span><span class="h-prob a">A&nbsp;' + fp(e.prbs.a) + '</span></div></td>';
     html += '<td><div class="h-tips">' + tipsHtml + '</div></td>';
@@ -678,6 +637,38 @@ function renderHistory() {
   }
   el.innerHTML = html;
 }
+
+window.exportHistory = async function() {
+  const hist = window._predictionHistory || [];
+  if (hist.length === 0) { alert('No history to export.'); return; }
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'betiqpro_history_match_prediction.json',
+      types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+    });
+    const writable = await handle.createWritable();
+    await writable.write(JSON.stringify(hist, null, 2));
+    await writable.close();
+  } catch(err) { if (err.name !== 'AbortError') alert('Save failed: ' + err.message); }
+};
+
+window.importHistory = function(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) { alert('Invalid file: expected a JSON array.'); return; }
+      window._predictionHistory = data;
+      saveHistoryToStorage();
+      renderHistory();
+      alert('Imported ' + data.length + ' prediction(s).');
+    } catch(err) { alert('Error reading file: ' + err.message); }
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+};
 
 window.clearHistory = function() {
   window._predictionHistory = [];
@@ -715,12 +706,6 @@ window.reloadEntry = function(idx) {
 
 function restoreMatchRows(side, matches) {
   if (!matches || !matches.length) return;
-  const cnt = 10;
-  if (cnt !== matchCount) {
-    matchCount = cnt;
-    document.querySelectorAll('.mct-btn').forEach(b => b.classList.toggle('active', +b.dataset.n === cnt));
-    buildMatchRows();
-  }
   const tbody = $(side + 'MatchBody');
   if (!tbody) return;
   matches.forEach((m, i) => {
@@ -1116,8 +1101,8 @@ function renderProbsTab(xgResult, prbs, btts, mat, skellam, scores, ouData, tota
   html += '<div class="dq-ring-wrap">';
   html += '<div class="dq-ring"><svg width="54" height="54" viewBox="0 0 54 54"><circle class="dq-ring-bg" cx="27" cy="27" r="22"/><circle class="dq-ring-fill" cx="27" cy="27" r="22" stroke="' + strokeColor + '" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + offset.toFixed(1) + '"/></svg>';
   html += '<div class="dq-center" style="color:' + dqColor + '">' + dq + '%</div></div>';
-  html += '<div class="dq-info"><div class="dq-info-title">Data Quality: ' + (dq>=70?'Reliable':dq>=45?'Moderate':'Low') + (xgResult.statDivergenceWarning ? ' <span style="color:var(--red);font-size:9px">⚠ STAT DIVERGENCE</span>' : '') + '</div>';
-  html += '<div class="dq-info-detail">Source: ' + xgResult.dataSource + ' · Home Adv: +' + xgResult.homeAdv.toFixed(2) + ' xG<br>Dynamic DC ρ: ' + (xg+awayXG < 2.8 ? calcDynamicRho(xg,awayXG).toFixed(3)+' (active)' : 'off') + '</div></div></div>';
+  html += '<div class="dq-info"><div class="dq-info-title">Data Quality: ' + (dq>=70?'Reliable':dq>=45?'Moderate':'Low') + (xgResult.statDivergenceWarning ? ' <span style="color:var(--red);font-size:9px">⚠ DIVERGENCE</span>' : '') + '</div>';
+  html += '<div class="dq-info-detail">' + xgResult.dataSource + ' · H.A: +' + xgResult.homeAdv.toFixed(2) + ' xG · DC ρ: ' + (xg+awayXG < 2.8 ? calcDynamicRho(xg,awayXG).toFixed(3) : 'off') + '</div></div></div>';
 
   html += '<div class="metric-row">';
   html += '<div class="metric"><div class="ml">Home xG</div><div class="mv" style="color:var(--cyan)">' + xg.toFixed(2) + '</div><div class="ms">CI: [' + homeCI.low + ', ' + homeCI.high + ']</div></div>';
@@ -1178,7 +1163,7 @@ function renderProbsTab(xgResult, prbs, btts, mat, skellam, scores, ouData, tota
   html += '<div class="metric"><div class="ml">DC 1X</div><div class="mv" style="color:var(--green)">' + fp(prbs.h+prbs.d) + '</div><div class="ms">DC X2: ' + fp(prbs.d+prbs.a) + '</div><div class="ms">DC 12: ' + fp(prbs.h+prbs.a) + '</div></div>';
   html += '</div>';
 
-  html += '<div class="card"><div class="card-title">💎 Fair Value Engine — Highest Certainty Markets</div>';
+  html += '<div class="card"><div class="card-title">💎 Top Certainty Markets</div>';
   html += '<div class="fv-grid">';
   fairValue.forEach(fv => {
     html += '<div class="fv-item"><div class="fv-market">' + fv.market + '</div><div class="fv-cert">' + fv.certainty + '% certainty</div><div class="fv-prob">Fair Odds: ' + fo(fv.prob) + '</div></div>';
@@ -1221,13 +1206,13 @@ function renderSimTab(sim, prbs, btts, totalXG, mat) {
       '<div class="sim-model">Model: ' + fp(modelVal) + '<br><span style="color:' + dC + '">Δ' + drift.toFixed(1) + '%</span></div></div>';
   }
   let html = '<div class="card"><div class="card-title">🎲 Monte Carlo Simulation (12,000 Iterations)</div>';
-  html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.6">Random Poisson sampling run 12,000 times. Δ column shows deviation from analytical model — gaps over 3% indicate high match uncertainty.</div>';
+  html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:14px">12,000 Poisson samples · Δ = deviation from analytical model (&gt;3% = high uncertainty)</div>';
   html += simRow('Home Win', sim.homeWins, prbs.h, 'var(--green)');
   html += simRow('Draw', sim.draws, prbs.d, 'var(--amber)');
   html += simRow('Away Win', sim.awayWins, prbs.a, 'var(--red)');
   html += simRow('Over 2.5', sim.over25, ou25.over, 'var(--over)');
   html += simRow('BTTS Yes', sim.bttsY, btts, 'var(--under)');
-  html += '<div class="note" style="margin-top:12px">Δ under 2% = model stable. 2–5% = moderate uncertainty. Over 5% = results sensitive to assumptions — reduce stake size.</div>';
+  html += '<div class="note" style="margin-top:12px">Δ &lt;2% stable · 2–5% moderate · &gt;5% sensitive — reduce stake size.</div>';
   html += '</div>';
   return html;
 }
@@ -1260,7 +1245,7 @@ function renderOUTab(ouData, mat) {
 //  RENDER — AH TAB
 // ══════════════════════════════════════════════════════════════
 function renderAHTab(mat) {
-  let html = '<div class="card"><div class="card-title">Asian Handicap Lines <span style="font-size:9px;font-weight:400;color:var(--muted)">· Quarter-ball supported · −N = team gives goals (fav) · +N = team receives goals (underdog)</span></div>';
+  let html = '<div class="card"><div class="card-title">Asian Handicap Lines <span style="font-size:9px;font-weight:400;color:var(--muted)">· Qtr-ball supported · −N fav, +N dog</span></div>';
   html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:520px"><thead><tr><th style="text-align:left">Home Label</th><th style="text-align:left">Away Label</th><th>H Cover %</th><th>A Cover %</th><th>Push %</th><th>Fair H/A</th><th>Line Type</th><th>Best Side</th></tr></thead><tbody>';
   [-4.5,-3.5,-2.5,-1.5,-0.5,0.0,0.5,1.5,2.5,3.5,4.5].forEach(threshold => {
     const c = calcAHCover(mat, threshold);
@@ -1277,7 +1262,7 @@ function renderAHTab(mat) {
     html += '<tr><td style="text-align:left;font-weight:700;color:var(--green)">'+homeLabel+'</td><td style="text-align:left;font-weight:700;color:var(--red)">'+awayLabel+'</td><td style="color:var(--green)">'+fp(c.home)+'</td><td style="color:var(--red)">'+fp(c.away)+'</td><td style="color:var(--muted)">'+fp(c.push)+'</td><td style="font-size:11px">'+fo(c.home)+' / '+fo(c.away)+'</td><td>'+lineType+'</td><td><span style="font-weight:700;'+bestSideColor+'">'+bestSide+'</span></td></tr>';
   });
   html += '</tbody></table></div>';
-  html += '<div class="note" style="margin-top:10px"><strong>AH Convention:</strong> Negative handicap (−N) = that team gives N goals — they are the <em>favourite</em> and must win by more than N. Positive (+N) = that team receives N goals — they are the <em>underdog</em> and can draw or lose by up to N and still cover.</div>';
+  html += '<div class="note" style="margin-top:10px">−N = team gives goals (fav), +N = team receives goals (underdog).</div>';
   html += '</div>';
   return html;
 }
@@ -1310,13 +1295,13 @@ function renderKellyTab(mat, prbs, btts) {
     markets.push({label:'AH Away '+aL,prob:ah.away,cat:'AH',fairOdds:1/(ah.away||0.001)});
   });
   const top = markets.filter(m => m.prob <= 0.89 && m.prob >= 0.70).sort((a,b) => b.prob-a.prob).slice(0,15);
-  let html = '<div class="status-ok" style="margin-bottom:14px">✓ Model-Driven Odds Compilation — fair prices derived from Poisson + DC + Monte Carlo</div>';
+  let html = '<div class="status-ok" style="margin-bottom:14px">✓ Fair odds: Poisson + DC + Monte Carlo</div>';
   html += '<div class="card"><div class="card-title">💰 Compiled Fair Odds by Market</div>';
   html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:600px"><thead><tr><th style="text-align:left">Market</th><th>Cat</th><th>Model %</th><th>Fair Odds</th><th>Implied %</th></tr></thead><tbody>';
   top.forEach(m => {
     html += '<tr><td style="text-align:left;font-weight:700;color:var(--text)">'+m.label+'</td><td><span class="badge '+(m.cat==='1X2'?'badge-val':'badge-fair')+'">'+m.cat+'</span></td><td>'+(m.prob*100).toFixed(1)+'%</td><td style="color:var(--cyan);font-weight:700;font-family:\'JetBrains Mono\',monospace">'+m.fairOdds.toFixed(2)+'</td><td>'+(m.prob*100).toFixed(1)+'%</td></tr>';
   });
-  html += '</tbody></table></div><div class="note" style="margin-top:10px">All odds are model-compiled fair prices with zero margin. Markets ranked by probability strength 70% to 89%.</div></div>';
+  html += '</tbody></table></div><div class="note" style="margin-top:10px">Zero-margin fair odds. Markets ranked 70–89% probability.</div></div>';
   return html;
 }
 
@@ -1395,8 +1380,8 @@ window.runUnifiedTips = function() {
       return lines.join(' · ');
     }
 
-    let html = '<div class="summary-box">Unified Tips engine: Poisson + Dixon-Coles + 12,000-iteration Monte Carlo. Picks ranked by <strong>model agreement score</strong> (Poisson ↔ MC convergence × data quality × probability). AH signs: <strong>−N = Home gives goals (home fav), +N = Home receives goals (away fav)</strong>.</div>';
-    html += '<div class="card"><div class="card-title">🎯 Unified Tips — 5 Safest Picks <span style="font-size:9px;font-weight:400;color:var(--muted)">· Fair Odds &gt; 1.30 · Confidence &gt; 30% · Model Probability Weighted · Unbiased</span></div>';
+    let html = '<div class="summary-box">Picks ranked by model agreement (Poisson × MC convergence × data quality). −N = home fav, +N = away fav.</div>';
+    html += '<div class="card"><div class="card-title">🎯 Unified Tips — 5 Safest Picks <span style="font-size:9px;font-weight:400;color:var(--muted)">· Fair &gt; 1.30 · Confidence &gt; 30%</span></div>';
     if (unified.length === 0) {
       html += '<div style="padding:16px;color:var(--muted);font-size:13px">No predictions meet the criteria (fair odds &gt; 1.30, confidence &gt; 30%).</div>';
     } else {
@@ -1420,9 +1405,9 @@ window.runUnifiedTips = function() {
       });
     }
     html += '</div>';
-    html += '<div class="note" style="margin-top:12px"><strong>Summary:</strong> ';
-    if (unified.length > 0) html += 'Top pick: <strong>'+unified[0].market+'</strong> (Confidence: '+fp(unified[0].safeScore)+'). ';
-    html += 'Showing '+unified.length+' safest picks with fair odds &gt; 1.30 and confidence &gt; 30%. Based on 12,000 Monte Carlo runs.</div>';
+    html += '<div class="note" style="margin-top:12px">';
+    if (unified.length > 0) html += 'Top: <strong>'+unified[0].market+'</strong> ('+fp(unified[0].safeScore)+'). ';
+    html += unified.length+' picks &gt; 1.30 fair odds. 12K Monte Carlo.</div>';
     body.innerHTML = html;
   } catch(err) { body.innerHTML = '<div style="color:var(--red)">Unified Tips failed: '+err.message+'</div>'; }
 };
@@ -1439,7 +1424,7 @@ function renderTeamAnalysisTab(xgResult, prbs, btts) {
   const sp = c => c === 'dominant' ? 'var(--win)' : c === 'attacking' ? 'var(--over)' : c === 'defensive' ? 'var(--under)' : c === 'struggling' ? 'var(--lose)' : 'var(--muted2)';
   const bar = (pct, color) => '<div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin:4px 0"><div style="height:100%;width:'+Math.round(pct*100)+'%;background:'+color+';border-radius:3px"></div></div>';
 
-  let html = '<div class="card"><div class="card-title">📊 Comprehensive Team Analysis <span style="font-size:9px;font-weight:400;color:var(--muted)">· Beyond xG · Pattern Recognition · Form Profile</span></div>';
+  let html = '<div class="card"><div class="card-title">📊 Team Analysis <span style="font-size:9px;font-weight:400;color:var(--muted)">· Form · Style · Patterns</span></div>';
 
   [hp, ap].forEach((prof, i) => {
     const name = i === 0 ? hn : an;
@@ -1575,7 +1560,7 @@ function renderTeamAnalysisTab(xgResult, prbs, btts) {
     html += '</div></div>';
   }
 
-  html += '<div class="note" style="margin-top:12px"><strong>How to read:</strong> <strong>Form Rating</strong> (0-100) = composite score based on PPG, goal diff, clean sheets, consistency & momentum. <strong>Style</strong> describes match character (dominant, attacking, defensive, balanced, struggling). <strong>Consistency</strong> = coefficient of variation in goals (lower = more predictable). <strong>Momentum</strong> = recent 3-match form vs season average. Erratic teams get wider confidence intervals.</div>';
+  html += '<div class="note" style="margin-top:12px"><strong>Form Rating</strong> (0-100): PPG + GD + CS + consistency + momentum. <strong>Consistency</strong> = CoV of goals (lower = more predictable). <strong>Momentum</strong> = last 3 vs season avg. Erratic teams get wider CIs.</div>';
   html += '</div>';
   return html;
 }
@@ -1592,12 +1577,12 @@ function renderResults(xgResult, mat, prbs, btts, scores, ouData, skellam, homeC
   const confBadge = '<div style="font-size:9px;font-weight:700;padding:4px 9px;border-radius:4px;font-family:\'JetBrains Mono\',monospace;background:'+conf.bg+';color:'+conf.color+';border:1px solid '+conf.border+'">⬡ '+conf.label+' CONFIDENCE</div>';
 
   let html = '<div class="panel anim">';
-  html += '<div class="panel-hd"><div class="panel-title">📊 Prediction Results</div>';
+  html += '<div class="panel-hd"><div class="panel-title">📊 Results</div>';
   html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+confBadge;
-  html += '<button onclick="copyResults()" style="font-size:11px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:4px;cursor:pointer;font-family:\'Inter\',sans-serif;font-weight:600">📋 Copy</button>';
+  html += '<button onclick="copyResults()" style="font-size:11px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:4px;cursor:pointer">📋 Copy</button>';
   html += '</div></div>';
   html += '<div class="panel-bd">';
-  html += '<div class="ds-bar">◆ '+xgResult.dataSource+(useDC?' · DC ON (ρ='+dispRho+')':' · DC OFF')+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG · Team Profile: ACTIVE'+(xgResult.homeErratic||xgResult.awayErratic?' ⚠ ERRATIC':'')+'</div>';
+  html += '<div class="ds-bar">◆ '+xgResult.dataSource+(useDC?' · DC ON (ρ='+dispRho+')':' · DC OFF')+' · H.A: +'+xgResult.homeAdv.toFixed(2)+(xgResult.homeErratic||xgResult.awayErratic?' ⚠ ERRATIC':'')+'</div>';
 
   html += '<div class="tabs" id="resTabs">';
   html += '<button class="tab-btn active" data-tab="tab-probs">📈 Probs</button>';
@@ -1613,17 +1598,16 @@ function renderResults(xgResult, mat, prbs, btts, scores, ouData, skellam, homeC
   html += '<div class="tab-content" id="tab-team">'+renderTeamAnalysisTab(xgResult, prbs, btts)+'</div>';
   html += '<div class="tab-content" id="tab-unified"><div id="unifiedBody">'+
     '<div style="text-align:center;padding:32px 20px">'+
-    '<div style="font-size:32px;margin-bottom:12px">🎯</div>'+
-    '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Unified Tips Engine</div>'+
-    '<div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6">5 safest picks with &gt; 1.30 fair odds from 12,000-iteration Monte Carlo.</div>'+
-    '<button onclick="runUnifiedTips()" style="font-size:12px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:8px 18px;border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-weight:700">▶ Run Unified Analysis</button>'+
+    '<div style="font-size:24px;margin-bottom:8px">🎯</div>'+
+    '<div style="font-size:13px;color:var(--muted);margin-bottom:16px">5 safest picks &gt; 1.30 fair odds (12K Monte Carlo)</div>'+
+    '<button onclick="runUnifiedTips()" class="btn btn-secondary" style="font-size:12px">▶ Run Tips</button>'+
     '</div></div></div>';
   html += '<div class="tab-content" id="tab-ou">'+renderOUTab(ouData,mat)+'</div>';
   html += '<div class="tab-content" id="tab-ah">'+renderAHTab(mat)+'</div>';
   html += '<div class="tab-content" id="tab-sim">'+renderSimTab(sim,prbs,btts,totalXG,mat)+'</div>';
   html += '<div class="tab-content" id="tab-kelly">'+renderKellyTab(mat,prbs,btts)+'</div>';
 
-  html += '<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. 10-match analysis: form rating (PPG, goal diff, CS rate, consistency, momentum), style profiling (dominant/attacking/defensive/balanced/struggling), momentum detection (last 3 vs season avg), consistency grading via coefficient of variation. xG adjusted for form rating, momentum, style, clean-sheet rate & scoring reliability. CI width widened for erratic teams, narrowed for consistent. Unified Tips ranked by model agreement (Poisson ↔ Monte Carlo convergence × data quality). Monte Carlo: 12,000 iterations. Skellam distribution for goal difference. Quarter-ball AH lines supported.</div>';
+  html += '<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson'+(useDC?' + Dixon-Coles (ρ='+dispRho+')':'')+' · Monte Carlo (12K) · Skellam GD · Form-adjusted xG · Qtr-ball AH supported.</div>';
   html += '</div></div>';
 
   const rd = $('results');
@@ -1722,40 +1706,30 @@ window.runAnalysis = function(overwriteIdx) {
 };
 
 window.clearAll = function() {
-  // Clear team names
-  ['homeTeam','awayTeam',
-   'homeGF','homeGA','awayGF','awayGA',
-   'homeGFAll','homeGAAll','awayGFAll','awayGAAll'].forEach(id => {
+  ['homeTeam','awayTeam','homeGF','homeGA','awayGF','awayGA','homeGFAll','homeGAAll','awayGFAll','awayGAAll'].forEach(id => {
     const el = $(id); if (el) { el.value=''; el.classList.remove('err','ok'); }
   });
-  // Clear match rows
   ['home','away'].forEach(side => {
     const tbody = $(side + 'MatchBody');
     if (!tbody) return;
     tbody.querySelectorAll('.match-input').forEach(inp => {
-      if (inp.dataset.field === 'venue') {
-        inp.value = side === 'home' ? 'H' : 'A';
-      } else {
-        inp.value = '';
-      }
+      inp.value = inp.dataset.field === 'venue' ? (side === 'home' ? 'H' : 'A') : '';
       inp.classList.remove('err','ok');
     });
     tbody.querySelectorAll('.result-select').forEach(sel => { sel.value=''; sel.className='result-select'; });
   });
-   updateDerivedBars();
-   $('results').style.display = 'none';
-   $('errBox').classList.remove('show');
-   const dcEl = $('dcIndicator'); if (dcEl) dcEl.innerHTML = '<span style="color:var(--muted)">DC: auto-detect</span>';
-   window._lastSnapshot = null; window._lastMatrix = null; window._lastPrbs = null; window._lastBTTS = null;
-   window._lastXG = null; window._unifiedRun = false;
- };
+  updateDerivedBars();
+  $('results').style.display = 'none';
+  $('errBox').classList.remove('show');
+  const dcEl = $('dcIndicator'); if (dcEl) dcEl.innerHTML = 'DC: auto-detect';
+  window._lastSnapshot = null; window._lastMatrix = null; window._lastPrbs = null; window._lastBTTS = null;
+  window._lastXG = null; window._unifiedRun = false;
+};
 
  window.loadExample = function() {
   $('homeTeam').value = 'Arsenal';
   $('awayTeam').value = 'Chelsea';
   updateDerivedBars();
-
-  // Example: Arsenal last 10 (newest→oldest) — home matches
   const homeExample = [
     { scored:3, conceded:1, result:'W', venue:'H' },
     { scored:1, conceded:2, result:'L', venue:'A' },
@@ -1768,7 +1742,6 @@ window.clearAll = function() {
     { scored:2, conceded:2, result:'D', venue:'A' },
     { scored:2, conceded:0, result:'W', venue:'H' }
   ];
-  // Example: Chelsea last 10 — away matches
   const awayExample = [
     { scored:1, conceded:2, result:'L', venue:'A' },
     { scored:2, conceded:1, result:'W', venue:'A' },
@@ -1781,10 +1754,7 @@ window.clearAll = function() {
     { scored:3, conceded:2, result:'W', venue:'A' },
     { scored:1, conceded:1, result:'D', venue:'A' }
   ];
-
-  // Ensure 10 match rows
   if (matchCount !== 10) { matchCount = 10; buildMatchRows(); }
-
   ['home','away'].forEach((side, si) => {
     const examples = si === 0 ? homeExample : awayExample;
     const tbody = $(side + 'MatchBody');
@@ -1816,7 +1786,5 @@ document.addEventListener('keydown', e => {
 
 })();
 </script>
-<script src="header.js"></script>
-<script src="back-to-top.js"></script>
 </body>
 </html>

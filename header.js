@@ -4,14 +4,13 @@
     '  <a href="index.html" class="logo">' +
     '    <div class="logo-mark">B</div>' +
     '    <div class="logo-text">Bet<span>IQ</span></div>' +
-    '    <div class="logo-badge">PRO</div>' +
     '  </a>' +
     '  <nav class="navbar" id="mainNav">' +
     '    <a href="index.html">Dashboard</a>' +
     '    <a href="betiq-stats.html">BetIQ Stats</a>' +
+    '    <a href="value-finder.html">Value Finder</a>' +   
     '    <a href="match-prediction.html">Match Prediction</a>' +
     '    <a href="odds-calculator.html">Odds Calculator</a>' +
-    '    <a href="value-finder.html">Value Finder</a>' +
     '  </nav>' +
     '  <div class="header-right">' +
     '    <div class="live-badge">' +
