@@ -57,6 +57,16 @@
 .poisson-odds{font-size:10px;color:var(--cyan);font-weight:600;font-family:'JetBrains Mono',monospace}
 
 .no-value-msg{padding:20px;text-align:center;color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace}
+.field input:read-only{opacity:.55;cursor:not-allowed}
+
+/* ── COLLAPSIBLE ── */
+.collapsible{border:1px solid var(--border2);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;background:var(--surface2);}
+.collapsible-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s;}
+.collapsible-header:hover{background:var(--surface3);}
+.collapsible-title{flex:1;font-size:11px;font-weight:700;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;}
+.collapsible-chevron{font-size:10px;color:var(--muted);transition:transform .2s;}
+.collapsible-chevron.open{transform:rotate(180deg);}
+.collapsible-body{padding:14px 14px 6px;border-top:1px solid var(--border);}
 </style>
 </head>
 <body>
@@ -69,7 +79,7 @@
     <div class="panel">
       <div class="panel-hd">
         <div class="panel-title">Value Finder Pro</div>
-        <div class="panel-sub">Dixon-Coles · Convergence · Brier-Weighted Blended · BWB Probability (Alt) · Kelly Staking</div>
+        <div class="panel-sub">Dixon-Coles · Convergence · Brier-Weighted Blended · VAL Value Pick · Kelly Staking</div>
       </div>
       <div class="panel-bd">
 
@@ -104,15 +114,17 @@
             <div class="field"><label>Away GF</label><input id="gsAwayGF" type="number" step="0.01" min="0" placeholder="e.g. 2.10" oninput="computeModelFromGoals()"></div>
             <div class="field"><label>Away GA</label><input id="gsAwayGA" type="number" step="0.01" min="0" placeholder="e.g. 0.95" oninput="computeModelFromGoals()"></div>
           </div>
-          <div style="margin-top:8px">
-            <div onclick="var c=this.parentNode.querySelector('.lb-body');var i=this.querySelector('.lb-chevron');c.style.display=c.style.display==='none'?'':'none';i.textContent=c.style.display==='none'?'▶':'▼'" style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:4px 0;-webkit-user-select:none;user-select:none">
-              <span class="lb-chevron" style="font-size:10px;color:var(--muted);transition:transform .15s">▶</span>
-              <span style="font-size:11px;font-weight:600;color:var(--muted2)">League Base &amp; Dixon-Coles ρ</span>
+          <div class="collapsible" style="margin-top:8px">
+            <div class="collapsible-header" onclick="toggleCollapsible('leagueStatsBody','leagueStatsChevron')">
+              <span class="collapsible-title">League Stats &amp; Dixon-Coles ρ</span>
+              <span class="collapsible-chevron" id="leagueStatsChevron">▼</span>
             </div>
-            <div class="lb-body" style="display:none;padding-top:6px">
+            <div class="collapsible-body" id="leagueStatsBody" style="display:none">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 <div class="field"><label style="font-size:10px">League Base (avg G/match)</label><input id="gsLeagueBase" type="number" step="0.01" min="0.1" value="1.30" oninput="computeModelFromGoals()"></div>
                 <div class="field"><label style="font-size:10px">Dixon-Coles ρ <span style="font-weight:400;color:var(--muted)">(typ. -0.20 to -0.05)</span></label><input id="gsRho" type="number" step="0.01" min="-0.5" max="0.5" value="-0.13" oninput="computeModelFromGoals()"></div>
+                <div class="field"><label style="font-size:10px">League Avg Home Goals <span style="font-weight:400;color:var(--muted)">(replaces League Base + Home Adv)</span></label><input id="gsLeagueHG" type="number" step="0.01" min="0.1" placeholder="e.g. 1.55" oninput="computeModelFromGoals()"></div>
+                <div class="field"><label style="font-size:10px">League Avg Away Goals <span style="font-weight:400;color:var(--muted)">(replaces League Base + Home Adv)</span></label><input id="gsLeagueAG" type="number" step="0.01" min="0.1" placeholder="e.g. 1.15" oninput="computeModelFromGoals()"></div>
               </div>
             </div>
           </div>
@@ -146,7 +158,7 @@
               <input id="bankroll" type="number" step="100" min="100" value="10000" style="width:100%">
             </div>
             <span style="font-size:11px;font-weight:700;color:var(--muted2);font-family:'JetBrains Mono',monospace">TZS</span>
-            <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">— BWB: Kelly% × Bankroll · BWB-P: Prob-based stake (editable)</span>
+            <span style="font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace">— BWB: Kelly% × Bankroll · VAL: Kelly% × Bankroll</span>
           </div>
         </div>
 
@@ -207,12 +219,11 @@
             <tr>
               <th style="text-align:left;width:90px">Date</th>
               <th style="text-align:left">Match</th>
-              <th style="text-align:center;width:120px">BWB 1X2</th>
+              <th style="text-align:center;width:140px">1X2 BWB% | BK</th>
               <th style="text-align:center;width:100px">Pick</th>
               <th style="text-align:center;width:50px">Result</th>
-              <th style="text-align:center;width:40px">P/L</th>
-              <th style="text-align:center;width:40px">P/L (P)</th>
-              <th style="text-align:center;width:50px">P/L (DC)</th>
+              <th style="text-align:center;width:50px">P/L</th>
+              <th style="text-align:center;width:50px">P/L (V)</th>
               <th style="text-align:center;width:80px">Actions</th>
             </tr>
           </thead>
@@ -329,6 +340,12 @@ function dixonColesProb(lh, la, i, j, rho) {
   return base * Math.max(0, tau);
 }
 
+function setModReadonly(ro) {
+  $('modH').readOnly = ro;
+  $('modD').readOnly = ro;
+  $('modA').readOnly = ro;
+}
+
 window.computeModelFromGoals = function() {
   var lb = parseFloat($('gsLeagueBase').value) || 1.30;
   var hGFAll = parseFloat($('gsHomeGFAll').value), hGAAll = parseFloat($('gsHomeGAAll').value);
@@ -337,22 +354,43 @@ window.computeModelFromGoals = function() {
   var aGF = parseFloat($('gsAwayGF').value), aGA = parseFloat($('gsAwayGA').value);
   var hasVenue = !isNaN(hGF) && !isNaN(hGA) && !isNaN(aGF) && !isNaN(aGA);
   var hasAll = !isNaN(hGFAll) && !isNaN(hGAAll) && !isNaN(aGFAll) && !isNaN(aGAAll);
-  if (!hasVenue && !hasAll) return;
-  var homeAdv = 0.30, homeXG, awayXG;
+  if (!hasVenue && !hasAll) {
+    setModReadonly(false);
+    return;
+  }
+  var leagueHG = parseFloat($('gsLeagueHG').value);
+  var leagueAG = parseFloat($('gsLeagueAG').value);
+  var hasLeagueGA = !isNaN(leagueHG) && !isNaN(leagueAG) && leagueHG > 0 && leagueAG > 0;
+  var homeXG, awayXG;
   var hAtt, hDef, aAtt, aDef;
   if (hasVenue && hasAll) {
-    hAtt = hGF / lb; hDef = hGA / lb; aAtt = aGF / lb; aDef = aGA / lb;
-    homeXG = lb * hAtt * aDef + homeAdv;
-    awayXG = lb * aAtt * hDef;
+    var homeAdvV = 0;  // venue data already embeds home advantage
+    if (hasLeagueGA) {
+      hAtt = hGF / leagueHG; hDef = hGA / leagueAG; aAtt = aGF / leagueAG; aDef = aGA / leagueHG;
+      homeXG = leagueHG * hAtt * aDef;
+      awayXG = leagueAG * aAtt * hDef;
+    } else {
+      hAtt = hGF / lb; hDef = hGA / lb; aAtt = aGF / lb; aDef = aGA / lb;
+      homeXG = lb * hAtt * aDef + homeAdvV;
+      awayXG = lb * aAtt * hDef;
+    }
     var hxAll = (hGFAll + aGAAll) / 2 * 1.08, axAll = (aGFAll + hGAAll) / 2;
     homeXG = homeXG * 0.6 + hxAll * 0.4;
     awayXG = awayXG * 0.6 + axAll * 0.4;
   } else if (hasVenue) {
-    hAtt = hGF / lb; hDef = hGA / lb; aAtt = aGF / lb; aDef = aGA / lb;
-    homeXG = lb * hAtt * aDef + homeAdv;
-    awayXG = lb * aAtt * hDef;
+    var homeAdvV = 0;  // venue data already embeds home advantage
+    if (hasLeagueGA) {
+      hAtt = hGF / leagueHG; hDef = hGA / leagueAG; aAtt = aGF / leagueAG; aDef = aGA / leagueHG;
+      homeXG = leagueHG * hAtt * aDef;
+      awayXG = leagueAG * aAtt * hDef;
+    } else {
+      hAtt = hGF / lb; hDef = hGA / lb; aAtt = aGF / lb; aDef = aGA / lb;
+      homeXG = lb * hAtt * aDef + homeAdvV;
+      awayXG = lb * aAtt * hDef;
+    }
   } else {
-    homeXG = (hGFAll + aGAAll) / 2 * 1.08;
+    var homeAdvA = 0.15;  // mild boost when only all-competition data
+    homeXG = (hGFAll + aGAAll) / 2 * 1.08 + homeAdvA;
     awayXG = (aGFAll + hGAAll) / 2;
   }
   homeXG = Math.max(0.1, Math.min(9, homeXG));
@@ -370,6 +408,7 @@ window.computeModelFromGoals = function() {
     $('modH').value = (h / t * 100).toFixed(1);
     $('modD').value = (d / t * 100).toFixed(1);
     $('modA').value = (a / t * 100).toFixed(1);
+    setModReadonly(true);
     if (window.detectModInputMode) window.detectModInputMode();
   }
 };
@@ -545,22 +584,16 @@ window.runAnalysis = function(overwriteIdx) {
   var margin = (iSum - 1) * 100;
   var bpH = iH / iSum, bpD = iD / iSum, bpA = iA / iSum;
 
-  // Convergence
+  // Convergence — signal probs = simple midpoint of model and no-vig book, normalised
   var dH = bpH - modH, dD = bpD - modD, dA = bpA - modA;
   var aH = Math.abs(dH), aD = Math.abs(dD), aA = Math.abs(dA), aSum = aH + aD + aA;
-  var cpH = aSum - aH, cpD = aSum - aD, cpA = aSum - aA, cpSum = cpH + cpD + cpA;
-  var wH = 0, wD = 0, wA = 0;
-  if (cpSum > 0 && aSum > 0) {
-    wH = ((cpH / cpSum) + (aH / aSum)) / 2;
-    wD = ((cpD / cpSum) + (aD / aSum)) / 2;
-    wA = ((cpA / cpSum) + (aA / aSum)) / 2;
-  }
-  var totalW = wH + wD + wA;
-  var convH = totalW > 0 ? wH / totalW : 1 / 3;
-  var convD = totalW > 0 ? wD / totalW : 1 / 3;
-  var convA = totalW > 0 ? wA / totalW : 1 / 3;
+  var mH = (modH + bpH) / 2, mD = (modD + bpD) / 2, mA = (modA + bpA) / 2;
+  var mSum = mH + mD + mA;
+  var convH = mSum > 0 ? mH / mSum : 1 / 3;
+  var convD = mSum > 0 ? mD / mSum : 1 / 3;
+  var convA = mSum > 0 ? mA / mSum : 1 / 3;
 
-  var convScore = Math.round((1 - aSum) * 100);
+  var convScore = Math.round((1 - aSum / 2) * 100);
   convScore = Math.max(0, Math.min(100, convScore));
 
   // Dixon-Coles
@@ -685,185 +718,103 @@ window.runAnalysis = function(overwriteIdx) {
     html += '</div></div>';
   }
 
-  // ── Card 2: BWB PROBABILITY (ALT) ──
-  var bwbAltColor = 'var(--cyan)';
-  var bwbAltBg = 'rgba(0,194,255,0.06)';
-  var bwbAltBorder = 'rgba(0,194,255,0.2)';
-  var bwbAltBadgeBg = 'rgba(0,194,255,0.12)';
-  var bwbAltBadgeBorder = 'rgba(0,194,255,0.35)';
-  var bwbAltProbStake = calcProbStake(bwbProb);
-  var bwbAltActionable = bwbProb >= 0.20;
-
-  var bwbAltScore = 0;
-  if (bwbAltActionable) {
-    bwbAltScore += Math.min(40, bwbProb * 50);
-    bwbAltScore += Math.min(20, bwbAgreement * 20);
-    bwbAltScore += Math.min(20, convScore * 0.3);
-    bwbAltScore += Math.min(20, Math.max(0, bwbEV * 100));
+  // ── Card 2: VAL VALUE PICK (+EV) ──
+  var valSidesInfo = [
+    { side:'h', label:'1', prob:ensemble.probs.h, odds:b1.h, bp:bpH },
+    { side:'d', label:'X', prob:ensemble.probs.d, odds:b1.d, bp:bpD },
+    { side:'a', label:'2', prob:ensemble.probs.a, odds:b1.a, bp:bpA }
+  ];
+  var valBest = null;
+  for (var vi = 0; vi < valSidesInfo.length; vi++) {
+    var vs = valSidesInfo[vi];
+    vs.ev = vs.prob * vs.odds - 1;
+    vs.edge = edgePct(vs.prob, vs.bp);
+    vs.kelly = kellyVal(vs.odds, vs.prob);
+    if (vs.ev > 0 && (!valBest || vs.ev > valBest.ev)) valBest = vs;
   }
-  bwbAltScore = Math.min(100, Math.round(bwbAltScore));
+  var valSide = valBest ? valBest.side : '';
+  var valLabel = valBest ? valBest.label : '';
+  var valProb = valBest ? valBest.prob : 0;
+  var valOdds = valBest ? valBest.odds : 0;
+  var valEV = valBest ? valBest.ev : 0;
+  var valEdge = valBest ? valBest.edge : 0;
+  var valKelly = valBest ? valBest.kelly : 0;
+  var valActionable = valBest !== null;
 
-  var bwbAltTier = 'none', bwbAltTierLabel = 'No Value', bwbAltTierDesc = 'Does not meet minimum thresholds';
-  if (bwbAltScore >= 80) { bwbAltTier = 'elite'; bwbAltTierLabel = 'ELITE'; bwbAltTierDesc = 'Very high probability. Strong conviction pick.'; }
-  else if (bwbAltScore >= 60) { bwbAltTier = 'high'; bwbAltTierLabel = 'HIGH'; bwbAltTierDesc = 'High probability with solid metrics.'; }
-  else if (bwbAltScore >= 40) { bwbAltTier = 'medium'; bwbAltTierLabel = 'MEDIUM'; bwbAltTierDesc = 'Moderate probability. Acceptable confidence.'; }
-  else if (bwbAltScore >= 20) { bwbAltTier = 'low'; bwbAltTierLabel = 'LOW'; bwbAltTierDesc = 'Low probability. Marginal confidence.'; }
+  var valScore = 0;
+  if (valActionable) {
+    valScore += Math.min(40, Math.max(0, valEV * 200));
+    valScore += Math.min(30, Math.max(0, valEdge * 0.8));
+    valScore += Math.min(30, Math.max(0, valKelly * 100));
+  }
+  valScore = Math.min(100, Math.round(valScore));
 
-  if (bwbAltActionable) {
-    html += '<div class="pick-card ' + bwbAltTier + '" style="background:' + bwbAltBg + ';border-color:' + bwbAltBorder + '">';
+  var valColor = '#2ecc71';
+  var valBg = 'rgba(46,204,113,0.06)';
+  var valBorder = 'rgba(46,204,113,0.2)';
+  var valBadgeBg = 'rgba(46,204,113,0.12)';
+  var valBadgeBorder = 'rgba(46,204,113,0.35)';
+
+  var valTier = 'none', valTierLabel = 'No Value', valTierDesc = 'No side with positive expected value.';
+  if (valScore >= 80) { valTier = 'elite'; valTierLabel = 'ELITE'; valTierDesc = 'Strong +EV opportunity. Highest confidence.'; }
+  else if (valScore >= 60) { valTier = 'high'; valTierLabel = 'HIGH'; valTierDesc = 'Good +EV opportunity with solid value.'; }
+  else if (valScore >= 40) { valTier = 'medium'; valTierLabel = 'MEDIUM'; valTierDesc = 'Moderate +EV opportunity.'; }
+  else if (valScore >= 20) { valTier = 'low'; valTierLabel = 'LOW'; valTierDesc = 'Marginal +EV opportunity.'; }
+
+  var valStake = valActionable ? calcStake(valKelly, valEdge) : 0;
+
+  if (valActionable) {
+    html += '<div class="pick-card ' + valTier + '" style="background:' + valBg + ';border-color:' + valBorder + '">';
     html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">';
-    html += '<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:' + bwbAltBadgeBg + ';color:' + bwbAltColor + ';border:1px solid ' + bwbAltBadgeBorder + '">BWB-P</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">BWB Probability-First</span></div><span class="pick-badge" style="color:' + bwbAltColor + '">' + bwbLabel + '</span>';
-    html += '<span style="font-size:12px;color:var(--muted2);margin-left:8px;font-family:\'JetBrains Mono\',monospace">@ ' + bwbOdds.toFixed(2) + '</span></div>';
-    html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:' + (bwbAltTier === 'elite' ? 'rgba(0,229,160,0.12)' : bwbAltTier === 'high' ? 'rgba(0,229,160,0.08)' : bwbAltTier === 'medium' ? 'rgba(245,200,66,0.1)' : 'rgba(107,116,148,0.1)') + ';color:' + (bwbAltTier === 'elite' || bwbAltTier === 'high' ? 'var(--green)' : bwbAltTier === 'medium' ? 'var(--draw)' : 'var(--muted2)') + ';border:1px solid ' + (bwbAltTier === 'elite' || bwbAltTier === 'high' ? 'rgba(0,229,160,0.25)' : bwbAltTier === 'medium' ? 'rgba(245,200,66,0.25)' : 'rgba(107,116,148,0.25)') + '">' + bwbAltTierLabel + '</span>';
+    html += '<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:' + valBadgeBg + ';color:' + valColor + ';border:1px solid ' + valBadgeBorder + '">VAL</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">Value Pick</span></div><span class="pick-badge" style="color:' + valColor + '">' + valLabel + '</span>';
+    html += '<span style="font-size:12px;color:var(--muted2);margin-left:8px;font-family:\'JetBrains Mono\',monospace">@ ' + valOdds.toFixed(2) + '</span></div>';
+    html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:' + (valTier === 'elite' ? 'rgba(0,229,160,0.12)' : valTier === 'high' ? 'rgba(0,229,160,0.08)' : valTier === 'medium' ? 'rgba(245,200,66,0.1)' : 'rgba(107,116,148,0.1)') + ';color:' + (valTier === 'elite' || valTier === 'high' ? 'var(--green)' : valTier === 'medium' ? 'var(--draw)' : 'var(--muted2)') + ';border:1px solid ' + (valTier === 'elite' || valTier === 'high' ? 'rgba(0,229,160,0.25)' : valTier === 'medium' ? 'rgba(245,200,66,0.25)' : 'rgba(107,116,148,0.25)') + '">' + valTierLabel + '</span>';
     html += '</div>';
 
     html += '<div class="pick-row" style="margin-bottom:10px">';
-    html += '<div class="pick-stat"><div class="pick-stat-label">Blended %</div><div class="pick-stat-val" style="color:var(--fg)">' + fp(bwbProb) + '</div></div>';
-    html += '<div class="pick-stat"><div class="pick-stat-label">EV%</div><div class="pick-stat-val" style="color:' + (bwbEV > 0.1 ? 'var(--green)' : 'var(--draw)') + '">' + (bwbEV > 0 ? '+' : '') + (bwbEV * 100).toFixed(1) + '%</div></div>';
-    html += '<div class="pick-stat"><div class="pick-stat-label">Edge%</div><div class="pick-stat-val" style="color:' + (bwbEdge > 5 ? 'var(--green)' : 'var(--draw)') + '">' + (bwbEdge > 0 ? '+' : '') + bwbEdge.toFixed(1) + '%</div></div>';
-    html += '<div class="pick-stat"><div class="pick-stat-label">Prob Stake</div><div class="pick-stat-val" style="color:' + bwbAltColor + '">' + bwbAltProbStake + ' TZS</div></div>';
+    html += '<div class="pick-stat"><div class="pick-stat-label">Blended %</div><div class="pick-stat-val" style="color:var(--fg)">' + fp(valProb) + '</div></div>';
+    html += '<div class="pick-stat"><div class="pick-stat-label">EV%</div><div class="pick-stat-val" style="color:' + (valEV > 0.1 ? 'var(--green)' : 'var(--draw)') + '">' + (valEV > 0 ? '+' : '') + (valEV * 100).toFixed(1) + '%</div></div>';
+    html += '<div class="pick-stat"><div class="pick-stat-label">Edge%</div><div class="pick-stat-val" style="color:' + (valEdge > 5 ? 'var(--green)' : 'var(--draw)') + '">' + (valEdge > 0 ? '+' : '') + valEdge.toFixed(1) + '%</div></div>';
+    html += '<div class="pick-stat"><div class="pick-stat-label">Stake</div><div class="pick-stat-val" style="color:' + valColor + '">' + valStake + ' TZS</div></div>';
     html += '</div>';
 
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
     html += '<span style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.5px;text-transform:uppercase">Signal Agreement:</span>';
-    for (var asi = 0; asi < ensemble.signals.length; asi++) {
-      var asp = ensemble.signals[asi].probs;
-      var ass = asp.h > asp.d && asp.h > asp.a ? 'h' : asp.d > asp.a ? 'd' : 'a';
-      var aagrees = ass === bwbSide;
-      html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:600;font-family:\'JetBrains Mono\',monospace;background:' + (aagrees ? 'rgba(0,194,255,0.08)' : 'rgba(107,116,148,0.06)') + ';color:' + (aagrees ? 'var(--cyan)' : 'var(--muted)') + '">' + sigNames[asi] + (aagrees ? ' ✓' : ' ✗') + '</span>';
+    for (var valsi = 0; valsi < ensemble.signals.length; valsi++) {
+      var valsp = ensemble.signals[valsi].probs;
+      var valss = valsp.h > valsp.d && valsp.h > valsp.a ? 'h' : valsp.d > valsp.a ? 'd' : 'a';
+      var valagrees = valss === valSide;
+      html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:600;font-family:\'JetBrains Mono\',monospace;background:' + (valagrees ? 'rgba(46,204,113,0.08)' : 'rgba(107,116,148,0.06)') + ';color:' + (valagrees ? valColor : 'var(--muted)') + '">' + sigNames[valsi] + (valagrees ? ' ✓' : ' ✗') + '</span>';
     }
-    var bwbAltFairOdds = bwbProb > 0 ? (1 / bwbProb).toFixed(2) : '-';
-    html += '<span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-left:auto">Fair: <strong style="color:' + bwbAltColor + '">' + bwbAltFairOdds + '</strong></span>';
     html += '</div>';
 
     html += '<div class="conf-strip">';
-    for (var aci = 0; aci < 10; aci++) {
-      var bwbAltSeg = '';
-      if (aci < Math.round(bwbAltScore / 10)) {
-        bwbAltSeg = 'filled';
-        if (bwbAltScore < 40) bwbAltSeg += ' low';
-        else if (bwbAltScore < 60) bwbAltSeg += ' warn';
+    for (var valci = 0; valci < 10; valci++) {
+      var valSeg = '';
+      if (valci < Math.round(valScore / 10)) {
+        valSeg = 'filled';
+        if (valScore < 40) valSeg += ' low';
+        else if (valScore < 60) valSeg += ' warn';
       }
-      html += '<div class="conf-seg ' + bwbAltSeg + '"></div>';
+      html += '<div class="conf-seg ' + valSeg + '"></div>';
     }
     html += '</div>';
-    html += '<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + bwbAltTierDesc + '</span><span style="font-size:9px;font-weight:700;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">Confidence: ' + bwbAltScore + '/100</span></div>';
+    html += '<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + valTierDesc + '</span><span style="font-size:9px;font-weight:700;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">Confidence: ' + valScore + '/100</span></div>';
     html += '</div>';
   } else {
-    html += '<div class="pick-card none" style="background:' + bwbAltBg + ';border-color:' + bwbAltBorder + '">';
+    html += '<div class="pick-card none" style="background:' + valBg + ';border-color:' + valBorder + '">';
     html += '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px">';
-    html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:rgba(0,194,255,0.1);color:var(--cyan);border:1px solid rgba(0,194,255,0.25)">BWB-P</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">BWB Probability-First</span></div>';
-    html += '<span style="font-size:13px;color:var(--muted2);font-weight:700;font-family:\'JetBrains Mono\',monospace">⚠ Below Threshold</span>';
-    html += '<span style="font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">Blended probability too low for a confident pick.</span>';
+    html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:' + valBadgeBg + ';color:' + valColor + ';border:1px solid ' + valBadgeBorder + '">VAL</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">Value Pick</span></div>';
+    html += '<span style="font-size:13px;color:var(--muted2);font-weight:700;font-family:\'JetBrains Mono\',monospace">⚠ No Value</span>';
+    html += '<span style="font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">No side has positive expected value (EV &le; 0).</span>';
     html += '<div style="display:flex;gap:16px;margin-top:4px;font-size:10px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">';
-    html += '<span>Best: <strong style="color:' + bwbAltColor + '">' + bwbLabel + ' @ ' + bwbOdds.toFixed(2) + '</strong></span>';
-    html += '<span>Blended Prob: <strong>' + fp(bwbProb) + '</strong></span>';
-    html += '<span>EV: <strong style="color:' + (bwbEV > 0 ? 'var(--green)' : 'var(--muted)') + '">' + (bwbEV > 0 ? '+' : '') + (bwbEV * 100).toFixed(1) + '%</strong></span>';
+    html += '<span>Best EV: <strong style="color:' + (valEV > 0 ? 'var(--green)' : 'var(--muted)') + '">' + (valEV > 0 ? '+' : '') + (valEV * 100).toFixed(1) + '%</strong></span>';
+    html += '<span>Model Prob: <strong>' + fp(valProb) + '</strong></span>';
     html += '</div>';
-    html += '<div style="margin-top:4px;font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">Requires Prob ≥ 20% — Stakes proportionally to probability regardless of EV</div>';
+    html += '<div style="margin-top:4px;font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">Searches all 3 sides for the highest +EV — stakes via Kelly</div>';
     html += '</div></div>';
   }
-
   html += '</div>'; // end picks-row
-
-  // ── Card 3: DOUBLE CHANCE ──
-  var dc1XProb = bP.h + bP.d;
-  var dc12Prob = bP.h + bP.a;
-  var dcX2Prob = bP.d + bP.a;
-  var dc1XOdds = 1 / (1 / b1.h + 1 / b1.d);
-  var dc12Odds = 1 / (1 / b1.h + 1 / b1.a);
-  var dcX2Odds = 1 / (1 / b1.d + 1 / b1.a);
-
-  var dcPick = dc1XProb >= dc12Prob && dc1XProb >= dcX2Prob ? '1X' : dc12Prob >= dcX2Prob ? '12' : 'X2';
-  var dcProb = dcPick === '1X' ? dc1XProb : dcPick === '12' ? dc12Prob : dcX2Prob;
-  var dcOdds = dcPick === '1X' ? dc1XOdds : dcPick === '12' ? dc12Odds : dcX2Odds;
-  var dcMarketProbNV = dcPick === '1X' ? bpH + bpD : dcPick === '12' ? bpH + bpA : bpD + bpA;
-  var dcFairOdds = dcMarketProbNV > 0 ? 1 / dcMarketProbNV : 0;
-  var dcEV = dcProb * dcFairOdds - 1;
-  var dcEdge = edgePct(dcProb, dcMarketProbNV);
-
-  var dcAgree = 0;
-  for (var dsi = 0; dsi < ensemble.signals.length; dsi++) {
-    var dsp = ensemble.signals[dsi].probs;
-    var dsDC = (dsp.h + dsp.d) >= (dsp.h + dsp.a) && (dsp.h + dsp.d) >= (dsp.d + dsp.a) ? '1X' : (dsp.h + dsp.a) >= (dsp.d + dsp.a) ? '12' : 'X2';
-    if (dsDC === dcPick) dcAgree++;
-  }
-  var dcAgreement = ensemble.signals.length > 0 ? dcAgree / ensemble.signals.length : 0;
-
-  var dcActionable = dcProb >= 0.35 && dcEV > 0.02;
-
-  var dcScore = 0;
-  if (dcProb >= 0.35) {
-    dcScore += Math.min(40, Math.round(dcProb * 40));
-    dcScore += Math.min(30, Math.max(0, Math.round(dcEV * 150)));
-    dcScore += Math.min(20, Math.round(dcAgreement * 30));
-    dcScore += Math.min(10, Math.round(convScore * 0.1));
-  }
-  dcScore = Math.min(100, Math.round(dcScore));
-
-  var dcColor = '#a78bfa';
-  var dcBg = 'rgba(167,139,250,0.06)';
-  var dcBorder = 'rgba(167,139,250,0.2)';
-  var dcBadgeBg = 'rgba(167,139,250,0.12)';
-  var dcBadgeBorder = 'rgba(167,139,250,0.35)';
-
-  var dcTier = 'none', dcTierLabel = 'No Value', dcTierDesc = 'Does not meet minimum thresholds';
-  if (dcScore >= 80) { dcTier = 'elite'; dcTierLabel = 'ELITE'; dcTierDesc = 'Strong double chance indication. High conviction.'; }
-  else if (dcScore >= 60) { dcTier = 'high'; dcTierLabel = 'HIGH'; dcTierDesc = 'Good double chance value with solid agreement.'; }
-  else if (dcScore >= 40) { dcTier = 'medium'; dcTierLabel = 'MEDIUM'; dcTierDesc = 'Moderate double chance confidence.'; }
-  else if (dcScore >= 20) { dcTier = 'low'; dcTierLabel = 'LOW'; dcTierDesc = 'Weak double chance indication.'; }
-
-  var dcKelly = kellyVal(dcOdds, dcProb);
-  var dcEdgePct = edgePct(dcProb, dcMarketProbNV);
-  var dcProbStake = dcActionable ? calcStake(dcKelly, dcEdgePct) : 0;
-
-  html += '<div class="picks-row" style="margin-top:12px">';
-  html += '<div class="pick-card ' + dcTier + '" style="background:' + dcBg + ';border-color:' + dcBorder + '">';
-  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">';
-  html += '<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700;font-family:\'JetBrains Mono\',monospace;letter-spacing:0.8px;text-transform:uppercase;background:' + dcBadgeBg + ';color:' + dcColor + ';border:1px solid ' + dcBadgeBorder + '">DC</span><span style="font-size:7px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase">Double Chance</span></div><span class="pick-badge" style="color:' + dcColor + '">' + dcPick + '</span>';
-  html += '<span style="font-size:12px;color:var(--muted2);margin-left:8px;font-family:\'JetBrains Mono\',monospace">@ ' + dcOdds.toFixed(2) + '</span></div>';
-  html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;font-family:\'JetBrains Mono\',monospace;background:' + (dcTier === 'elite' ? 'rgba(0,229,160,0.12)' : dcTier === 'high' ? 'rgba(0,229,160,0.08)' : dcTier === 'medium' ? 'rgba(245,200,66,0.1)' : 'rgba(107,116,148,0.1)') + ';color:' + (dcTier === 'elite' || dcTier === 'high' ? 'var(--green)' : dcTier === 'medium' ? 'var(--draw)' : 'var(--muted2)') + ';border:1px solid ' + (dcTier === 'elite' || dcTier === 'high' ? 'rgba(0,229,160,0.25)' : dcTier === 'medium' ? 'rgba(245,200,66,0.25)' : 'rgba(107,116,148,0.25)') + '">' + dcTierLabel + '</span>';
-  html += '</div>';
-
-  html += '<div class="pick-row" style="margin-bottom:10px">';
-  html += '<div class="pick-stat"><div class="pick-stat-label">DC %</div><div class="pick-stat-val" style="color:var(--fg)">' + fp(dcProb) + '</div></div>';
-  html += '<div class="pick-stat"><div class="pick-stat-label">EV%</div><div class="pick-stat-val" style="color:' + (dcEV > 0.1 ? 'var(--green)' : dcEV > 0 ? 'var(--draw)' : 'var(--muted2)') + '">' + (dcEV > 0 ? '+' : '') + (dcEV * 100).toFixed(1) + '%</div></div>';
-  html += '<div class="pick-stat"><div class="pick-stat-label">Edge%</div><div class="pick-stat-val" style="color:' + (dcEdge > 5 ? 'var(--green)' : dcEdge > 0 ? 'var(--draw)' : 'var(--muted2)') + '">' + (dcEdge > 0 ? '+' : '') + dcEdge.toFixed(1) + '%</div></div>';
-  html += '<div class="pick-stat"><div class="pick-stat-label">Covers</div><div class="pick-stat-val" style="color:' + dcColor + '">' + (dcPick === '1X' ? '1+X' : dcPick === '12' ? '1+2' : 'X+2') + '</div></div>';
-  if (dcActionable) {
-    html += '<div class="pick-stat"><div class="pick-stat-label">Stake</div><div class="pick-stat-val" style="color:' + dcColor + '">' + dcProbStake + ' TZS</div></div>';
-  } else {
-    html += '<div class="pick-stat"><div class="pick-stat-label">Stake</div><div class="pick-stat-val" style="color:var(--muted2)">—</div></div>';
-  }
-  html += '</div>';
-
-  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-  html += '<span style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:0.5px;text-transform:uppercase">DC Agreement:</span>';
-  for (var dsi2 = 0; dsi2 < ensemble.signals.length; dsi2++) {
-    var dsp2 = ensemble.signals[dsi2].probs;
-    var dsDC2 = (dsp2.h + dsp2.d) >= (dsp2.h + dsp2.a) && (dsp2.h + dsp2.d) >= (dsp2.d + dsp2.a) ? '1X' : (dsp2.h + dsp2.a) >= (dsp2.d + dsp2.a) ? '12' : 'X2';
-    var dsAgree2 = dsDC2 === dcPick;
-    html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:600;font-family:\'JetBrains Mono\',monospace;background:' + (dsAgree2 ? 'rgba(167,139,250,0.08)' : 'rgba(107,116,148,0.06)') + ';color:' + (dsAgree2 ? dcColor : 'var(--muted)') + '">' + sigNames[dsi2] + (dsAgree2 ? ' ⬩' : ' —') + '</span>';
-  }
-  html += '<span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-left:8px">Covers: <strong style="color:' + dcColor + '">' + (dcPick === '1X' ? 'Home or Draw' : dcPick === '12' ? 'Home or Away' : 'Draw or Away') + '</strong></span>';
-  var dcFairStr = dcFairOdds > 0 ? dcFairOdds.toFixed(2) : '-';
-  html += '<span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-left:auto">Fair: <strong style="color:' + dcColor + '">' + dcFairStr + '</strong></span>';
-  html += '</div>';
-
-  html += '<div class="conf-strip">';
-  for (var dci = 0; dci < 10; dci++) {
-    var dcSeg = '';
-    if (dci < Math.round(dcScore / 10)) {
-      dcSeg = 'filled';
-      if (dcScore < 40) dcSeg += ' low';
-      else if (dcScore < 60) dcSeg += ' warn';
-    }
-    html += '<div class="conf-seg ' + dcSeg + '"></div>';
-  }
-  html += '</div>';
-  html += '<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">' + dcTierDesc + '</span><span style="font-size:9px;font-weight:700;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">Confidence: ' + dcScore + '/100</span></div>';
-  html += '</div>'; // end pick-card
-  html += '</div>'; // end dc row
 
   html += '</div>'; // end flex container
   html += '</div>'; // end top-picks container
@@ -1029,9 +980,8 @@ window.runAnalysis = function(overwriteIdx) {
   html += '<div class="vf-note" style="margin-top:16px">';
   html += '<strong>Brier-Weighted Blended (BWB):</strong> Primary pick from the Brier-Weighted ensemble (Market + Convergence + Dixon-Coles). ';
   html += 'Picks the highest blended probability outcome. Requires Prob &ge; 20%. ';
-  html += '<strong>BWB Probability (BWB-P):</strong> Alternative with probability-based staking. ';
-  html += 'Stakes proportionally to blended probability regardless of EV. ';
-  html += '<strong>Double Chance (DC):</strong> Evaluates all three double-chance combinations (1X, 12, X2) using Brier-Weighted Blended probabilities. Picks the highest combined probability &ge; 35% with positive EV.';
+  html += '<strong>VAL Value Pick (+EV):</strong> Scans all 3 sides (Home/Draw/Away) using blended probabilities and picks the highest positive EV. ';
+  html += 'Applies Kelly stake when blended Prob &ge; 20% and positive Edge (blended % &gt; bookie %).';
   html += '</div>';
 
   html += '</div></div>';
@@ -1088,47 +1038,33 @@ window.runAnalysis = function(overwriteIdx) {
         tier: bwbTier
       };
     })(),
-    // BWB Probability (Alt): probability-based staking, always stakes if prob >= 20%
-    bwbAlt: (function(){
-      var bp_ = ensemble.probs;
-      var s_ = bp_.h >= bp_.d && bp_.h >= bp_.a ? 'h' : bp_.d >= bp_.a ? 'd' : 'a';
-      var l_ = s_ === 'h' ? '1' : s_ === 'd' ? 'X' : '2';
-      var pr_ = s_ === 'h' ? bp_.h : s_ === 'd' ? bp_.d : bp_.a;
-      var od_ = s_ === 'h' ? b1.h : s_ === 'd' ? b1.d : b1.a;
+    // VAL Value Pick: scans all 3 sides for +EV, picks highest EV
+    val: (function(){
+      var vs_ = [
+        { side:'h', label:'1', prob:ensemble.probs.h, odds:b1.h, bp:bpH },
+        { side:'d', label:'X', prob:ensemble.probs.d, odds:b1.d, bp:bpD },
+        { side:'a', label:'2', prob:ensemble.probs.a, odds:b1.a, bp:bpA }
+      ];
+      var best_ = null;
+      for (var vi_ = 0; vi_ < vs_.length; vi_++) {
+        var v_ = vs_[vi_];
+        v_.ev = v_.prob * v_.odds - 1;
+        v_.edge = edgePct(v_.prob, v_.bp);
+        v_.kelly = kellyVal(v_.odds, v_.prob);
+        if (v_.ev > 0 && (!best_ || v_.ev > best_.ev)) best_ = v_;
+      }
       return {
-        side: s_, label: l_, prob: pr_, odds: od_,
-        ev: pr_ * od_ - 1,
-        stake: calcProbStake(pr_),
-        actionable: pr_ >= 0.20,
-        score: bwbAltScore,
-        tier: bwbAltTier
-      };
-    })(),
-    // Double Chance: evaluates all three double-chance combinations using BWB probs
-    doubleChance: (function(){
-      var dcProbs_ = {
-        '1X': ensemble.probs.h + ensemble.probs.d,
-        '12': ensemble.probs.h + ensemble.probs.a,
-        'X2': ensemble.probs.d + ensemble.probs.a
-      };
-      var dcOdds_ = {
-        '1X': 1 / (1/b1.h + 1/b1.d),
-        '12': 1 / (1/b1.h + 1/b1.a),
-        'X2': 1 / (1/b1.d + 1/b1.a)
-      };
-      var dcPick_ = dcProbs_['1X'] >= dcProbs_['12'] && dcProbs_['1X'] >= dcProbs_['X2'] ? '1X' : dcProbs_['12'] >= dcProbs_['X2'] ? '12' : 'X2';
-      var dcProb_ = dcProbs_[dcPick_];
-      var dcOddsVal_ = dcOdds_[dcPick_];
-      var dcMarketNV_ = dcPick_ === '1X' ? bpD + bpH : dcPick_ === '12' ? bpA + bpH : bpA + bpD;
-      var dcFairOdds_ = dcMarketNV_ > 0 ? 1 / dcMarketNV_ : 0;
-      var dcEV_ = dcProb_ * dcFairOdds_ - 1;
-      var dcActionable_ = dcProb_ >= 0.35 && dcEV_ > 0.02;
-      return {
-        pick: dcPick_, prob: dcProb_, odds: dcOddsVal_, ev: dcEV_,
-        actionable: dcActionable_,
-        score: dcScore,
-        tier: dcTier,
-        stake: dcActionable_ ? calcStake(kellyVal(dcOddsVal_, dcProb_), edgePct(dcProb_, dcMarketNV_)) : 0
+        side: best_ ? best_.side : '',
+        label: best_ ? best_.label : '',
+        prob: best_ ? best_.prob : 0,
+        odds: best_ ? best_.odds : 0,
+        ev: best_ ? best_.ev : 0,
+        edge: best_ ? best_.edge : 0,
+        kelly: best_ ? best_.kelly : 0,
+        actionable: best_ !== null,
+        score: valScore,
+        tier: valTier,
+        stake: best_ ? calcStake(best_.kelly, best_.edge) : 0
       };
     })(),
   };
@@ -1145,8 +1081,8 @@ window.runAnalysis = function(overwriteIdx) {
       if (e.homeTeam === ht && e.awayTeam === at) { existingIdx = i; break; }
     }
     if (existingIdx >= 0) {
-      var oldEntry = window._predictionHistory[existingIdx];
-      if ((!resultVal || resultVal === '') && oldEntry && oldEntry.result) entry.result = oldEntry.result;
+      var oldEntryExisting = window._predictionHistory[existingIdx];
+      if ((!resultVal || resultVal === '') && oldEntryExisting && oldEntryExisting.result) entry.result = oldEntryExisting.result;
       window._predictionHistory[existingIdx] = entry;
     } else {
       window._predictionHistory.push(entry);
@@ -1159,11 +1095,12 @@ window.runAnalysis = function(overwriteIdx) {
 };
 
 window.clearAll = function() {
-  ['modH','modD','modA','b1h','b1d','b1a','homeTeam','awayTeam','gsHomeGFAll','gsHomeGAAll','gsAwayGFAll','gsAwayGAAll','gsHomeGF','gsHomeGA','gsAwayGF','gsAwayGA','matchResult'].forEach(function(id) {
+  ['modH','modD','modA','b1h','b1d','b1a','homeTeam','awayTeam','gsHomeGFAll','gsHomeGAAll','gsAwayGFAll','gsAwayGAAll','gsHomeGF','gsHomeGA','gsAwayGF','gsAwayGA','matchResult','gsLeagueHG','gsLeagueAG'].forEach(function(id) {
     var el = $(id); if (el) el.value = '';
   });
   var gsLB = $('gsLeagueBase'); if (gsLB) gsLB.value = '1.30';
   var gsRho = $('gsRho'); if (gsRho) gsRho.value = '-0.13';
+
   var br = $('bankroll'); if (br) br.value = '10000';
   $('results').style.display = 'none';
   $('errBox').classList.remove('show');
@@ -1184,6 +1121,7 @@ window.loadExample = function() {
   $('b1h').value = '3.00';
   $('b1d').value = '3.60';
   $('b1a').value = '2.05';
+  setModReadonly(true);
   window.runAnalysis();
 };
 
@@ -1239,59 +1177,53 @@ function renderHistory() {
     var plStr = pl > 0 ? '+' + pl : pl < 0 ? '' + pl : '-';
     var plCls = pl > 0 ? 'pos' : pl < 0 ? 'neg' : '';
 
-    // BWB Alt P/L
-    var bwbAltEnt = e.bwbAlt || {};
-    var bwbAltStakeVal = bwbAltEnt.stake || 0;
-    var bwbAltPl = 0;
-    if (bwbAltEnt.actionable && bwbAltStakeVal > 0 && e.result) {
-      if (e.result === (bwbAltEnt.label || '')) {
-        bwbAltPl = Math.round(bwbAltStakeVal * (bwbAltEnt.odds - 1));
+    // VAL Value Pick P/L
+    var valEnt = e.val || {};
+    var valStakeVal = valEnt.stake || 0;
+    var valPl = 0;
+    if (valEnt.actionable && valStakeVal > 0 && e.result) {
+      if (e.result === (valEnt.label || '')) {
+        valPl = Math.round(valStakeVal * (valEnt.odds - 1));
       } else {
-        bwbAltPl = -bwbAltStakeVal;
+        valPl = -valStakeVal;
       }
     }
-    var bwbAltPlStr = bwbAltPl > 0 ? '+' + bwbAltPl : bwbAltPl < 0 ? '' + bwbAltPl : '-';
-    var bwbAltPlCls = bwbAltPl > 0 ? 'pos' : bwbAltPl < 0 ? 'neg' : '';
-
-    // Double Chance P/L
-    var dcEnt = e.doubleChance || {};
-    var dcStake = dcEnt.stake || 0;
-    var dcPl = 0;
-    if (dcEnt.actionable && dcStake > 0 && e.result) {
-      var dcWon = (dcEnt.pick === '1X' && (e.result === '1' || e.result === 'X')) ||
-                  (dcEnt.pick === '12' && (e.result === '1' || e.result === '2')) ||
-                  (dcEnt.pick === 'X2' && (e.result === 'X' || e.result === '2'));
-      if (dcWon) {
-        dcPl = Math.round(dcStake * (dcEnt.odds - 1));
-      } else {
-        dcPl = -dcStake;
-      }
-    }
-    var dcPlStr = dcPl > 0 ? '+' + dcPl : dcPl < 0 ? '' + dcPl : '-';
-    var dcPlCls = dcPl > 0 ? 'pos' : dcPl < 0 ? 'neg' : '';
+    var valPlStr = valPl > 0 ? '+' + valPl : valPl < 0 ? '' + valPl : '-';
+    var valPlCls = valPl > 0 ? 'pos' : valPl < 0 ? 'neg' : '';
 
     html += '<tr>';
     html += '<td><span class="h-date">' + escHtml(e.date) + '</span></td>';
     html += '<td><span class="h-match">' + escHtml(titleCase(e.homeTeam)) + '<span class="vs">vs</span>' + escHtml(titleCase(e.awayTeam)) + '</span></td>';
-    // BWB 1X2: show all three blended probabilities
+    // BWB 1X2: show all three blended probabilities with bookmaker odds below
     var comp = e.composite || {};
     var cH = comp.h !== undefined ? Math.round(comp.h * 100) : '-';
     var cD = comp.d !== undefined ? Math.round(comp.d * 100) : '-';
     var cA = comp.a !== undefined ? Math.round(comp.a * 100) : '-';
-    html += '<td style="text-align:center;font-size:10px;font-family:\'JetBrains Mono\',monospace;line-height:1.4">';
-    html += '<span style="color:var(--green)">' + cH + '%</span> <span style="color:var(--muted)">|</span> ';
+    var rawB = e.inputs || {};
+    var bOddsH = rawB.b1h ? parseFloat(rawB.b1h).toFixed(2) : '-';
+    var bOddsD = rawB.b1d ? parseFloat(rawB.b1d).toFixed(2) : '-';
+    var bOddsA = rawB.b1a ? parseFloat(rawB.b1a).toFixed(2) : '-';
+    html += '<td style="text-align:center;font-size:10px;font-family:\'JetBrains Mono\',monospace;line-height:1.3">';
+    html += '<div style="margin-bottom:2px"><span style="color:var(--green)">' + cH + '%</span> <span style="color:var(--muted)">|</span> ';
     html += '<span style="color:var(--draw)">' + cD + '%</span> <span style="color:var(--muted)">|</span> ';
-    html += '<span style="color:var(--red)">' + cA + '%</span>';
+    html += '<span style="color:var(--red)">' + cA + '%</span></div>';
+    html += '<div style="font-size:9px;opacity:0.65"><span style="color:var(--green)">' + bOddsH + '</span> <span style="color:var(--muted)">|</span> ';
+    html += '<span style="color:var(--draw)">' + bOddsD + '</span> <span style="color:var(--muted)">|</span> ';
+    html += '<span style="color:var(--red)">' + bOddsA + '</span></div>';
     html += '</td>';
     html += '<td style="text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:700;color:' + sideColor + '">' + (isActionable ? sideLabel + '<br><span style="font-size:9px;color:var(--muted2);font-weight:400">@ ' + oddsStr + '</span>' : '<span style="color:var(--muted);font-weight:400">-</span>') + '</td>';
     var resultColor = e.result === '1' ? 'var(--green)' : e.result === 'X' ? 'var(--draw)' : e.result === '2' ? 'var(--red)' : 'var(--muted)';
     var resultBg = e.result === '1' ? 'rgba(0,229,160,0.12)' : e.result === 'X' ? 'rgba(245,200,66,0.12)' : e.result === '2' ? 'rgba(255,77,109,0.12)' : 'transparent';
     html += '<td style="text-align:center"><span class="h-result" data-r="' + escHtml(e.result || '') + '" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;background:' + resultBg + ';color:' + resultColor + ';border:2px solid ' + resultColor + '">' + (e.result && e.result !== '' ? escHtml(e.result) : '-') + '</span></td>';
     html += '<td style="text-align:center;font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace" class="' + plCls + '">' + plStr + '</td>';
-    html += '<td style="text-align:center;font-size:11px;font-weight:600;font-family:\'JetBrains Mono\',monospace" class="' + bwbAltPlCls + '">' + bwbAltPlStr + '</td>';
-    html += '<td style="text-align:center;font-size:11px;font-weight:600;font-family:\'JetBrains Mono\',monospace" class="' + dcPlCls + '">' + dcPlStr + '</td>';
+    html += '<td style="text-align:center;font-size:11px;font-weight:600;font-family:\'JetBrains Mono\',monospace" class="' + valPlCls + '">' + valPlStr + '</td>';
     html += '<td><div class="h-actions">' +
-      '<span class="h-btn reload" onclick="reloadEntry(' + idx + ')" title="Re-run">&#8635;</span>' +
+      '<select id="resEdit-' + idx + '" class="res-edit" style="display:none;width:44px;font-size:10px;padding:1px 2px">' +
+        '<option value="">—</option><option value="1">1</option><option value="X">X</option><option value="2">2</option>' +
+      '</select>' +
+      '<span id="saveResBtn-' + idx + '" class="h-btn" style="display:none" onclick="saveInlineResult(' + idx + ')" title="Save result">✓</span>' +
+      '<span class="h-btn" onclick="toggleInlineResult(' + idx + ')" title="Set result">✎</span>' +
+      '<span class="h-btn reload" onclick="loadEntry(' + idx + ')" title="Load into form">&#8635;</span>' +
       '<span class="h-btn delete" onclick="deleteEntry(' + idx + ')" title="Delete">&#10005;</span>' +
     '</div></td>';
     html += '</tr>';
@@ -1309,10 +1241,8 @@ function renderProfitTracker() {
 
   // Brier-Weighted Blended stats
   var bwbAllW = 0, bwbAllL = 0, bwbValW = 0, bwbValL = 0, bwbP = 0, bwbTot = 0;
-  // BWB Probability (Alt) stats
-  var bwbAltAllW = 0, bwbAltAllL = 0, bwbAltValW = 0, bwbAltValL = 0, bwbAltP = 0, bwbAltTot = 0;
-  // Double Chance stats
-  var dcAllW = 0, dcAllL = 0, dcValW = 0, dcValL = 0, dcP = 0, dcTot = 0;
+  // VAL Value Pick stats
+  var valAllW = 0, valAllL = 0, valValW = 0, valValL = 0, valP = 0, valTot = 0;
   for (var hi = 0; hi < hist.length; hi++) {
     var e = hist[hi];
     if (!e.result || e.result === '') continue;
@@ -1331,32 +1261,15 @@ function renderProfitTracker() {
       }
     }
 
-    // BWB Probability (Alt)
-    var bwbAltEntry = e.bwbAlt || {};
-    if (e.result && bwbAltEntry.label) {
-      if (e.result === bwbAltEntry.label) bwbAltAllW++; else bwbAltAllL++;
+    // VAL Value Pick
+    var val = e.val || {};
+    if (e.result && val.label) {
+      if (e.result === val.label) valAllW++; else valAllL++;
     }
-    if (bwbAltEntry.actionable && bwbAltEntry.stake > 0) {
-      bwbAltTot += bwbAltEntry.stake;
-      if (e.result === bwbAltEntry.label) { bwbAltValW++; bwbAltP += Math.round(bwbAltEntry.stake * (bwbAltEntry.odds - 1)); }
-      else { bwbAltValL++; bwbAltP -= bwbAltEntry.stake; }
-    }
-
-    // Double Chance
-    var dc = e.doubleChance || {};
-    if (e.result && dc.pick) {
-      var dcWon = (dc.pick === '1X' && (e.result === '1' || e.result === 'X')) ||
-                  (dc.pick === '12' && (e.result === '1' || e.result === '2')) ||
-                  (dc.pick === 'X2' && (e.result === 'X' || e.result === '2'));
-      if (dcWon) dcAllW++; else dcAllL++;
-    }
-    if (dc.actionable && dc.stake > 0) {
-      dcTot += dc.stake;
-      var dcWonVal = (dc.pick === '1X' && (e.result === '1' || e.result === 'X')) ||
-                     (dc.pick === '12' && (e.result === '1' || e.result === '2')) ||
-                     (dc.pick === 'X2' && (e.result === 'X' || e.result === '2'));
-      if (dcWonVal) { dcValW++; dcP += Math.round(dc.stake * (dc.odds - 1)); }
-      else { dcValL++; dcP -= dc.stake; }
+    if (val.actionable && val.stake > 0) {
+      valTot += val.stake;
+      if (e.result === val.label) { valValW++; valP += Math.round(val.stake * (val.odds - 1)); }
+      else { valValL++; valP -= val.stake; }
     }
 
   }
@@ -1374,16 +1287,14 @@ function renderProfitTracker() {
   var bwbValWr = wrStr(bwbValW, bwbValL);
   var bwbRoi = roiStr(bwbP, bwbTot);
 
-  var bwbAltAllWr = wrStr(bwbAltAllW, bwbAltAllL);
-  var bwbAltValWr = wrStr(bwbAltValW, bwbAltValL);
-  var bwbAltRoi = roiStr(bwbAltP, bwbAltTot);
+  var valAllWr = wrStr(valAllW, valAllL);
+  var valValWr = wrStr(valValW, valValL);
+  var valRoi = roiStr(valP, valTot);
 
-  var dcAllWr = wrStr(dcAllW, dcAllL);
-  var dcValWr = wrStr(dcValW, dcValL);
-  var dcRoi = roiStr(dcP, dcTot);
-
-  function ptCard(title, accent, allWr, valWr, stake, pl, plPct) {
+  function ptCard(title, accent, bankroll, allWr, valWr, stake, pl, plPct) {
     var plColor = pl > 0 ? 'var(--green)' : pl < 0 ? 'var(--red)' : 'var(--muted2)';
+    var avail = bankroll + pl;
+    var availColor = avail >= bankroll ? 'var(--green)' : 'var(--red)';
     return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;font-family:\'JetBrains Mono\',monospace;position:relative;overflow:hidden">' +
       '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:' + accent + '"></div>' +
       '<div style="font-size:11px;font-weight:700;color:' + accent + ';letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--surface3)">' + title + '</div>' +
@@ -1394,14 +1305,17 @@ function renderProfitTracker() {
       '<div class="pt-row"><span style="font-size:10px;color:var(--muted2)">Total Stake</span><span style="font-size:11px;font-weight:700;color:var(--fg)"><span style="color:var(--muted)">TZS </span>' + stake.toLocaleString() + '</span></div>' +
       '<div class="pt-row"><span style="font-size:10px;color:var(--muted2)">Profit / Loss</span><span style="font-size:11px;font-weight:700;color:' + plColor + '">' + (pl > 0 ? '+' : '') + pl.toLocaleString() + ' <span style="font-size:9px;color:' + plColor + '80">TZS</span></span></div>' +
       '<div class="pt-row"><span style="font-size:10px;color:var(--muted2)">P/L %</span><span style="font-size:11px;font-weight:700;color:' + plColor + '">' + (plPct > 0 ? '+' : '') + plPct.toFixed(1) + '%</span></div>' +
+      '<div style="height:1px;background:var(--surface3);margin:3px 0"></div>' +
+      '<div class="pt-row"><span style="font-size:10px;color:var(--muted2)">Available</span><span style="font-size:11px;font-weight:700;color:' + availColor + '"><span style="color:var(--muted)">TZS </span>' + avail.toLocaleString() + '</span></div>' +
       '</div></div>';
   }
 
+  var br = parseFloat($('bankroll').value) || 10000;
+
   el.innerHTML =
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' +
-    ptCard('Brier-Weighted Blended', 'var(--amber)', bwbAllWr, bwbValWr, bwbTot, bwbP, bwbRoi) +
-    ptCard('BWB Probability (Alt)', 'var(--cyan)', bwbAltAllWr, bwbAltValWr, bwbAltTot, bwbAltP, bwbAltRoi) +
-    ptCard('Double Chance', '#a78bfa', dcAllWr, dcValWr, dcTot, dcP, dcRoi) +
+    '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">' +
+    ptCard('Brier-Weighted Blended', 'var(--amber)', br, bwbAllWr, bwbValWr, bwbTot, bwbP, bwbRoi) +
+    ptCard('VAL Value Pick (+EV)', '#2ecc71', br, valAllWr, valValWr, valTot, valP, valRoi) +
     '</div>';
 }
 window.renderProfitTracker = renderProfitTracker;
@@ -1411,7 +1325,7 @@ async function exportHistory(fmt) {
   if (hist.length === 0) { alert('No history to export.'); return; }
   var content, filename, mime;
   if (fmt === 'csv') {
-      var rows = [['Date','Home','Away','Result','BWBPick','BWBOdds','BWBEv','BWBActionable','BWBP/L','BWBAltPick','BWBAltOdds','BWBAltEv','BWBAltActionable','BWBAltStake','BWBAltP/L','DCPick','DCOdds','DCEV','DCActionable','DCStake','DCP/L'].join(',')];
+      var rows = [['Date','Home','Away','Result','BWBPick','BWBOdds','BWBEv','BWBActionable','BWBP/L','VALPick','VALOdds','VALEV','VALActionable','VALStake','VALP/L'].join(',')];
     for (var ei = 0; ei < hist.length; ei++) {
       var e = hist[ei];
       var bwb = e.bwb || {};
@@ -1427,28 +1341,15 @@ async function exportHistory(fmt) {
           else bwbPL = -bwbStake;
         }
       }
-      var bwbAltEnt = e.bwbAlt || {};
-      var bwbAltSideLabel = bwbAltEnt.side === 'h' ? '1' : bwbAltEnt.side === 'd' ? 'X' : bwbAltEnt.side === 'a' ? '2' : '';
-      var bwbAltOddsVal = bwbAltEnt.odds !== undefined ? bwbAltEnt.odds.toFixed(2) : '';
-      var bwbAltEvVal = bwbAltEnt.ev !== undefined ? (bwbAltEnt.ev*100).toFixed(1)+'%' : '';
-      var bwbAltStakeVal = bwbAltEnt.stake || 0;
-      var bwbAltPL = '-';
-      if (bwbAltEnt.actionable && bwbAltEnt.stake > 0 && e.result) {
-        if (e.result === bwbAltSideLabel) bwbAltPL = Math.round(bwbAltEnt.stake * (bwbAltEnt.odds - 1));
-        else bwbAltPL = -bwbAltEnt.stake;
-      }
-      var dcEnt2 = e.doubleChance || {};
-      var dcPickVal = dcEnt2.pick || '';
-      var dcOddsVal2 = dcEnt2.odds !== undefined ? dcEnt2.odds.toFixed(2) : '';
-      var dcEvVal = dcEnt2.ev !== undefined ? (dcEnt2.ev*100).toFixed(1)+'%' : '';
-      var dcStakeVal2 = dcEnt2.stake || 0;
-      var dcPL = '-';
-      if (dcEnt2.actionable && dcEnt2.stake > 0 && e.result) {
-        var dcWonCSV = (dcEnt2.pick === '1X' && (e.result === '1' || e.result === 'X')) ||
-                       (dcEnt2.pick === '12' && (e.result === '1' || e.result === '2')) ||
-                       (dcEnt2.pick === 'X2' && (e.result === 'X' || e.result === '2'));
-        if (dcWonCSV) dcPL = Math.round(dcEnt2.stake * (dcEnt2.odds - 1));
-        else dcPL = -dcEnt2.stake;
+      var valEnt2 = e.val || {};
+      var valPickVal = valEnt2.label || '';
+      var valOddsVal2 = valEnt2.odds !== undefined ? valEnt2.odds.toFixed(2) : '';
+      var valEvVal = valEnt2.ev !== undefined ? (valEnt2.ev*100).toFixed(1)+'%' : '';
+      var valStakeVal2 = valEnt2.stake || 0;
+      var valPL = '-';
+      if (valEnt2.actionable && valEnt2.stake > 0 && e.result) {
+        if (e.result === valEnt2.label) valPL = Math.round(valEnt2.stake * (valEnt2.odds - 1));
+        else valPL = -valEnt2.stake;
       }
       rows.push([
         esc(e.date), esc(e.homeTeam), esc(e.awayTeam), esc(e.result),
@@ -1456,16 +1357,11 @@ async function exportHistory(fmt) {
         esc(bwbEvVal),
         esc(bwb.actionable ? 'Yes' : 'No'),
         esc(''+bwbPL),
-        esc(bwbAltSideLabel), esc(bwbAltOddsVal),
-        esc(bwbAltEvVal),
-        esc(bwbAltEnt.actionable ? 'Yes' : 'No'),
-        esc(''+bwbAltStakeVal),
-        esc(''+bwbAltPL),
-        esc(dcPickVal), esc(dcOddsVal2),
-        esc(dcEvVal),
-        esc(dcEnt2.actionable ? 'Yes' : 'No'),
-        esc(''+dcStakeVal2),
-        esc(''+dcPL)
+        esc(valPickVal), esc(valOddsVal2),
+        esc(valEvVal),
+        esc(valEnt2.actionable ? 'Yes' : 'No'),
+        esc(''+valStakeVal2),
+        esc(''+valPL)
       ].join(','));
     }
     content = rows.join('\r\n');
@@ -1514,6 +1410,24 @@ window.clearHistory = function() {
   renderProfitTracker();
 };
 
+window.toggleInlineResult = function(idx) {
+  var sel = $('resEdit-' + idx), btn = $('saveResBtn-' + idx);
+  if (!sel) return;
+  var vis = sel.style.display === 'none' ? '' : 'none';
+  sel.style.display = vis; btn.style.display = vis;
+  if (vis === '') {
+    var h = window._predictionHistory, realIdx = h.length - 1 - idx, e = h[realIdx];
+    if (e) sel.value = e.result || '';
+  }
+};
+window.saveInlineResult = function(idx) {
+  var h = window._predictionHistory, realIdx = h.length - 1 - idx, e = h[realIdx];
+  if (!e) return;
+  var sel = $('resEdit-' + idx);
+  e.result = sel.value || '';
+  saveHistory(); renderHistory(); renderProfitTracker();
+};
+
 window.deleteEntry = function(idx) {
   var h = window._predictionHistory;
   var realIdx = h.length - 1 - idx;
@@ -1523,7 +1437,7 @@ window.deleteEntry = function(idx) {
   renderProfitTracker();
 };
 
-window.reloadEntry = function(idx) {
+window.loadEntry = function(idx) {
   var h = window._predictionHistory;
   var realIdx = h.length - 1 - idx;
   var e = h[realIdx];
@@ -1540,8 +1454,6 @@ window.reloadEntry = function(idx) {
   if (e.result !== undefined && e.result !== '') $('matchResult').value = e.result;
   $('results').style.display = 'none';
   $('errBox').classList.remove('show');
-  window.runAnalysis(realIdx);
-  renderProfitTracker();
 };
 
 function escHtml(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
@@ -1550,9 +1462,17 @@ function titleCase(s) { return (s || '').replace(/\w\S*/g, function(t){ return t
 renderHistory();
 renderProfitTracker();
 
-document.addEventListener('keydown', function(e) {
+  document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); window.runAnalysis(); }
 });
+
+window.toggleCollapsible = function(bodyId, chevronId) {
+  var body = document.getElementById(bodyId), chev = document.getElementById(chevronId);
+  if (!body) return;
+  var isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (chev) chev.classList.toggle('open', !isOpen);
+};
 
 })();
 </script>

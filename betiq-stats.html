@@ -40,6 +40,9 @@
 
 /* ── Bookmaker note ─────────────────────────────────── */
 .bk-note{font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:14px;padding:10px 14px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.12);border-left:3px solid var(--purple);border-radius:4px;}
+
+/* ── Profit Tracker ────────────────────────────────── */
+.pt-row{display:flex;justify-content:space-between;align-items:center}
 </style>
 </head>
 <body>
@@ -59,133 +62,62 @@
 
           <!-- TEAM NAMES -->
           <div class="slabel">Match</div>
-          <div class="g2" style="margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
             <div class="field"><label>Home Team</label><input id="homeTeam" type="text" placeholder="e.g. Arsenal"></div>
             <div class="field"><label>Away Team</label><input id="awayTeam" type="text" placeholder="e.g. Chelsea"></div>
+            <div class="field">
+              <label>Match Result <span style="color:var(--muted);font-weight:400;font-size:9px">(1/X/2)</span></label>
+              <div style="display:flex;gap:4px">
+                <input id="homeGoals" type="number" min="0" max="15" placeholder="H" style="width:30px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:8px 4px;font:inherit;font-size:12px;text-align:center" oninput="syncGoalsResult()">
+                <span style="display:flex;align-items:center;color:var(--muted2);font-size:10px">–</span>
+                <input id="awayGoals" type="number" min="0" max="15" placeholder="A" style="width:30px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:8px 4px;font:inherit;font-size:12px;text-align:center" oninput="syncGoalsResult()">
+                <select id="matchResult" style="flex:1;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:8px 4px;font:inherit;font-size:12px" onchange="clearGoalsOnManual()">
+                  <option value="">—</option>
+                  <option value="1">1</option>
+                  <option value="X">X</option>
+                  <option value="2">2</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <!-- CORE STATS -->
-          <div class="slabel">All Matches Combined <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — boosts accuracy)</span></div>
-          <div class="g4" style="margin-bottom:14px">
-            <div class="field"><label>Home GF All</label><input id="homeGFAll" type="number" step="0.01" placeholder="Avg scored"></div>
-            <div class="field"><label>Home GA All</label><input id="homeGAAll" type="number" step="0.01" placeholder="Avg conceded"></div>
-            <div class="field"><label>Away GF All</label><input id="awayGFAll" type="number" step="0.01" placeholder="Avg scored"></div>
-            <div class="field"><label>Away GA All</label><input id="awayGAAll" type="number" step="0.01" placeholder="Avg conceded"></div>
-          </div>
-
-          <div class="slabel">Home / Away Venue Stats</div>
-          <div class="g4" style="margin-bottom:16px">
-            <div class="field"><label>Home GF</label><input id="homeGF" type="number" step="0.01" placeholder="1.75"></div>
-            <div class="field"><label>Home GA</label><input id="homeGA" type="number" step="0.01" placeholder="0.95"></div>
-            <div class="field"><label>Away GF</label><input id="awayGF" type="number" step="0.01" placeholder="1.40"></div>
-            <div class="field"><label>Away GA</label><input id="awayGA" type="number" step="0.01" placeholder="1.10"></div>
-          </div>
-
-          <!-- HOME/AWAY LAST 6 GF/GA STATS -->
-          <div class="slabel">Home / Away Last 6 Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — recent form boost)</span></div>
-          <div class="g4" style="margin-bottom:16px">
-            <div class="field"><label>Home GF (L6)</label><input id="homeGFL6" type="number" step="0.01" placeholder="1.85"></div>
-            <div class="field"><label>Home GA (L6)</label><input id="homeGAL6" type="number" step="0.01" placeholder="0.70"></div>
-            <div class="field"><label>Away GF (L6)</label><input id="awayGFL6" type="number" step="0.01" placeholder="1.55"></div>
-            <div class="field"><label>Away GA (L6)</label><input id="awayGAL6" type="number" step="0.01" placeholder="1.05"></div>
-          </div>
-
-          <!-- HOME/AWAY WDL STATS (collapsible) -->
-          <div class="collapsible">
-            <div class="collapsible-header" onclick="toggleCollapsible('wdlBody', 'wdlChevron')">
-              <span class="collapsible-icon">📊</span>
-              <span class="collapsible-title">Home / Away 1x2 Stats (WDL) <span class="collapsible-badge">Optional — boosts accuracy</span></span>
-              <span class="collapsible-chevron" id="wdlChevron">▼</span>
-            </div>
-            <div class="collapsible-body" id="wdlBody" style="display:none">
-              <div class="collapsible-note">Enter W-D-L records at each venue. All Stats + Venue Stats + Last 6 are blended (30/15/55 weight) to produce WDL strength multipliers. At minimum, fill the venue-specific fields for a boost.</div>
-
-              <div class="slabel">All Matches Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional)</span></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-                <div>
-                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Home Stats</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-                    <div class="field"><label>W</label><input id="homeWAll" type="number" min="0" placeholder="12"></div>
-                    <div class="field"><label>D</label><input id="homeDAll" type="number" min="0" placeholder="7"></div>
-                    <div class="field"><label>L</label><input id="homeLAll" type="number" min="0" placeholder="3"></div>
-                  </div>
-                </div>
-                <div>
-                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Away Stats</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-                    <div class="field"><label>W</label><input id="awayWAll" type="number" min="0" placeholder="10"></div>
-                    <div class="field"><label>D</label><input id="awayDAll" type="number" min="0" placeholder="9"></div>
-                    <div class="field"><label>L</label><input id="awayLAll" type="number" min="0" placeholder="1"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="slabel">Venue Stats <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(recommended — boosts accuracy)</span></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-                <div>
-                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Home Stats</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-                    <div class="field"><label>W</label><input id="homeW" type="number" min="0" placeholder="3"></div>
-                    <div class="field"><label>D</label><input id="homeD" type="number" min="0" placeholder="3"></div>
-                    <div class="field"><label>L</label><input id="homeL" type="number" min="0" placeholder="4"></div>
-                  </div>
-                </div>
-                <div>
-                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Away Stats</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-                    <div class="field"><label>W</label><input id="awayW" type="number" min="0" placeholder="2"></div>
-                    <div class="field"><label>D</label><input id="awayD" type="number" min="0" placeholder="4"></div>
-                    <div class="field"><label>L</label><input id="awayL" type="number" min="0" placeholder="4"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="slabel">Last 6 Matches <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — recent form boost)</span></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
-                <div>
-                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Home Last 6</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-                    <div class="field"><label>W</label><input id="homeWL6" type="number" min="0" placeholder="3"></div>
-                    <div class="field"><label>D</label><input id="homeDL6" type="number" min="0" placeholder="2"></div>
-                    <div class="field"><label>L</label><input id="homeLL6" type="number" min="0" placeholder="1"></div>
-                  </div>
-                </div>
-                <div>
-                  <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Away Last 6</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-                    <div class="field"><label>W</label><input id="awayWL6" type="number" min="0" placeholder="2"></div>
-                    <div class="field"><label>D</label><input id="awayDL6" type="number" min="0" placeholder="3"></div>
-                    <div class="field"><label>L</label><input id="awayLL6" type="number" min="0" placeholder="1"></div>
-                  </div>
-                </div>
-              </div>
-
+          <div class="slabel">Team Goals</div>
+          <div style="margin-bottom:14px">
+            <select id="venueScope" style="width:100%;background:var(--surface2);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:6px 8px;font:inherit;font-size:11px;margin-bottom:10px">
+              <option value="all">All Venues (overall avg)</option>
+              <option value="split">Home / Away Split</option>
+            </select>
+            <div class="g4">
+              <div class="field"><label>Home GF</label><input id="homeGF" type="number" step="0.01" placeholder="Avg scored"></div>
+              <div class="field"><label>Home GA</label><input id="homeGA" type="number" step="0.01" placeholder="Avg conceded"></div>
+              <div class="field"><label>Away GF</label><input id="awayGF" type="number" step="0.01" placeholder="Avg scored"></div>
+              <div class="field"><label>Away GA</label><input id="awayGA" type="number" step="0.01" placeholder="Avg conceded"></div>
             </div>
           </div>
 
-          <!-- BOOKMAKER ODDS -->
-          <div class="slabel">🏦 Bookmaker Odds <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — sharpens value detection)</span></div>
-          <div class="bk-note">Enter decimal odds from your bookmaker. The model cross-references vig-free implied probabilities with Poisson projections to detect edges and calibrate picks.</div>
 
-          <div class="slabel">1X2 Odds <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(decimal, e.g. 1.85 / 3.40 / 4.20)</span></div>
-          <div class="g3" style="margin-bottom:14px">
-            <div class="field"><label>Home Win (1)</label><input id="bkHome" type="number" step="0.01" min="1.01" placeholder="e.g. 1.85"></div>
-            <div class="field"><label>Draw (X)</label><input id="bkDraw" type="number" step="0.01" min="1.01" placeholder="e.g. 3.40"></div>
-            <div class="field"><label>Away Win (2)</label><input id="bkAway" type="number" step="0.01" min="1.01" placeholder="e.g. 4.20"></div>
-          </div>
 
-          <div class="slabel">Asian Handicap Odds <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(decimal — negative = home gives goals)</span></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:4px">
-            <div class="field"><label>AH Line (e.g. -0.5)</label><input id="bkAHLine" type="text" inputmode="decimal" placeholder="e.g. -0.5" maxlength="6"></div>
-            <div class="field"><label>AH Home Odds</label><input id="bkAHHome" type="number" step="0.01" min="1.01" placeholder="e.g. 1.95"></div>
-            <div class="field"><label>AH Away Odds</label><input id="bkAHAway" type="number" step="0.01" min="1.01" placeholder="e.g. 1.90"></div>
-          </div>
-
-          <div class="slabel">Over / Under Odds <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(decimal)</span></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
-            <div class="field"><label>Line (e.g. 2.5)</label><input id="bkOULine" type="text" inputmode="decimal" placeholder="e.g. 2.5" maxlength="6"></div>
-            <div class="field"><label>Over Odds</label><input id="bkOver" type="number" step="0.01" min="1.01" placeholder="e.g. 1.90"></div>
-            <div class="field"><label>Under Odds</label><input id="bkUnder" type="number" step="0.01" min="1.01" placeholder="e.g. 1.95"></div>
+          <!-- HOME/AWAY WDL STATS -->
+          <div class="slabel">Home / Away 1x2 Stats (WDL) <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(optional — boosts accuracy)</span></div>
+          <div style="margin-bottom:14px;font-size:11px;color:var(--muted2);line-height:1.6;">Enter W-D-L records to produce WDL strength multipliers that adjust the model's xG predictions.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Home Stats</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                <div class="field"><label>W</label><input id="homeWAll" type="number" min="0" placeholder="12"></div>
+                <div class="field"><label>D</label><input id="homeDAll" type="number" min="0" placeholder="7"></div>
+                <div class="field"><label>L</label><input id="homeLAll" type="number" min="0" placeholder="3"></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted2);margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;text-align:center">Away Stats</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                <div class="field"><label>W</label><input id="awayWAll" type="number" min="0" placeholder="10"></div>
+                <div class="field"><label>D</label><input id="awayDAll" type="number" min="0" placeholder="9"></div>
+                <div class="field"><label>L</label><input id="awayLAll" type="number" min="0" placeholder="1"></div>
+              </div>
+            </div>
           </div>
 
           <!-- MATCH CONTEXT (collapsible) -->
@@ -212,6 +144,25 @@
             </div>
           </div>
 
+          <!-- BOOKMAKER ODDS (collapsible) -->
+          <div class="collapsible">
+            <div class="collapsible-header" onclick="toggleCollapsible('bkBody', 'bkChevron')">
+              <span class="collapsible-icon">🏦</span>
+              <span class="collapsible-title">Bookmaker Odds <span class="collapsible-badge">Optional — sharpens value detection</span></span>
+              <span class="collapsible-chevron" id="bkChevron">▼</span>
+            </div>
+            <div class="collapsible-body" id="bkBody" style="display:none">
+              <div class="collapsible-note">Enter decimal odds from your bookmaker. The model cross-references vig-free implied probabilities with Poisson projections to detect edges and calibrate picks.</div>
+
+              <div class="slabel">1X2 Odds <span style="color:var(--muted);font-weight:400;font-size:9px;letter-spacing:0">(decimal, e.g. 1.85 / 3.40 / 4.20)</span></div>
+              <div class="g3" style="margin-bottom:14px">
+                <div class="field"><label>Home Win (1)</label><input id="bkHome" type="number" step="0.01" min="1.01" placeholder="e.g. 1.85"></div>
+                <div class="field"><label>Draw (X)</label><input id="bkDraw" type="number" step="0.01" min="1.01" placeholder="e.g. 3.40"></div>
+                <div class="field"><label>Away Win (2)</label><input id="bkAway" type="number" step="0.01" min="1.01" placeholder="e.g. 4.20"></div>
+              </div>
+            </div>
+          </div>
+
            <div id="dcIndicator" style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:12px;text-align:center">
              <span style="color:var(--muted)">DC: auto-detect</span>
            </div>
@@ -228,6 +179,31 @@
     </div>
   </main>
   
+  <!-- PROFIT TRACKER -->
+  <div class="history-wrap">
+    <div class="hist-panel">
+      <div class="panel-hd" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div class="panel-title">Profit Tracker <span style="font-size:11px;color:var(--muted2);font-weight:400">— Pick Performance</span></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted2)">🏦 <input id="bankrollInput" type="number" value="10000" min="100" step="500" style="width:65px;background:transparent;border:none;color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;outline:none" onchange="document.getElementById('bankrollDisplay').textContent=this.value;renderProfitTracker()"> TZS</div>
+          <select id="ptFilter" onchange="renderProfitTracker()" style="background:var(--surface2);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer">
+            <option value="0">All</option>
+            <option value="10">Last 10</option>
+            <option value="20">Last 20</option>
+            <option value="30">Last 30</option>
+            <option value="50">Last 50</option>
+            <option value="100">Last 100</option>
+          </select>
+        </div>
+      </div>
+      <div class="hist-table-wrap">
+        <div id="profitTrackerBody" style="padding:14px;min-height:60px">
+          <div style="text-align:center;color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace;padding:20px">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- HISTORY -->
   <div class="history-wrap">
     <div class="hist-panel">
@@ -247,7 +223,9 @@
               <th style="text-align:left;width:90px">Date</th>
               <th style="text-align:left">Match</th>
               <th style="text-align:left;width:200px">1×2 Probabilities</th>
-              <th style="text-align:left">Top Tips</th>
+              <th style="text-align:left">Pick</th>
+              <th style="text-align:center;width:60px">Result</th>
+              <th style="text-align:center;width:50px">P/L</th>
               <th style="text-align:center;width:80px">Actions</th>
             </tr>
           </thead>
@@ -256,11 +234,9 @@
       </div>
     </div>
   </div>
-  
-  </div>
 </div>
 
-  <div id="footer"></div>
+<div id="footer"></div>
 
 </div>
 
@@ -298,38 +274,19 @@ function getOdds(id){
 /**
  * Parse all bookmaker odds from the UI.
  * Returns null if no odds were entered at all.
- * Returns an object with any subset of { h, d, a, ouLine, over, under, ahLine, ahHome, ahAway }.
+ * Returns an object with any subset of { h, d, a }.
  */
 function getBkOdds(){
   const bkHome = getOdds('bkHome'), bkDraw = getOdds('bkDraw'), bkAway = getOdds('bkAway');
-  const bkOver = getOdds('bkOver'), bkUnder = getOdds('bkUnder');
-  const bkAHHome = getOdds('bkAHHome'), bkAHAway = getOdds('bkAHAway');
-  const ouLineEl = $('bkOULine'), ahLineEl = $('bkAHLine');
 
   const has1x2 = bkHome !== null || bkDraw !== null || bkAway !== null;
-  const hasOU  = bkOver  !== null || bkUnder !== null;
-  const hasAH  = bkAHHome !== null || bkAHAway !== null;
 
-  if(!has1x2 && !hasOU && !hasAH) return null;
+  if(!has1x2) return null;
 
   const result = {};
   if(bkHome !== null) result.h = bkHome;
   if(bkDraw !== null) result.d = bkDraw;
   if(bkAway !== null) result.a = bkAway;
-  if(hasOU){
-    const ouVal = ouLineEl ? ouLineEl.value.trim() : '';
-    result.ouLine = ouVal !== '' ? parseFloat(ouVal) : 2.5;
-    if(isNaN(result.ouLine)) result.ouLine = 2.5;
-    if(bkOver !== null)  result.over  = bkOver;
-    if(bkUnder !== null) result.under = bkUnder;
-  }
-  if(hasAH){
-    const ahVal = ahLineEl ? ahLineEl.value.trim() : '';
-    result.ahLine = ahVal !== '' ? parseFloat(ahVal) : 0;
-    if(isNaN(result.ahLine)) result.ahLine = 0;
-    if(bkAHHome !== null) result.ahHome = bkAHHome;
-    if(bkAHAway !== null) result.ahAway = bkAHAway;
-  }
   return result;
 }
 
@@ -374,7 +331,7 @@ function blendWithBk(modelProb, bkProb, dqScore){
 /** Build a full bkOdds analysis object for display and use in tips */
 function analyzeBkOdds(bkOdds, prbs, btts, mat, dqScore){
   if(!bkOdds) return null;
-  const result = { items: [], vig1x2: null, vigOU: null, vigAH: null };
+  const result = { items: [], vig1x2: null };
 
   // 1x2
   if(bkOdds.h != null && bkOdds.d != null && bkOdds.a != null){
@@ -389,39 +346,6 @@ function analyzeBkOdds(bkOdds, prbs, btts, mat, dqScore){
     result.items.push({ market:'Away Win', cat:'1X2', modelProb:prbs.a, bkProb:bkPA, bkOdds:bkOdds.a, blendedProb:blendA, edge:prbs.a - bkPA });
     result.blend1x2 = { h: blendH, d: blendD, a: blendA };
   }
-
-  // O/U
-  if(bkOdds.over != null || bkOdds.under != null){
-    const line = bkOdds.ouLine || 2.5;
-    const modelOU = calcOU(mat, line);
-    if(bkOdds.over != null && bkOdds.under != null){
-      const { probs, vig } = vigFreeProbs([bkOdds.over, bkOdds.under]);
-      result.vigOU = vig;
-      const bkOver = probs[0], bkUnder = probs[1];
-      result.items.push({ market:'Over '+line, cat:'O/U', modelProb:modelOU.over, bkProb:bkOver, bkOdds:bkOdds.over, blendedProb:blendWithBk(modelOU.over, bkOver, dqScore), edge:modelOU.over - bkOver, ouLine:line });
-      result.items.push({ market:'Under '+line, cat:'O/U', modelProb:modelOU.under, bkProb:bkUnder, bkOdds:bkOdds.under, blendedProb:blendWithBk(modelOU.under, bkUnder, dqScore), edge:modelOU.under - bkUnder, ouLine:line });
-    } else if(bkOdds.over != null){
-      result.items.push({ market:'Over '+line, cat:'O/U', modelProb:modelOU.over, bkProb:null, bkOdds:bkOdds.over, blendedProb:modelOU.over, edge:null, ouLine:line });
-    } else {
-      result.items.push({ market:'Under '+line, cat:'O/U', modelProb:modelOU.under, bkProb:null, bkOdds:bkOdds.under, blendedProb:modelOU.under, edge:null, ouLine:line });
-    }
-  }
-
-  // AH
-  if(bkOdds.ahHome != null || bkOdds.ahAway != null){
-    const ahLine = bkOdds.ahLine !== undefined ? bkOdds.ahLine : 0;
-    const modelAH = calcAHCover(mat, ahLine);
-    if(bkOdds.ahHome != null && bkOdds.ahAway != null){
-      const { probs, vig } = vigFreeProbs([bkOdds.ahHome, bkOdds.ahAway]);
-      result.vigAH = vig;
-      const bkAHH = probs[0], bkAHA = probs[1];
-      const ahLineLabel = ahLine === 0 ? '0' : (ahLine < 0 ? '−' : '+') + Math.abs(ahLine).toFixed(1);
-      const ahLineLabelA = ahLine === 0 ? '0' : (ahLine < 0 ? '+' : '−') + Math.abs(ahLine).toFixed(1);
-      result.items.push({ market:'AH Home '+ahLineLabel, cat:'AH', modelProb:modelAH.home, bkProb:bkAHH, bkOdds:bkOdds.ahHome, blendedProb:blendWithBk(modelAH.home, bkAHH, dqScore), edge:modelAH.home - bkAHH, ahThreshold:ahLine, ahSide:'home' });
-      result.items.push({ market:'AH Away '+ahLineLabelA, cat:'AH', modelProb:modelAH.away, bkProb:bkAHA, bkOdds:bkOdds.ahAway, blendedProb:blendWithBk(modelAH.away, bkAHA, dqScore), edge:modelAH.away - bkAHA, ahThreshold:ahLine, ahSide:'away' });
-    }
-  }
-
   return result;
 }
 
@@ -461,13 +385,121 @@ function renderBkCompCard(bkAnalysis){
   // Vig summary
   const vigs = [];
   if(bkAnalysis.vig1x2 !== null) vigs.push('1X2 vig: '+((bkAnalysis.vig1x2)*100).toFixed(2)+'%');
-  if(bkAnalysis.vigOU  !== null) vigs.push('O/U vig: '+((bkAnalysis.vigOU)*100).toFixed(2)+'%');
-  if(bkAnalysis.vigAH  !== null) vigs.push('AH vig: '+((bkAnalysis.vigAH)*100).toFixed(2)+'%');
   if(vigs.length > 0) html += '<div class="bk-vig" style="margin-top:8px;font-size:10px;color:var(--muted);font-family:\'JetBrains Mono\',monospace">📊 Overround — '+vigs.join(' · ')+'</div>';
   html += '<div class="note" style="margin-top:8px">Blended % = model probability weighted by data quality (60–75%) fused with bookmaker vig-free probability. Use blended figure for final stake decisions.</div>';
   html += '</div>';
   return html;
 }
+
+// ── Profit Tracker ─────────────────────────────────────────────
+function kellyVal(odds, prob) {
+  if (odds <= 1.01 || prob <= 0) return 0;
+  return Math.max(0, ((odds - 1) * prob - (1 - prob)) / (odds - 1));
+}
+
+function getBankroll(){
+  var el=document.getElementById('bankrollInput');
+  return el?parseInt(el.value)||10000:10000;
+}
+
+function calcStake(kelly, edge, bankroll) {
+  bankroll = bankroll || getBankroll();
+  if (kelly > 0) return Math.round(bankroll * Math.min(kelly, 0.25));
+  if (edge > 0) return Math.round(bankroll * Math.min(edge, 0.05));
+  return 0;
+}
+
+function calcProbStake(prob, bankroll) {
+  bankroll = bankroll || getBankroll();
+  if (prob < 0.20) return 0;
+  var pct = Math.min(Math.max(0, (prob - 0.20) / 0.50), 1) * 0.08;
+  return Math.round(bankroll * pct);
+}
+
+window.renderProfitTracker = function() {
+  var el = $('profitTrackerBody');
+  if (!el) return;
+  var hist = window._predictionHistory || [];
+  var ptFilterEl = $('ptFilter');
+  var lastN = ptFilterEl ? parseInt(ptFilterEl.value) || 0 : 0;
+  if (lastN > 0 && hist.length > lastN) hist = hist.slice(hist.length - lastN);
+
+  // ── Model Pick stats ──
+  var allW = 0, allL = 0, valW = 0, valL = 0, totalP = 0, totalStake = 0;
+  for (var hi = 0; hi < hist.length; hi++) {
+    var e = hist[hi];
+    if (!e.result || e.result === '' || !e.pick) continue;
+    if (e.result === e.pick) allW++; else allL++;
+    if (e.pl !== undefined && Math.abs(e.pl) > 0) {
+      totalP += e.pl;
+      totalStake += Math.abs(e.stake || 0);
+    }
+  }
+
+  // ── Top Scoreline (MC) stats ──
+  var slW = 0, slL = 0, slTotalP = 0, slTotalStake = 0;
+  for (var si = 0; si < hist.length; si++) {
+    var se = hist[si];
+    if (!se.result || se.result === '' || !se.topScores || !se.topScores.length) continue;
+    var hg = se.inputs && se.inputs.homeGoals ? parseInt(se.inputs.homeGoals) : null;
+    var ag = se.inputs && se.inputs.awayGoals ? parseInt(se.inputs.awayGoals) : null;
+    if (hg === null || ag === null || isNaN(hg) || isNaN(ag)) continue;
+    var top1 = se.topScores[0];
+    if (!top1) continue;
+    // Direction-only match: compare the sign of the score difference
+    var predDir = top1.home > top1.away ? 'H' : top1.home === top1.away ? 'D' : 'A';
+    var actualDir = hg > ag ? 'H' : hg === ag ? 'D' : 'A';
+    var hit = predDir === actualDir;
+    if (hit) slW++; else slL++;
+    if (se.stake !== undefined && Math.abs(se.stake) > 0) {
+      slTotalStake += Math.abs(se.stake);
+      // Use model probability for that direction as fair odds
+      var dirProb = predDir === 'H' ? (se.mcPrbs ? se.mcPrbs.h : se.prbs ? se.prbs.h : 0.5) : predDir === 'D' ? (se.mcPrbs ? se.mcPrbs.d : se.prbs ? se.prbs.d : 0.25) : (se.mcPrbs ? se.mcPrbs.a : se.prbs ? se.prbs.a : 0.45);
+      var dirOdds = dirProb > 0.001 ? 1 / dirProb : 2.0;
+      var scorelinePL = hit ? Math.round(Math.abs(se.stake) * (dirOdds - 1)) : -Math.abs(se.stake);
+      slTotalP += scorelinePL;
+    }
+  }
+
+  function wrStr(w, l) {
+    var tot = w + l;
+    return tot > 0 ? w + '/' + tot + ' (' + (w / tot * 100).toFixed(1) + '%)' : '0/0 (0.0%)';
+  }
+
+  function roiStr(p, tot) {
+    return tot > 0 ? (p / tot * 100) : 0;
+  }
+
+  var allWr = wrStr(allW, allL);
+  var roi = roiStr(totalP, totalStake);
+  var plColor = totalP > 0 ? 'var(--green)' : totalP < 0 ? 'var(--red)' : 'var(--muted2)';
+
+  var bankroll=getBankroll();
+
+  function ptCard(title, accent, w, l, stake, plVal, pct, bnk) {
+    var pColor = plVal > 0 ? 'var(--green)' : plVal < 0 ? 'var(--red)' : 'var(--muted2)';
+    var wr = wrStr(w, l);
+    var running = bnk + plVal;
+    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;font-family:\'JetBrains Mono\',monospace;position:relative;overflow:hidden">' +
+      '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:' + accent + '"></div>' +
+      '<div style="font-size:11px;font-weight:700;color:' + accent + ';letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--surface3)">' + title + '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px">' +
+      '<div class="pt-row"><span style="font-size:10px;color:var(--muted2)">Win Rate</span><span style="font-size:11px;font-weight:700;color:var(--fg)">' + wr + '</span></div>' +
+      '<div style="height:1px;background:var(--surface3);margin:3px 0"></div>' +
+      '<div class="pt-row"><span style="font-size:10px;color:var(--muted2)">Total Stake</span><span style="font-size:11px;font-weight:700;color:var(--fg)"><span style="color:var(--muted)">TZS </span>' + stake.toLocaleString() + '</span></div>' +
+      '<div class="pt-row"><span style="font-size:10px;color:var(--muted2)">Profit / Loss</span><span style="font-size:11px;font-weight:700;color:' + pColor + '">' + (plVal > 0 ? '+' : '') + plVal.toLocaleString() + ' <span style="font-size:9px;color:' + pColor + '80">TZS</span></span></div>' +
+      '<div class="pt-row"><span style="font-size:10px;color:var(--muted2)">P/L %</span><span style="font-size:11px;font-weight:700;color:' + pColor + '">' + (pct > 0 ? '+' : '') + pct.toFixed(1) + '%</span></div>' +
+      '<div style="height:1px;background:var(--surface3);margin:3px 0"></div>' +
+      '<div class="pt-row"><span style="font-size:10px;color:var(--muted2)">Bankroll</span><span style="font-size:11px;font-weight:700;color:' + (running >= bnk ? 'var(--green)' : 'var(--red)') + '">TZS ' + running.toLocaleString() + '</span></div>' +
+      '</div></div>';
+  }
+
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+    ptCard('Model Pick', 'var(--cyan)', allW, allL, totalStake, totalP, roi, bankroll) +
+    ptCard('Top Scoreline (MC)', 'var(--purple)', slW, slL, slTotalStake, slTotalP, roiStr(slTotalP, slTotalStake), bankroll) +
+    '</div>';
+};
 
 // Store bk analysis globally for reuse in tips
 window._lastBkAnalysis = null;
@@ -491,6 +523,7 @@ function saveHistoryToStorage(){
 
 window._predictionHistory=loadHistoryFromStorage();
 renderHistory();
+window.renderProfitTracker();
 
 function renderHistory(){
   const el=$('historyBody'),cnt=$('histCount');
@@ -498,26 +531,51 @@ function renderHistory(){
   const h=window._predictionHistory;
   if(cnt) cnt.textContent='('+h.length+')';
   if(h.length===0){
-    el.innerHTML='<tr><td colspan="5" class="h-empty" style="text-align:center"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
+    el.innerHTML='<tr><td colspan="7" class="h-empty" style="text-align:center"><div class="h-empty-icon">📋</div><div class="h-empty-txt">No predictions yet</div><div class="h-empty-sub">Run an analysis to start building your history.</div></td></tr>';
     return;
   }
   let html='';
   for(let i=h.length-1;i>=0;i--){
     const e=h[i];
     const idx=h.length-1-i;
-    const hasTips=e.unifiedTips&&e.unifiedTips.length>0;
     let tipsHtml;
-    if(hasTips){
-      tipsHtml=e.unifiedTips.slice(0,4).map(t=>'<span class="h-tip">'+escHtml(t.market)+'&nbsp;<span style="color:var(--cyan)">'+fp(t.prob)+'</span></span>').join('');
+    if(e.pick){
+      var pickColor=e.pick==='1'?'var(--green)':e.pick==='X'?'var(--draw)':'var(--red)';
+      tipsHtml='<span class="h-tip" style="font-weight:700;font-size:13px;color:'+pickColor+'">'+escHtml(e.pick)+'</span>';
     } else {
-      tipsHtml='<span style="color:var(--muted);font-size:11px;font-family:\'JetBrains Mono\',monospace">— run Unified Tips</span>';
+      tipsHtml='<span style="color:var(--muted);font-size:11px">—</span>';
     }
     html+='<tr>';
     html+='<td><span class="h-date">'+escHtml(e.date)+'</span></td>';
     html+='<td><span class="h-match">'+escHtml(e.homeTeam)+'<span class="vs">vs</span>'+escHtml(e.awayTeam)+'</span></td>';
-    html+='<td><div class="h-probs"><span class="h-prob h">H&nbsp;'+fp(e.prbs.h)+'</span><span class="h-prob d">D&nbsp;'+fp(e.prbs.d)+'</span><span class="h-prob a">A&nbsp;'+fp(e.prbs.a)+'</span></div></td>';
+    html+='<td><div class="h-probs">';
+    if(e.prbs){
+      html+='<span class="h-prob h">H&nbsp;'+fp(e.prbs.h)+'</span>';
+      html+='<span class="h-prob d">D&nbsp;'+fp(e.prbs.d)+'</span>';
+      html+='<span class="h-prob a">A&nbsp;'+fp(e.prbs.a)+'</span>';
+    } else {
+      html+='<span style="color:var(--muted)">—</span>';
+    }
+    html+='</div></td>';
     html+='<td><div class="h-tips">'+tipsHtml+'</div></td>';
+    var resultColor=e.result==='1'?'var(--green)':e.result==='X'?'var(--draw)':e.result==='2'?'var(--red)':'var(--muted)';
+    var resultBg=e.result==='1'?'rgba(0,229,160,0.12)':e.result==='X'?'rgba(245,200,66,0.12)':e.result==='2'?'rgba(255,77,109,0.12)':'transparent';
+    var hgVal=e.inputs&&e.inputs.homeGoals?escHtml(e.inputs.homeGoals):'';
+    var agVal=e.inputs&&e.inputs.awayGoals?escHtml(e.inputs.awayGoals):'';
+    html+='<td style="text-align:center"><span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:800;font-family:\'JetBrains Mono\',monospace;background:'+resultBg+';color:'+resultColor+';border:2px solid '+resultColor+'">'+(e.result&&e.result!==''?escHtml(e.result):'-')+'</span></td>';
+    var pl=e.pl!==undefined?e.pl:0;
+    var plStr=pl>0?'+'+pl:(pl<0?''+pl:'-');
+    var plCls=pl>0?'pos':pl<0?'neg':'';
+    var sourceBadge=e.stakeSource==='mc'?'<span style="font-size:8px;color:var(--muted2);margin-left:3px;font-weight:400">MC</span>':'';
+    html+='<td style="text-align:center;font-size:12px;font-weight:700;font-family:\'JetBrains Mono\',monospace" class="'+plCls+'">'+plStr+sourceBadge+'</td>';
     html+='<td><div class="h-actions">'+
+      '<select id="resEdit-'+idx+'" class="res-edit" style="display:none;width:44px;font-size:10px;padding:1px 2px" onchange="syncGoalsResultEdit('+idx+')">'+
+        '<option value="">—</option><option value="1">1</option><option value="X">X</option><option value="2">2</option>'+
+      '</select>'+
+      '<input id="hgEdit-'+idx+'" type="number" min="0" max="15" style="display:none;width:24px;font-size:10px;padding:2px 3px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--fg);font-family:\'JetBrains Mono\',monospace;outline:none" placeholder="H" value="'+hgVal+'" oninput="syncGoalsResultEdit('+idx+')">'+
+      '<input id="agEdit-'+idx+'" type="number" min="0" max="15" style="display:none;width:24px;font-size:10px;padding:2px 3px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--fg);font-family:\'JetBrains Mono\',monospace;outline:none" placeholder="A" value="'+agVal+'" oninput="syncGoalsResultEdit('+idx+')">'+
+      '<span id="saveResBtn-'+idx+'" class="h-btn" style="display:none" onclick="saveInlineResult('+idx+')" title="Save result">✓</span>'+
+      '<span class="h-btn" onclick="toggleInlineResult('+idx+')" title="Set result">✎</span>'+
       '<span class="h-btn reload" onclick="reloadEntry('+idx+')" title="Re-run this match">↻</span>'+
       '<span class="h-btn delete" onclick="deleteEntry('+idx+')" title="Delete">✕</span>'+
     '</div></td>';
@@ -551,6 +609,7 @@ window.importHistory=function(evt){
       window._predictionHistory=data;
       saveHistoryToStorage();
       renderHistory();
+      window.renderProfitTracker();
       alert('Imported '+data.length+' prediction(s).');
     }catch(err){alert('Error reading file: '+err.message);}
   };
@@ -562,6 +621,7 @@ window.clearHistory=function(){
   window._predictionHistory=[];
   saveHistoryToStorage();
   renderHistory();
+  window.renderProfitTracker();
 };
 
 window.deleteEntry=function(idx){
@@ -570,6 +630,7 @@ window.deleteEntry=function(idx){
   if(realIdx>=0&&realIdx<h.length) h.splice(realIdx,1);
   saveHistoryToStorage();
   renderHistory();
+  window.renderProfitTracker();
 };
 
 window.reloadEntry=function(idx){
@@ -580,29 +641,64 @@ window.reloadEntry=function(idx){
   const inp=e.inputs;
   const set=(id,val)=>{const el=$(id);if(el)el.value=val;};
   set('homeTeam',inp.homeTeam||'');set('awayTeam',inp.awayTeam||'');
+  set('venueScope',inp.venueScope||'all');
   set('homeGF',inp.homeGF||'');set('homeGA',inp.homeGA||'');
   set('awayGF',inp.awayGF||'');set('awayGA',inp.awayGA||'');
-  set('homeGFAll',inp.homeGFAll||'');set('homeGAAll',inp.homeGAAll||'');
-  set('awayGFAll',inp.awayGFAll||'');set('awayGAAll',inp.awayGAAll||'');
-  set('homeW',inp.homeW||'');set('homeD',inp.homeD||'');set('homeL',inp.homeL||'');
-  set('awayW',inp.awayW||'');set('awayD',inp.awayD||'');set('awayL',inp.awayL||'');
   set('homeWAll',inp.homeWAll||'');set('homeDAll',inp.homeDAll||'');set('homeLAll',inp.homeLAll||'');
   set('awayWAll',inp.awayWAll||'');set('awayDAll',inp.awayDAll||'');set('awayLAll',inp.awayLAll||'');
-  set('homeGFL6',inp.homeGFL6||'');set('homeGAL6',inp.homeGAL6||'');
-  set('awayGFL6',inp.awayGFL6||'');set('awayGAL6',inp.awayGAL6||'');
-  set('homeWL6',inp.homeWL6||'');set('homeDL6',inp.homeDL6||'');set('homeLL6',inp.homeLL6||'');
-  set('awayWL6',inp.awayWL6||'');set('awayDL6',inp.awayDL6||'');set('awayLL6',inp.awayLL6||'');
   set('homeForm',inp.homeForm||'');set('awayForm',inp.awayForm||'');
   set('compType',inp.compType||'league');
   // Restore bookmaker odds if saved
   set('bkHome',inp.bkHome||'');set('bkDraw',inp.bkDraw||'');set('bkAway',inp.bkAway||'');
-  set('bkOULine',inp.bkOULine||'');set('bkOver',inp.bkOver||'');set('bkUnder',inp.bkUnder||'');
-  set('bkAHLine',inp.bkAHLine||'');set('bkAHHome',inp.bkAHHome||'');set('bkAHAway',inp.bkAHAway||'');
+  if(e.result!==undefined&&e.result!==''){var mrEl=$('matchResult');if(mrEl)mrEl.value=e.result;}
+  if(e.inputs){set('homeGoals',e.inputs.homeGoals||'');set('awayGoals',e.inputs.awayGoals||'');}
   $('results').style.display='none';
   window.runAnalysis(realIdx);
 };
 
+window.toggleInlineResult=function(idx){
+  var sel=$('resEdit-'+idx),hg=$('hgEdit-'+idx),ag=$('agEdit-'+idx),btn=$('saveResBtn-'+idx);
+  if(!sel)return;
+  var vis=sel.style.display==='none'?'':'none';
+  sel.style.display=vis;hg.style.display=vis;ag.style.display=vis;btn.style.display=vis;
+  if(vis===''){
+    var h=window._predictionHistory,realIdx=h.length-1-idx,e=h[realIdx];
+    if(e)sel.value=e.result||'';
+  }
+};
+window.syncGoalsResultEdit=function(idx){
+  var hg=$('hgEdit-'+idx),ag=$('agEdit-'+idx),sel=$('resEdit-'+idx);
+  var h=parseInt(hg.value),a=parseInt(ag.value);
+  if(!isNaN(h)&&!isNaN(a)){sel.value=h>a?'1':h===a?'X':'2';}
+};
+window.saveInlineResult=function(idx){
+  var h=window._predictionHistory,realIdx=h.length-1-idx,e=h[realIdx];
+  if(!e)return;
+  var sel=$('resEdit-'+idx),hg=$('hgEdit-'+idx),ag=$('agEdit-'+idx);
+  e.result=sel.value||'';
+  if(!e.inputs)e.inputs={};
+  e.inputs.homeGoals=hg.value||'';
+  e.inputs.awayGoals=ag.value||'';
+  if(e.result&&e.stake>0){
+    if(e.result===e.pick){e.pl=e.pickOdds?Math.round(e.stake*(e.pickOdds-1)):Math.round(e.stake*((1/e.pickProb)-1));}
+    else{e.pl=-e.stake;}
+  } else {e.pl=0;}
+  saveHistoryToStorage();renderHistory();window.renderProfitTracker();
+};
+
 function escHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+window.syncGoalsResult=function(){
+  var h=$('homeGoals'),a=$('awayGoals'),r=$('matchResult');
+  if(!h||!a||!r)return;
+  var hv=parseInt(h.value),av=parseInt(a.value);
+  if(!isNaN(hv)&&!isNaN(av)){r.value=hv>av?'1':hv===av?'X':'2';}
+  else if(h.value===''&&a.value===''){r.value='';}
+};
+window.clearGoalsOnManual=function(){
+  var h=$('homeGoals'),a=$('awayGoals');
+  if(h)h.value='';if(a)a.value='';
+};
 
 // ── Input helpers ──────────────────────────────────────────────
 function getNum(id){
@@ -634,50 +730,6 @@ document.querySelectorAll('.field input').forEach(inp=>{
   });
 });
 
-// ── Bk line inputs: allow digits, one leading minus, one dot ──
-['bkOULine','bkAHLine'].forEach(id=>{
-  const el=$(id); if(!el) return;
-  el.addEventListener('keydown',function(e){
-    // Allow: backspace, delete, tab, escape, arrows, home, end
-    if([8,9,27,35,36,37,38,39,40,46].includes(e.keyCode)) return;
-    // Allow Ctrl/Cmd shortcuts
-    if((e.ctrlKey||e.metaKey)&&['a','c','v','x'].includes(e.key)) return;
-    // Allow minus only at position 0 and only if not already present
-    if(e.key==='-'&&this.selectionStart===0&&!this.value.includes('-')) return;
-    // Allow plus only at position 0 and only if no sign present
-    if(e.key==='+'&&this.selectionStart===0&&!this.value.includes('-')&&!this.value.includes('+')) return;
-    // Allow one dot
-    if(e.key==='.'&&!this.value.includes('.')) return;
-    // Allow 0-9
-    if(e.key>='0'&&e.key<='9') return;
-    e.preventDefault();
-  });
-  el.addEventListener('input',function(){
-    // Strip anything not a digit, dot, leading minus, or leading plus
-    let v=this.value;
-    // Remove leading plus (we accept it visually but normalize)
-    v=v.replace(/^\+/,'');
-    // Keep only: optional leading minus, digits, one dot
-    const neg=v.startsWith('-');
-    let body=v.replace(/[^0-9.]/g,'');
-    // Only one dot allowed
-    const parts=body.split('.');
-    if(parts.length>2) body=parts[0]+'.'+parts.slice(1).join('');
-    this.value=(neg?'-':'')+body;
-    // Validation highlight
-    if(this.value===''||this.value==='-'){this.classList.remove('err','ok');return;}
-    const n=parseFloat(this.value);
-    if(isNaN(n)){this.classList.add('err');this.classList.remove('ok');}
-    else{this.classList.remove('err');this.classList.add('ok');}
-  });
-  el.addEventListener('blur',function(){
-    if(this.value===''||this.value==='-'){this.classList.remove('err','ok');return;}
-    const n=parseFloat(this.value);
-    if(isNaN(n)){this.classList.add('err');this.classList.remove('ok');}
-    else{this.classList.remove('err');this.classList.add('ok');}
-  });
-});
-
 // ══════════════════════════════════════════════════════════════
 //  MATH CORE
 // ══════════════════════════════════════════════════════════════
@@ -691,8 +743,11 @@ function poisson(lam,k){
 function calcDynamicRho(lh,la){
   const total=lh+la;
   if(total<=0) return -0.13;
-  const rho=-(0.08+0.04/total);
-  return Math.max(-0.20,Math.min(-0.06,rho));
+  const base=-(0.08+0.04/total);
+  // Exponential decay after DC threshold (~2.8 xG total) — at high xG the low-score
+  // correction should vanish because Poisson already handles those scores correctly.
+  const decay=Math.exp(-Math.max(0,total-2.8)*0.4);
+  return Math.max(-0.20,base*decay);
 }
 
 function dcCorrection(i,j,lH,lA,rho){
@@ -812,8 +867,8 @@ function parseFormString(str){
     if(l==='W')pts+=3*w;
     else if(l==='D')pts+=1*w; // Draw = 1pt not 1.5 — draws signal stagnation, not strong form
   });
-  // 0 pts => 0.82, full pts => 1.18  (wider range; neutral ~5-game PPG of 1.2 lands near 1.0)
-  return 0.82+(pts/maxPts)*0.36;
+  // 0 pts => 0.70, full pts => 1.30  (professional range; neutral ~5-game PPG of 1.2 lands near 1.0)
+  return 0.70+(pts/maxPts)*0.60;
 }
 
 function parseWDL(w,d,l){
@@ -826,8 +881,8 @@ function parseWDL(w,d,l){
 }
 
 function getHomeAdv(compType){
-  const map={league:0.30,cup:0.18,playoff:0.22,friendly:0.08};
-  return map[compType]!==undefined?map[compType]:0.30;
+  const map={league:0.25,cup:0.15,playoff:0.18,friendly:0.06};
+  return map[compType]!==undefined?map[compType]:0.25;
 }
 
 function compModifier(compType){
@@ -835,147 +890,67 @@ function compModifier(compType){
   return mods[compType]||mods.league;
 }
 
+function getHistoricalBaseline(){
+  var h=window._predictionHistory||[],withResult=h.filter(function(e){return e.result&&e.result!==''&&e.homeXG!=null;});
+  if(withResult.length<25)return null;
+  var totalXG=0,realXG=0,realCount=0,totalMatches=0,homeWins=0;
+  for(var i=0;i<withResult.length;i++){
+    var e=withResult[i];
+    totalMatches++;
+    if(e.result==='1')homeWins++;
+    // Prefer actual goals over model xG
+    var hg=e.inputs&&e.inputs.homeGoals?parseInt(e.inputs.homeGoals):null;
+    var ag=e.inputs&&e.inputs.awayGoals?parseInt(e.inputs.awayGoals):null;
+    if(hg!==null&&ag!==null&&!isNaN(hg)&&!isNaN(ag)){
+      realXG+=hg+ag;realCount++;
+    }else{
+      totalXG+=e.homeXG+e.awayXG;
+    }
+  }
+  var avgTotalXG=realCount>=5?(realXG/realCount):(totalXG/totalMatches);
+  var homeWinRate=homeWins/totalMatches;
+  var homeAdvBase=Math.min(0.50,Math.max(0.05,(homeWinRate-0.35)*1.5));
+  return{leagueBase:Math.round(avgTotalXG/2*100)/100,homeAdv:+homeAdvBase.toFixed(3),matchCount:totalMatches,usingActualGoals:realCount>=5};
+}
+
 // ── XG Computation ────────────────────────────────────────────
-function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awayGAAll){
-  let splitCount=0,combinedCount=0;
-  if(hv(homeGF))splitCount++;if(hv(homeGA))splitCount++;
-  if(hv(awayGF))splitCount++;if(hv(awayGA))splitCount++;
-  if(hv(homeGFAll))combinedCount++;if(hv(homeGAAll))combinedCount++;
-  if(hv(awayGFAll))combinedCount++;if(hv(awayGAAll))combinedCount++;
-  const hasSplit=splitCount>=2,hasCombined=combinedCount>=2;
+function computeXG(homeGF,homeGA,awayGF,awayGA,venueScope){
+  let combinedCount=0;
+  if(hv(homeGF))combinedCount++;if(hv(homeGA))combinedCount++;
+  if(hv(awayGF))combinedCount++;if(hv(awayGA))combinedCount++;
+  const hasCombined=combinedCount>=2;
   const compTypeVal=getStr('compType')||'league';
-  const homeAdv=getHomeAdv(compTypeVal);
-  const homeW=getInt('homeW'),homeD=getInt('homeD'),homeL=getInt('homeL');
-  const awayW=getInt('awayW'),awayD=getInt('awayD'),awayL=getInt('awayL');
+  const histBase=getHistoricalBaseline();
+  const homeAdv=histBase?histBase.homeAdv:getHomeAdv(compTypeVal);
   const homeWAll=getInt('homeWAll'),homeDAll=getInt('homeDAll'),homeLAll=getInt('homeLAll');
   const awayWAll=getInt('awayWAll'),awayDAll=getInt('awayDAll'),awayLAll=getInt('awayLAll');
-  const homeGFL6=getNum('homeGFL6'),homeGAL6=getNum('homeGAL6');
-  const awayGFL6=getNum('awayGFL6'),awayGAL6=getNum('awayGAL6');
-  const homeWL6=getInt('homeWL6'),homeDL6=getInt('homeDL6'),homeLL6=getInt('homeLL6');
-  const awayWL6=getInt('awayWL6'),awayDL6=getInt('awayDL6'),awayLL6=getInt('awayLL6');
-  const hasL6=hv(homeGFL6)||hv(homeGAL6)||hv(awayGFL6)||hv(awayGAL6);
-  const hasL6WDL=hv(homeWL6)||hv(homeDL6)||hv(homeLL6)||hv(awayWL6)||hv(awayDL6)||hv(awayLL6);
-  const leagueBase=1.35;
+  const leagueBase=histBase?histBase.leagueBase:1.30;
   let homeXG,awayXG,dataSource,confidence,
       homeAttackStr=1,homeDefenseStr=1,awayAttackStr=1,awayDefenseStr=1,
-      homeAttackStrL6=null,homeDefenseStrL6=null,awayAttackStrL6=null,awayDefenseStrL6=null,
-      dataQualityScore=0,ciWidth=0,statDivergenceWarning=false;
-  if(hasL6){
-    const hGF_L6=hv(homeGFL6)?homeGFL6:leagueBase;
-    const hGA_L6=hv(homeGAL6)?homeGAL6:leagueBase;
-    const aGF_L6=hv(awayGFL6)?awayGFL6:leagueBase;
-    const aGA_L6=hv(awayGAL6)?awayGAL6:leagueBase;
-    homeAttackStrL6=hGF_L6/leagueBase;homeDefenseStrL6=hGA_L6/leagueBase;
-    awayAttackStrL6=aGF_L6/leagueBase;awayDefenseStrL6=aGA_L6/leagueBase;
-  }
-
-  if(hasSplit&&hasCombined){
-    const hGF_s=hv(homeGF)?homeGF:homeGFAll*0.9,hGA_s=hv(homeGA)?homeGA:homeGAAll*1.05;
-    const aGF_s=hv(awayGF)?awayGF:awayGFAll*0.85,aGA_s=hv(awayGA)?awayGA:awayGFAll*1.15;
-    const leagueAvg=leagueBase;
-    homeAttackStr=hGF_s/leagueAvg;awayDefenseStr=aGA_s/leagueAvg;
-    awayAttackStr=aGF_s/leagueAvg;homeDefenseStr=hGA_s/leagueAvg;
-    const cGF=hv(homeGFAll)?homeGFAll:hGF_s,cGA=hv(homeGAAll)?homeGAAll:hGA_s;
-    const caGF=hv(awayGFAll)?awayGFAll:aGF_s,caGA=hv(awayGAAll)?awayGAAll:aGA_s;
-    const hxS=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
-    const axS=leagueAvg*awayAttackStr*homeDefenseStr;
-    const hxC=((cGF+caGA)/2)*1.08,axC=(caGF+cGA)/2;
-    if(hasL6){
-      const hxL6=leagueAvg*homeAttackStrL6*awayDefenseStrL6+homeAdv;
-      const axL6=leagueAvg*awayAttackStrL6*homeDefenseStrL6;
-      homeXG=hxS*0.35+hxC*0.20+hxL6*0.45;
-      awayXG=axS*0.35+axC*0.20+axL6*0.45;
-      dataSource='Split+Combined+L6 (35/20/45)';
-    } else {
-      homeXG=hxS*0.6+hxC*0.4;
-      awayXG=axS*0.6+axC*0.4;
-      dataSource='Split+Combined Fusion (60/40)';
-    }
-    confidence=splitCount===4&&combinedCount===4?'HIGH':'MEDIUM';
-    const checks=[
-      {a:hv(homeGF)?homeGF:null,b:hv(homeGFAll)?homeGFAll:null},
-      {a:hv(homeGA)?homeGA:null,b:hv(homeGAAll)?homeGAAll:null},
-      {a:hv(awayGF)?awayGF:null,b:hv(awayGFAll)?awayGFAll:null},
-      {a:hv(awayGA)?awayGA:null,b:hv(awayGAAll)?awayGAAll:null},
-      {a:hv(homeGFL6)?homeGFL6:null,b:hv(homeGF)?homeGF:null},
-      {a:hv(homeGAL6)?homeGAL6:null,b:hv(homeGA)?homeGA:null},
-      {a:hv(awayGFL6)?awayGFL6:null,b:hv(awayGF)?awayGF:null},
-      {a:hv(awayGAL6)?awayGAL6:null,b:hv(awayGA)?awayGA:null},
-      {a:hv(homeGFL6)?homeGFL6:null,b:hv(homeGFAll)?homeGFAll:null},
-      {a:hv(homeGAL6)?homeGAL6:null,b:hv(homeGAAll)?homeGAAll:null},
-      {a:hv(awayGFL6)?awayGFL6:null,b:hv(awayGFAll)?awayGFAll:null},
-      {a:hv(awayGAL6)?awayGAL6:null,b:hv(awayGAAll)?awayGAAll:null},
-    ];
-    let penalty=0;
-    checks.forEach(c=>{
-      if(c.a!==null&&c.b!==null&&Math.abs(c.a-c.b)>0.5)penalty+=10;
-    });
-    penalty=Math.min(penalty,35);
-    if(penalty>0)statDivergenceWarning=true;
-    const fieldsFilled=splitCount+combinedCount;
-    const baseScore=(fieldsFilled/8)*70;
-    const consistencyBonus=(hasSplit&&hasCombined)?20:0;
-    const homeFormStr=getStr('homeForm'),awayFormStr=getStr('awayForm');
-    const formBonus=(homeFormStr.length>=3&&awayFormStr.length>=3)?5:0;
-    const l6Bonus=(hasL6?3:0)+(hasL6WDL?3:0);
-    dataQualityScore=Math.max(20,Math.min(100,Math.round(baseScore+consistencyBonus+formBonus+l6Bonus-penalty)));
-  } else if(hasSplit){
+      dataQualityScore=0,ciWidth=0;
+  if(hasCombined){
     const hGF=hv(homeGF)?homeGF:leagueBase,hGA=hv(homeGA)?homeGA:leagueBase;
     const aGF=hv(awayGF)?awayGF:leagueBase,aGA=hv(awayGA)?awayGA:leagueBase;
     const leagueAvg=leagueBase;
     homeAttackStr=hGF/leagueAvg;awayDefenseStr=aGA/leagueAvg;
     awayAttackStr=aGF/leagueAvg;homeDefenseStr=hGA/leagueAvg;
-    const hxS=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
-    const axS=leagueAvg*awayAttackStr*homeDefenseStr;
-    if(hasL6){
-      const hxL6=leagueAvg*homeAttackStrL6*awayDefenseStrL6+homeAdv;
-      const axL6=leagueAvg*awayAttackStrL6*homeDefenseStrL6;
-      homeXG=hxS*0.55+hxL6*0.45;
-      awayXG=axS*0.55+axL6*0.45;
-      dataSource=splitCount===4?'Split+L6 (55/45)':'Split+L6 partial';
-    } else {
-      homeXG=hxS;
-      awayXG=axS;
-      dataSource=splitCount===4?'Split Stats Only':'Split Stats (partial)';
-    }
-    confidence=splitCount===4?'HIGH':'MEDIUM';
-    const fieldsFilled=splitCount+combinedCount;
-    const homeFormStr=getStr('homeForm'),awayFormStr=getStr('awayForm');
-    const formBonus=(homeFormStr.length>=3&&awayFormStr.length>=3)?5:0;
-    const l6Bonus=(hasL6?5:0)+(hasL6WDL?3:0);
-    dataQualityScore=Math.max(20,Math.min(100,Math.round((fieldsFilled/8)*70+formBonus+l6Bonus)));
-  } else if(hasCombined){
-    const hGF=hv(homeGFAll)?homeGFAll:leagueBase,hGA=hv(homeGAAll)?homeGAAll:leagueBase;
-    const aGF=hv(awayGFAll)?awayGFAll:leagueBase,aGA=hv(awayGAAll)?awayGAAll:leagueBase;
-    const leagueAvg=leagueBase;
-    homeAttackStr=hGF/leagueAvg;awayDefenseStr=aGA/leagueAvg;
-    awayAttackStr=aGF/leagueAvg;homeDefenseStr=hGA/leagueAvg;
+    // Bayesian shrinkage toward 1.0 (league average) — extreme values from small samples get pulled back
+    const priorWeight=15,dataWeight=combinedCount*5,shrinkFactor=dataWeight/(dataWeight+priorWeight);
+    homeAttackStr=1+(homeAttackStr-1)*shrinkFactor;
+    awayDefenseStr=1+(awayDefenseStr-1)*shrinkFactor;
+    awayAttackStr=1+(awayAttackStr-1)*shrinkFactor;
+    homeDefenseStr=1+(homeDefenseStr-1)*shrinkFactor;
     const hxC=leagueAvg*homeAttackStr*awayDefenseStr+homeAdv;
     const axC=leagueAvg*awayAttackStr*homeDefenseStr;
-    if(hasL6){
-      const hxL6=leagueAvg*homeAttackStrL6*awayDefenseStrL6+homeAdv;
-      const axL6=leagueAvg*awayAttackStrL6*homeDefenseStrL6;
-      homeXG=hxC*0.40+hxL6*0.60;
-      awayXG=axC*0.40+axL6*0.60;
-      dataSource=combinedCount===4?'Combined+L6 (40/60)':'Combined+L6 partial';
-    } else {
-      homeXG=hxC;
-      awayXG=axC;
-      dataSource=combinedCount===4?'Combined Stats Only':'Combined Stats (partial)';
-    }
+    homeXG=hxC;
+    awayXG=axC;
+    dataSource='Combined Stats ('+(venueScope==='all'?'All Venues':'H/A Split')+')';
     confidence=combinedCount===4?'HIGH':'LOW';
-    const fieldsFilled=splitCount+combinedCount;
-    const l6Bonus=(hasL6?5:0)+(hasL6WDL?3:0);
-    dataQualityScore=Math.max(20,Math.min(100,Math.round((fieldsFilled/8)*70+l6Bonus)));
+    const fieldsFilled=combinedCount;
+    dataQualityScore=Math.max(20,Math.min(100,Math.round((fieldsFilled/4)*70)));
   } else {
-    if(hasL6&&homeAttackStrL6!==null&&awayAttackStrL6!==null){
-      homeXG=leagueBase*homeAttackStrL6*awayDefenseStrL6+homeAdv;
-      awayXG=leagueBase*awayAttackStrL6*homeDefenseStrL6;
-      dataSource='Last 6 Only';confidence='LOW';
-    } else {
-      homeXG=leagueBase+homeAdv;awayXG=leagueBase;
-      dataSource='League defaults';confidence='LOW';
-    }
+    homeXG=leagueBase+homeAdv;awayXG=leagueBase;
+    dataSource='League defaults';confidence='LOW';
     dataQualityScore=20;
   }
 
@@ -985,91 +960,85 @@ function computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awa
   homeXG*=compMod.home;
   awayXG*=compMod.away;
 
-  const homeWDLMod=parseWDL(homeW,homeD,homeL);
-  const awayWDLMod=parseWDL(awayW,awayD,awayL);
   const homeWDLAllMod=parseWDL(homeWAll,homeDAll,homeLAll);
   const awayWDLAllMod=parseWDL(awayWAll,awayDAll,awayLAll);
-  const homeWDL6Mod=parseWDL(homeWL6,homeDL6,homeLL6);
-  const awayWDL6Mod=parseWDL(awayWL6,awayDL6,awayLL6);
   let homeWDLCombined=null,awayWDLCombined=null,
-      homeWDLStr=null,awayWDLStr=null,
       homeWDLAllStr=null,awayWDLAllStr=null,
-      homeWDL6Str=null,awayWDL6Str=null,
       hasWDL=false;
-  if(hv(homeW)){homeWDLStr='W'+homeW+' D'+homeD+' L'+homeL;hasWDL=true;}
-  if(hv(awayW)){awayWDLStr='W'+awayW+' D'+awayD+' L'+awayL;hasWDL=true;}
   if(hv(homeWAll)){homeWDLAllStr='W'+homeWAll+' D'+homeDAll+' L'+homeLAll;hasWDL=true;}
   if(hv(awayWAll)){awayWDLAllStr='W'+awayWAll+' D'+awayDAll+' L'+awayLAll;hasWDL=true;}
-  if(hv(homeWL6)||hv(homeDL6)||hv(homeLL6)){homeWDL6Str='W'+(homeWL6||0)+' D'+(homeDL6||0)+' L'+(homeLL6||0);hasWDL=true;}
-  if(hv(awayWL6)||hv(awayDL6)||hv(awayLL6)){awayWDL6Str='W'+(awayWL6||0)+' D'+(awayDL6||0)+' L'+(awayLL6||0);hasWDL=true;}
-  // Home WDL three-way blend (venue 30%, all 15%, last6 55%)
-  if(hv(homeWDLMod)&&hv(homeWDLAllMod)&&hv(homeWDL6Mod)){
-    homeWDLCombined=homeWDLMod*0.30+homeWDLAllMod*0.15+homeWDL6Mod*0.55;
-  } else if(hv(homeWDLMod)&&hv(homeWDL6Mod)){
-    homeWDLCombined=homeWDLMod*0.40+homeWDL6Mod*0.60;
-  } else if(hv(homeWDLAllMod)&&hv(homeWDL6Mod)){
-    homeWDLCombined=homeWDLAllMod*0.30+homeWDL6Mod*0.70;
-  } else if(hv(homeWDLMod)&&hv(homeWDLAllMod)){
-    homeWDLCombined=homeWDLMod*0.70+homeWDLAllMod*0.30;
-  } else if(hv(homeWDLMod)) homeWDLCombined=homeWDLMod;
-  else if(hv(homeWDLAllMod)) homeWDLCombined=homeWDLAllMod;
-  else if(hv(homeWDL6Mod)) homeWDLCombined=homeWDL6Mod;
-  // Away WDL three-way blend
-  if(hv(awayWDLMod)&&hv(awayWDLAllMod)&&hv(awayWDL6Mod)){
-    awayWDLCombined=awayWDLMod*0.30+awayWDLAllMod*0.15+awayWDL6Mod*0.55;
-  } else if(hv(awayWDLMod)&&hv(awayWDL6Mod)){
-    awayWDLCombined=awayWDLMod*0.40+awayWDL6Mod*0.60;
-  } else if(hv(awayWDLAllMod)&&hv(awayWDL6Mod)){
-    awayWDLCombined=awayWDLAllMod*0.30+awayWDL6Mod*0.70;
-  } else if(hv(awayWDLMod)&&hv(awayWDLAllMod)){
-    awayWDLCombined=awayWDLMod*0.70+awayWDLAllMod*0.30;
-  } else if(hv(awayWDLMod)) awayWDLCombined=awayWDLMod;
-  else if(hv(awayWDLAllMod)) awayWDLCombined=awayWDLAllMod;
-  else if(hv(awayWDL6Mod)) awayWDLCombined=awayWDL6Mod;
+  if(hv(homeWDLAllMod)) homeWDLCombined=homeWDLAllMod;
+  if(hv(awayWDLAllMod)) awayWDLCombined=awayWDLAllMod;
   if(hasWDL) dataQualityScore=Math.max(20,Math.min(100,Math.round(dataQualityScore)+8));
+
+  homeXG*=homeFormMult;
+  awayXG*=awayFormMult;
+  if(hv(homeWDLCombined)) homeXG*=homeWDLCombined;
+  if(hv(awayWDLCombined)) awayXG*=awayWDLCombined;
 
   homeXG=Math.max(0.1,Math.min(9,homeXG));
   awayXG=Math.max(0.1,Math.min(9,awayXG));
 
-  const fieldsFilled=splitCount+combinedCount;
-  ciWidth=fieldsFilled>=8?0.12:fieldsFilled>=6?0.22:fieldsFilled>=4?0.35:0.55;
+  ciWidth=combinedCount>=4?0.35:combinedCount>=2?0.55:0.75;
+  if(histBase)dataSource+=' · Hist baseline ('+histBase.leagueBase.toFixed(2)+' avg xG, +'+homeAdv.toFixed(2)+' HA'+(histBase.usingActualGoals?' from actual scores':' from model xG')+')';
 
   return{
     homeXG:+homeXG.toFixed(2),awayXG:+awayXG.toFixed(2),
     homeAttackStr:+homeAttackStr.toFixed(2),homeDefenseStr:+homeDefenseStr.toFixed(2),
     awayAttackStr:+awayAttackStr.toFixed(2),awayDefenseStr:+awayDefenseStr.toFixed(2),
-    homeAttackStrL6:homeAttackStrL6!==null?+homeAttackStrL6.toFixed(2):null,
-    homeDefenseStrL6:homeDefenseStrL6!==null?+homeDefenseStrL6.toFixed(2):null,
-    awayAttackStrL6:awayAttackStrL6!==null?+awayAttackStrL6.toFixed(2):null,
-    awayDefenseStrL6:awayDefenseStrL6!==null?+awayDefenseStrL6.toFixed(2):null,
-    dataSource,confidence,dataQualityScore,ciWidth,
+    dataSource,confidence,dataQualityScore,ciWidth,histBase,
     homeFormStr,awayFormStr,homeFormMult,awayFormMult,compType:compTypeVal,
-    homeAdv,statDivergenceWarning,
-    homeWDLCombined,awayWDLCombined,homeWDLStr,awayWDLStr,
-    homeWDLAllStr,awayWDLAllStr,homeWDL6Str,awayWDL6Str,hasWDL
+    homeAdv,statDivergenceWarning:false,
+    homeWDLCombined,awayWDLCombined,homeWDLAllStr,awayWDLAllStr,hasWDL
   };
 }
 
 // ── Monte Carlo (12,000 iterations) ───────────────────────────
-function runSimulation(homeXG,awayXG,n){
-  n=n||12000;
-  let homeWins=0,draws=0,awayWins=0,over25=0,bttsY=0;
-  // FIX: log-uniform Poisson sampler — unbiased at all lambda values
-  // Previous do-while with k<20 cap introduced systematic undercount at lambda>4
-  function samplePoisson(lam){
-    if(lam<=0)return 0;
-    let k=-1,logP=0;
-    const logL=-lam;
-    do{k++;logP+=Math.log(Math.random());}while(logP>logL);
-    return k;
+// ── Negative binomial helpers (Gamma-Poisson mixture) ──────
+function normalSample(){
+  let u,v,s;
+  do{u=2*Math.random()-1;v=2*Math.random()-1;s=u*u+v*v;}while(s>=1||s===0);
+  return u*Math.sqrt(-2*Math.log(s)/s);
+}
+function sampleGamma(shape,scale){
+  // Marsaglia-Tsang for shape>=1
+  const d=shape-1/3,c=1/Math.sqrt(9*d);
+  for(;;){
+    let x,v;
+    do{x=normalSample();v=1+c*x;}while(v<=0);
+    v=v*v*v;
+    const u=Math.random();
+    if(u<1-0.0331*x*x*x*x)return d*v*scale;
+    if(Math.log(u)<0.5*x*x+d*(1-v+Math.log(v)))return d*v*scale;
   }
+}
+function sampleNegBinom(mu,alpha){
+  // NB2: variance = mu + alpha*mu^2. Gamma(1/alpha, alpha*mu) then Poisson.
+  if(mu<=0)return 0;
+  const theta=sampleGamma(1/alpha,alpha*mu);
+  let k=-1,logP=0,logL=-theta;
+  do{k++;logP+=Math.log(Math.random());}while(logP>logL);
+  return k;
+}
+
+function runSimulation(homeXG,awayXG,n,dispersion){
+  n=n||12000;
+  dispersion=dispersion||0.20; // NB2 overdispersion parameter
+  let homeWins=0,draws=0,awayWins=0,over25=0,bttsY=0;
+  const scoreCounts={};
   for(let i=0;i<n;i++){
-    const hg=samplePoisson(homeXG),ag=samplePoisson(awayXG);
+    const hg=sampleNegBinom(homeXG,dispersion),ag=sampleNegBinom(awayXG,dispersion);
     if(hg>ag)homeWins++;else if(hg===ag)draws++;else awayWins++;
     if(hg+ag>2.5)over25++;
     if(hg>=1&&ag>=1)bttsY++;
+    const key=hg+'-'+ag;
+    scoreCounts[key]=(scoreCounts[key]||0)+1;
   }
-  return{homeWins:homeWins/n,draws:draws/n,awayWins:awayWins/n,over25:over25/n,bttsY:bttsY/n};
+  const mcScores=Object.entries(scoreCounts).map(([k,c])=>{
+    const [h,a]=k.split('-').map(Number);
+    return{home:h,away:a,p:c/n};
+  }).sort((a,b)=>b.p-a.p).slice(0,12);
+  return{homeWins:homeWins/n,draws:draws/n,awayWins:awayWins/n,over25:over25/n,bttsY:bttsY/n,mcScores};
 }
 
 // ── Fair Value Engine ──────────────────────────────────────────
@@ -1180,8 +1149,8 @@ function renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goa
     const hwC=xgResult.homeWDLCombined!==null?(xgResult.homeWDLCombined>1.01?'var(--green)':xgResult.homeWDLCombined<0.97?'var(--red)':'var(--amber)'):'var(--muted)';
     const awC=xgResult.awayWDLCombined!==null?(xgResult.awayWDLCombined>1.01?'var(--green)':xgResult.awayWDLCombined<0.97?'var(--red)':'var(--amber)'):'var(--muted)';
     const wdlDiff=xgResult.homeWDLCombined!==null&&xgResult.awayWDLCombined!==null?+((xgResult.homeWDLCombined-xgResult.awayWDLCombined)*100).toFixed(1):null;
-    const hwS=(xgResult.homeWDLStr||'')+(xgResult.homeWDLAllStr?', '+(xgResult.homeWDLAllStr||''):'')+(xgResult.homeWDL6Str?' · L6: '+xgResult.homeWDL6Str:'');
-    const awS=(xgResult.awayWDLStr||'')+(xgResult.awayWDLAllStr?', '+(xgResult.awayWDLAllStr||''):'')+(xgResult.awayWDL6Str?' · L6: '+xgResult.awayWDL6Str:'');
+    const hwS=(xgResult.homeWDLStr||'')+(xgResult.homeWDLAllStr?', '+(xgResult.homeWDLAllStr||''):'');
+    const awS=(xgResult.awayWDLStr||'')+(xgResult.awayWDLAllStr?', '+(xgResult.awayWDLAllStr||''):'');
     html+='<div class="metric-row">';
     html+='<div class="metric"><div class="ml">Home WDL</div><div class="mv" style="color:'+hwC+';font-size:18px">'+(hwP!==null?(xgResult.homeWDLCombined>=1?'+':'')+hwP+'%':'—')+'</div><div class="ms">'+hwS+'</div></div>';
     html+='<div class="metric"><div class="ml">Away WDL</div><div class="mv" style="color:'+awC+';font-size:18px">'+(awP!==null?(xgResult.awayWDLCombined>=1?'+':'')+awP+'%':'—')+'</div><div class="ms">'+awS+'</div></div>';
@@ -1236,129 +1205,127 @@ function renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goa
 }
 
 // ══════════════════════════════════════════════════════════════
-//  RENDER — SIM TAB
+//  RENDER — SIM TAB (main dashboard)
 // ══════════════════════════════════════════════════════════════
-function renderSimTab(sim,prbs,btts,totalXG,mat){
+function renderSimTab(sim,prbs,btts,totalXG,mat,xg){
   const ou25=mat?calcOU(mat,2.5):{over:0.5,under:0.5};
 
-  function simRow(label,simVal,modelVal,color){
-    const pct=(simVal*100).toFixed(1);
-    const drift=Math.abs(simVal-modelVal)*100;
-    const dC=drift<2?'var(--green)':drift<5?'var(--amber)':'var(--red)';
-    return '<div class="sim-row">'+
-      '<div class="sim-lbl">'+label+'</div>'+
-      '<div class="sim-track"><div class="sim-fill" style="width:'+pct+'%;background:'+color+'"><span class="sim-val">'+fp(simVal)+'</span></div></div>'+
-      '<div class="sim-model">Model: '+fp(modelVal)+'<br><span style="color:'+dC+'">Δ'+drift.toFixed(1)+'%</span></div>'+
-    '</div>';
+  function driftPct(simVal,modelVal){
+    return Math.abs(simVal-modelVal)*100;
   }
 
-  let html='<div class="card"><div class="card-title">🎲 Monte Carlo Simulation (12,000 Iterations)</div>';
-  html+='<div style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.6">Random Poisson sampling run 12,000 times. Δ column shows deviation from analytical model — gaps over 3% indicate high match uncertainty.</div>';
-  html+=simRow('Home Win',sim.homeWins,prbs.h,'var(--green)');
-  html+=simRow('Draw',sim.draws,prbs.d,'var(--amber)');
-  html+=simRow('Away Win',sim.awayWins,prbs.a,'var(--red)');
-  html+=simRow('Over 2.5',sim.over25,ou25.over,'var(--over)');
-  html+=simRow('BTTS Yes',sim.bttsY,btts,'var(--under)');
-  html+='<div class="note" style="margin-top:12px">Δ under 2% = model stable. 2–5% = moderate uncertainty. Over 5% = results sensitive to assumptions — reduce stake size.</div>';
+  function driftColor(d){
+    return d<2?'var(--green)':d<5?'var(--amber)':'var(--red)';
+  }
+
+  // ── Item 1: Three gauge cards ──
+  const items=[
+    {label:'Home Win', sim:sim.homeWins, model:prbs.h, color:'var(--green)'},
+    {label:'Draw',     sim:sim.draws,    model:prbs.d, color:'var(--amber)'},
+    {label:'Away Win', sim:sim.awayWins, model:prbs.a, color:'var(--over)'},
+  ];
+
+  function gaugeRing(pct,color,size){
+    const r=(size/2)-4,circ=2*Math.PI*r,offset=circ-(pct/100*circ);
+    return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
+      '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="var(--border)" stroke-width="4"/>'+
+      '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-dasharray="'+circ+'" stroke-dashoffset="'+offset+'" stroke-linecap="round" transform="rotate(-90,'+size/2+','+size/2+')"/>'+
+    '</svg>';
+  }
+
+  let html='';
+  html+='<div class="status-ok" style="margin-bottom:14px">🎲 <strong>Monte Carlo Dashboard</strong> — 12,000 negative binomial iterations (α=0.20) · Comparing simulation against analytical model · Higher Δ = more uncertainty</div>';
+
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">';
+  items.forEach(it=>{
+    const simPct=(it.sim*100).toFixed(1);
+    const drift=driftPct(it.sim,it.model);
+    const dC=driftColor(drift);
+    const verdict=drift<2?'✓ Aligned':drift<5?'~ Moderate':'⚠ Divergent';
+    html+='<div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;position:relative;overflow:hidden">';
+    html+='<div style="position:absolute;top:0;left:0;right:0;height:3px;background:'+it.color+'"></div>';
+    html+='<div style="font-size:11px;font-weight:700;color:'+it.color+';letter-spacing:1px;text-transform:uppercase;margin-bottom:14px">'+it.label+'</div>';
+    html+='<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px">';
+    html+=gaugeRing(simPct,it.color,64);
+    html+='<div style="font-size:36px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+it.color+'">'+simPct+'%</div>';
+    html+='</div>';
+    html+='<div style="font-size:10px;color:var(--muted2);font-family:\'JetBrains Mono\',monospace;margin-bottom:6px">MC: '+fp(it.sim)+' · Model: '+fp(it.model)+'</div>';
+    html+='<div style="display:flex;align-items:center;justify-content:center;gap:6px"><span style="font-size:10px;color:'+dC+';font-weight:700;font-family:\'JetBrains Mono\',monospace">Δ '+drift.toFixed(1)+'%</span><span style="font-size:9px;color:var(--muted2)">'+verdict+'</span></div>';
+    html+='</div>';
+  });
   html+='</div>';
-  return html;
-}
 
-// ══════════════════════════════════════════════════════════════
-//  RENDER — O/U TAB
-// ══════════════════════════════════════════════════════════════
-function renderOUTab(ouData,mat,bkAnalysis){
-  // Build a quick lookup from bkAnalysis items
-  const bkLookup = {};
-  if(bkAnalysis) bkAnalysis.items.filter(it=>it.cat==='O/U').forEach(it=>{ bkLookup[it.market] = it; });
 
-  let html='<div class="card"><div class="card-title">Over / Under Goal Lines</div>';
-  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:360px">';
-  const hasBkOU = Object.keys(bkLookup).length > 0;
-  html+='<thead><tr><th>Line</th><th>Over %</th><th>Under %</th><th>Fair O</th><th>Fair U</th><th>Signal</th>'+(hasBkOU?'<th>Bk Edge</th>':'')+'</tr></thead><tbody>';
-  ouData.forEach(o=>{
-    const diff=o.over-o.under;
-    const sig=diff>0.02?'<span class="sig over">OVER</span>':diff<-0.02?'<span class="sig under">UNDER</span>':'<span class="sig fair">EVEN</span>';
-    const overKey='Over '+o.line, underKey='Under '+o.line;
-    const bkOver=bkLookup[overKey], bkUnder=bkLookup[underKey];
-    let edgeCell='';
-    if(hasBkOU){
-      if(bkOver||bkUnder){
-        edgeCell='<td style="font-size:11px">'+(bkOver&&bkOver.edge!==null?edgeBadge(bkOver.edge):bkUnder&&bkUnder.edge!==null?edgeBadge(bkUnder.edge):'—')+'</td>';
-      } else {
-        edgeCell='<td style="color:var(--muted);font-size:10px">—</td>';
-      }
-    }
-    html+='<tr><td style="font-weight:700">'+o.line+'</td><td style="color:var(--over)">'+fp(o.over)+'</td><td style="color:var(--under)">'+fp(o.under)+'</td><td>'+fo(o.over)+'</td><td>'+fo(o.under)+'</td><td>'+sig+'</td>'+edgeCell+'</tr>';
-  });
-  html+='</tbody></table></div></div>';
+  // ── Item 6: Kelly stake from MC 1x2 ──
+  const mc1x2=[
+    {label:'Home Win',prob:sim.homeWins},
+    {label:'Draw',prob:sim.draws},
+    {label:'Away Win',prob:sim.awayWins},
+  ];
+  const topMc=mc1x2.reduce((a,b)=>a.prob>b.prob?a:b);
+  const mcKelly=calcProbStake(topMc.prob);
+  const stakeColor=topMc.label==='Home Win'?'var(--green)':topMc.label==='Draw'?'var(--amber)':'var(--red)';
 
-  let totalGoalsDist=[];
-  for(let g=0;g<=9;g++){let gp=0;for(let i=0;i<=MAX;i++)for(let j=0;j<=MAX;j++){if(i+j===g)gp+=(mat[i]?.[j]||0);}totalGoalsDist.push({goals:g,prob:gp});}
+  html+='<div class="card" style="border-color:rgba(0,229,160,.15);background:rgba(0,229,160,.03)"><div class="card-title" style="color:var(--green)">💰 Suggested Stake — Monte Carlo 1×2</div>';
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0">';
+  html+='<div><span style="font-weight:700;font-size:15px;color:'+stakeColor+'">'+topMc.label+'</span>';
+  html+='<span style="font-size:12px;color:var(--muted2);margin-left:10px">MC Prob: <strong style="color:var(--cyan)">'+fp(topMc.prob)+'</strong></span></div>';
+  if(mcKelly>0)html+='<div style="text-align:right"><span style="font-size:20px;font-weight:800;color:var(--amber)">TZS '+mcKelly.toLocaleString()+'</span><div style="font-size:9px;color:var(--muted2)">on '+topMc.label+'</div></div>';
+  else html+='<span style="color:var(--muted);font-size:12px">MC prob too low — no stake suggested</span>';
+  html+='</div>';
+  html+='<div style="font-size:10px;color:var(--muted2);margin-top:6px;padding-top:8px;border-top:1px solid var(--surface3)">Based on Monte Carlo probability (prob-based stake). Bankroll: TZS '+getBankroll().toLocaleString()+'. Equivalent: '+(mcKelly>0?((mcKelly/getBankroll())*100).toFixed(1)+'%':'—')+' of bankroll.</div>';
+  html+='</div>';
 
-  html+='<div class="card" style="margin-top:10px"><div class="card-title">Exact Total Goals Distribution</div>';
-  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:240px">';
-  html+='<thead><tr><th>Total Goals</th><th>Probability</th><th>Fair Odds</th></tr></thead><tbody>';
-  totalGoalsDist.filter(t=>t.prob>0.01).sort((a,b)=>b.prob-a.prob).slice(0,8).forEach(t=>{
-    html+='<tr><td style="font-weight:700">'+t.goals+'</td><td>'+fp(t.prob)+'</td><td>'+fo(t.prob)+'</td></tr>';
-  });
-  html+='</tbody></table></div></div>';
-  return html;
-}
+  // ── Item 7: Kelly stake from MC top scoreline ──
+  const topScore=sim.mcScores&&sim.mcScores.length>0?sim.mcScores[0]:null;
+  var slKelly=0,slScoreLabel='',slProb=0,slDirLabel='',slDirColor='';
+  if(topScore){
+    slProb=topScore.p;
+    slKelly=topScore.p<0.08?0:Math.round(getBankroll()*Math.min(Math.max(0,(topScore.p-0.08)/0.15),1)*0.16);
+    slScoreLabel=topScore.home+'-'+topScore.away;
+    slDirLabel=topScore.home>topScore.away?'Home':topScore.home===topScore.away?'Draw':'Away';
+    slDirColor=topScore.home>topScore.away?'var(--green)':topScore.home===topScore.away?'var(--amber)':'var(--red)';
+  }
+  html+='<div class="card" style="border-color:rgba(167,139,250,.15);background:rgba(167,139,250,.03)"><div class="card-title" style="color:var(--purple)">💰 Kelly Stake — MC Top Scoreline</div>';
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0">';
+  if(topScore){
+    html+='<div><span style="font-weight:700;font-size:15px;color:var(--fg)">'+slScoreLabel+'</span><span style="font-size:11px;font-weight:700;margin-left:6px;padding:1px 6px;border-radius:3px;background:'+slDirColor+'22;color:'+slDirColor+';border:1px solid '+slDirColor+'55">'+slDirLabel+'</span>';
+    html+='<span style="font-size:12px;color:var(--muted2);margin-left:10px">MC Prob: <strong style="color:var(--cyan)">'+fp(slProb)+'</strong></span></div>';
+    if(slKelly>0)html+='<div style="text-align:right"><span style="font-size:20px;font-weight:800;color:var(--amber)">TZS '+slKelly.toLocaleString()+'</span><div style="font-size:9px;color:var(--muted2)">on '+slScoreLabel+'</div></div>';
+    else html+='<span style="color:var(--muted);font-size:12px">MC prob too low — no stake suggested</span>';
+  } else {
+    html+='<span style="color:var(--muted);font-size:12px">No scoreline data available</span>';
+  }
+  html+='</div>';
+  html+='<div style="font-size:10px;color:var(--muted2);margin-top:6px;padding-top:8px;border-top:1px solid var(--surface3)">Based on Monte Carlo probability (prob-based stake). Bankroll: TZS '+getBankroll().toLocaleString()+'. Equivalent: '+(slKelly>0?((slKelly/getBankroll())*100).toFixed(1)+'%':'—')+' of bankroll.</div>';
+  html+='</div>';
 
-// ══════════════════════════════════════════════════════════════
-//  RENDER — AH TAB
-// ══════════════════════════════════════════════════════════════
-function renderAHTab(mat,bkAnalysis){
-  // Build AH bk lookup
-  const bkAHLookup = {};
-  if(bkAnalysis) bkAnalysis.items.filter(it=>it.cat==='AH').forEach(it=>{ bkAHLookup[it.market] = it; });
-  const hasBkAH = Object.keys(bkAHLookup).length > 0;
-
-  let html='<div class="card"><div class="card-title">Asian Handicap Lines <span style="font-size:9px;font-weight:400;color:var(--muted)">· Quarter-ball supported · −N = team gives goals (fav) · +N = team receives goals (underdog)</span></div>';
-  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:520px">';
-  html+='<thead><tr><th style="text-align:left">Home Label</th><th style="text-align:left">Away Label</th><th>H Cover %</th><th>A Cover %</th><th>Push %</th><th>Fair H/A</th><th>Line Type</th><th>Best Side</th>'+(hasBkAH?'<th>Bk Edge</th>':'')+'</tr></thead><tbody>';
-  [-4.5,-3.5,-2.5,-2.0,-1.75,-1.5,-1.25,-1.0,-0.75,-0.5,-0.25,0.0,0.25,0.5,0.75,1.0,1.5,1.75,2.0,2.5,3.5,4.5].forEach(threshold=>{
-    const c=calcAHCover(mat,threshold);
-    const absT=Math.abs(threshold);
-    const homeLabel=threshold===0?'0':(threshold<0?'−':'+')+(absT%1===0?absT.toFixed(1):absT.toFixed(2));
-    const awayLabel=threshold===0?'0':(threshold<0?'+':'−')+(absT%1===0?absT.toFixed(1):absT.toFixed(2));
-    const fraction=((absT%1)+1)%1;
-    const isQB=Math.abs(fraction-0.25)<0.001||Math.abs(fraction-0.75)<0.001;
-    const lineType=threshold===0?'Level':isQB?'<span class="sig slight">QTR-BALL</span>':'<span class="sig fair">HALF</span>';
-    let bestSide='',bestSideColor='color:var(--muted)';
-    if(c.home>c.away+0.05){bestSide='Home '+homeLabel;bestSideColor='color:var(--green)';}
-    else if(c.away>c.home+0.05){bestSide='Away '+awayLabel;bestSideColor='color:var(--red)';}
-    else{bestSide='Even';bestSideColor='color:var(--muted)';}
-    // Find matching bk item
-    let edgeCell = '';
-    if(hasBkAH){
-      const hKey = 'AH Home '+homeLabel, aKey = 'AH Away '+awayLabel;
-      const bkH = bkAHLookup[hKey], bkA = bkAHLookup[aKey];
-      if(bkH||bkA){
-        const best = bkH||bkA;
-        edgeCell = '<td style="font-size:11px">'+(best.edge!==null?edgeBadge(best.edge):'—')+'</td>';
-      } else {
-        edgeCell = '<td style="color:var(--muted);font-size:10px">—</td>';
-      }
-    }
-    html+='<tr>';
-    html+='<td style="text-align:left;font-weight:700;color:var(--green)">'+homeLabel+'</td>';
-    html+='<td style="text-align:left;font-weight:700;color:var(--red)">'+awayLabel+'</td>';
-    html+='<td style="color:var(--green)">'+fp(c.home)+'</td>';
-    html+='<td style="color:var(--red)">'+fp(c.away)+'</td>';
-    html+='<td style="color:var(--muted)">'+fp(c.push)+'</td>';
-    html+='<td style="font-size:11px">'+fo(c.home)+' / '+fo(c.away)+'</td>';
-    html+='<td>'+lineType+'</td>';
-    html+='<td><span style="font-weight:700;'+bestSideColor+'">'+bestSide+'</span></td>';
-    html+=edgeCell;
+  // ── Item 3: Top scoreline table ──
+  html+='<div class="card"><div class="card-title">🏆 Top Scorelines (Monte Carlo)</div>';
+  html+='<div style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.6">Most frequent exact scores from <strong>12,000</strong> Poisson simulation runs.</div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:380px">';
+  html+='<thead><tr><th style="width:36px">Rank</th><th style="text-align:left">Score</th><th>Probability</th><th>Fair Odds</th><th>Signal</th></tr></thead><tbody>';
+  const mcScores=sim.mcScores||[];
+  const maxScoreP=mcScores.length>0?mcScores[0].p:1;
+  mcScores.slice(0,8).forEach((s,i)=>{
+    const c=s.home>s.away?'var(--green)':s.home===s.away?'var(--amber)':'var(--over)';
+    const sig=s.home>s.away?'Home':s.home===s.away?'Draw':'Away';
+    html+='<tr'+(i===0?' style="background:rgba(0,229,160,.04)"':'')+'>';
+    html+='<td style="text-align:center;font-weight:700;color:var(--muted2);font-family:\'JetBrains Mono\',monospace">'+(i+1)+'</td>';
+    html+='<td style="text-align:left;font-weight:700;font-size:15px;color:'+c+'">'+s.home+'–'+s.away+'</td>';
+    html+='<td style="font-weight:700;color:var(--cyan)">'+fp(s.p)+'</td>';
+    html+='<td style="font-family:\'JetBrains Mono\',monospace;color:var(--text)">'+(s.p>0.001?(1/s.p).toFixed(2):'—')+'</td>';
+    html+='<td><span style="font-size:10px;font-weight:700;color:'+c+'">'+sig+'</span></td>';
     html+='</tr>';
   });
   html+='</tbody></table></div>';
-  html+='<div class="note" style="margin-top:10px"><strong>AH Convention:</strong> Negative handicap (−N) = that team gives N goals — they are the <em>favourite</em> and must win by more than N. Positive (+N) = that team receives N goals — they are the <em>underdog</em> and can draw or lose by up to N and still cover.</div>';
+  html+='<div class="note" style="margin-top:10px">Top 8 most frequent exact scorelines. Use these for correct-score and Asian Handicap markets. Fair odds shown are model-derived with zero margin.</div>';
   html+='</div>';
+
   return html;
 }
+
+
 
 // ══════════════════════════════════════════════════════════════
 //  RENDER — KELLY TAB (Odds Compilation)
@@ -1415,392 +1382,315 @@ function renderKellyTab(mat,prbs,btts){
 }
 
 // ══════════════════════════════════════════════════════════════
-//  RENDER — BK ANALYSIS TAB (dedicated bookmaker analysis)
+//  RENDER — O/U TAB (model-derived)
 // ══════════════════════════════════════════════════════════════
-function renderBkTab(bkAnalysis, prbs, btts, mat, xgResult){
-  if(!bkAnalysis || bkAnalysis.items.length === 0){
-    return '<div style="padding:24px;color:var(--muted)">No bookmaker odds entered.</div>';
-  }
-
-  let html = '<div class="status-ok" style="margin-bottom:14px">🏦 Bookmaker Odds Calibration Active — model probabilities cross-referenced against market implied probabilities (vig removed)</div>';
-
-  // Value Bets summary
-  const valueBets = bkAnalysis.items.filter(it => it.edge !== null && it.edge >= 0.03);
-  const strongValue = valueBets.filter(it => it.edge >= 0.05);
-  const slightValue = valueBets.filter(it => it.edge >= 0.03 && it.edge < 0.05);
-
-  if(valueBets.length > 0){
-    html += '<div class="card" style="border-color:rgba(0,229,160,.25);background:rgba(0,229,160,.04)">';
-    html += '<div class="card-title" style="color:var(--green)">✅ Value Bet Opportunities Detected</div>';
-    html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.6">Model probability exceeds bookmaker vig-free implied probability by ≥3%. These markets are priced in your favour — but always verify with independent research.</div>';
-    html += '<div style="display:flex;flex-direction:column;gap:8px">';
-    valueBets.sort((a,b)=>b.edge-a.edge).forEach(it=>{
-      const edgeColor = it.edge >= 0.05 ? 'var(--green)' : 'var(--amber)';
-      const tag = it.edge >= 0.05 ? '🔥 STRONG VALUE' : '💡 SLIGHT EDGE';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm)">';
-      html += '<div><div style="font-weight:700;font-size:13px;color:var(--text)">'+it.market+'</div>';
-      html += '<div style="font-size:11px;color:var(--muted2);margin-top:2px">Model: '+fp(it.modelProb)+' · Bk: '+fp(it.bkProb)+' · Bk Odds: '+it.bkOdds.toFixed(2)+'</div></div>';
-      html += '<div style="text-align:right"><div style="font-weight:800;font-size:15px;color:'+edgeColor+'">+'+((it.edge)*100).toFixed(1)+'%</div>';
-      html += '<div style="font-size:10px;font-weight:700;color:'+edgeColor+'">'+tag+'</div></div>';
-      html += '</div>';
-    });
-    html += '</div></div>';
-  } else {
-    html += '<div class="card" style="border-color:rgba(107,116,148,.25)">';
-    html += '<div class="card-title" style="color:var(--muted2)">📊 No Strong Value Detected</div>';
-    html += '<div style="font-size:11px;color:var(--muted2);line-height:1.6">Model probabilities are broadly in line with or below bookmaker implied probabilities. Consider skipping or reducing stake size on these markets.</div>';
-    html += '</div>';
-  }
-
-  // Full breakdown table
-  html += renderBkCompCard(bkAnalysis);
-
-  // Kelly suggestions when bk odds available
-  html += '<div class="card" style="margin-top:10px"><div class="card-title">📐 Kelly Criterion — Suggested Stakes (Fractional)</div>';
-  html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.6">Kelly fraction = (b·p − q) / b where b = decimal odds − 1, p = model probability (blended), q = 1 − p. Negative = no bet. Use ¼-Kelly for conservative staking.</div>';
-  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:440px">';
-  html += '<thead><tr><th style="text-align:left">Market</th><th>Bk Odds</th><th>Blended %</th><th>Full Kelly %</th><th>¼ Kelly %</th><th>Verdict</th></tr></thead><tbody>';
-  bkAnalysis.items.forEach(it=>{
-    const k = kellyC(it.blendedProb, it.bkOdds);
-    const fullK = k !== null ? (k*100).toFixed(1)+'%' : '—';
-    const qtrK  = k !== null ? ((k/4)*100).toFixed(1)+'%' : '—';
-    const verdict = k === null ? '<span style="color:var(--muted)">—</span>' :
-                    k <= 0 ? '<span style="color:var(--red)">No bet</span>' :
-                    k >= 0.10 ? '<span style="color:var(--green);font-weight:700">✓ Bet</span>' :
-                    '<span style="color:var(--amber)">✓ Small bet</span>';
-    const kColor = k === null || k <= 0 ? 'var(--muted)' : k >= 0.10 ? 'var(--green)' : 'var(--amber)';
-    html += '<tr>';
-    html += '<td style="text-align:left;font-weight:700">'+it.market+'</td>';
-    html += '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--amber)">'+it.bkOdds.toFixed(2)+'</td>';
-    html += '<td style="color:var(--purple)">'+fp(it.blendedProb)+'</td>';
-    html += '<td style="color:'+kColor+';font-family:\'JetBrains Mono\',monospace">'+fullK+'</td>';
-    html += '<td style="color:'+kColor+';font-family:\'JetBrains Mono\',monospace;font-weight:700">'+qtrK+'</td>';
-    html += '<td>'+verdict+'</td>';
-    html += '</tr>';
+function renderOUTab(ouData,mat){
+  let html='<div class="card"><div class="card-title">Over / Under Goal Lines</div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:360px">';
+  html+='<thead><tr><th>Line</th><th>Over %</th><th>Under %</th><th>Fair O</th><th>Fair U</th><th>Signal</th></tr></thead><tbody>';
+  ouData.forEach(o=>{
+    const diff=o.over-o.under;
+    const sig=diff>0.02?'<span class="sig over">OVER</span>':diff<-0.02?'<span class="sig under">UNDER</span>':'<span class="sig fair">EVEN</span>';
+    html+='<tr><td style="font-weight:700">'+o.line+'</td><td style="color:var(--over)">'+fp(o.over)+'</td><td style="color:var(--under)">'+fp(o.under)+'</td><td>'+fo(o.over)+'</td><td>'+fo(o.under)+'</td><td>'+sig+'</td></tr>';
   });
-  html += '</tbody></table></div>';
-  html += '<div class="note" style="margin-top:8px">Kelly criterion assumes blended probability is accurate. Real edge may differ from model estimate. Never bet more than ¼ Kelly without extreme confidence.</div>';
-  html += '</div>';
+  html+='</tbody></table></div></div>';
 
+  let totalGoalsDist=[];
+  for(let g=0;g<=9;g++){let gp=0;for(let i=0;i<=MAX;i++)for(let j=0;j<=MAX;j++){if(i+j===g)gp+=(mat[i]?.[j]||0);}totalGoalsDist.push({goals:g,prob:gp});}
+
+  html+='<div class="card" style="margin-top:10px"><div class="card-title">Exact Total Goals Distribution</div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:240px">';
+  html+='<thead><tr><th>Total Goals</th><th>Probability</th><th>Fair Odds</th></tr></thead><tbody>';
+  totalGoalsDist.filter(t=>t.prob>0.01).sort((a,b)=>b.prob-a.prob).slice(0,8).forEach(t=>{
+    html+='<tr><td style="font-weight:700">'+t.goals+'</td><td>'+fp(t.prob)+'</td><td>'+fo(t.prob)+'</td></tr>';
+  });
+  html+='</tbody></table></div></div>';
   return html;
 }
 
+// ══════════════════════════════════════════════════════════════
+//  RENDER — AH TAB (model-derived)
+// ══════════════════════════════════════════════════════════════
+function renderAHTab(mat){
+  let html='<div class="card"><div class="card-title">Asian Handicap Lines <span style="font-size:9px;font-weight:400;color:var(--muted)">· Quarter-ball supported · −N = team gives goals (fav) · +N = team receives goals (underdog)</span></div>';
+  html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:520px">';
+  html+='<thead><tr><th style="text-align:left">Home Label</th><th style="text-align:left">Away Label</th><th>H Cover %</th><th>A Cover %</th><th>Push %</th><th>Fair H/A</th><th>Line Type</th><th>Best Side</th></tr></thead><tbody>';
+  [-4.5,-3.5,-2.5,-2.0,-1.75,-1.5,-1.25,-1.0,-0.75,-0.5,-0.25,0.0,0.25,0.5,0.75,1.0,1.5,1.75,2.0,2.5,3.5,4.5].forEach(threshold=>{
+    const c=calcAHCover(mat,threshold);
+    const absT=Math.abs(threshold);
+    const homeLabel=threshold===0?'0':(threshold<0?'−':'+')+(absT%1===0?absT.toFixed(1):absT.toFixed(2));
+    const awayLabel=threshold===0?'0':(threshold<0?'+':'−')+(absT%1===0?absT.toFixed(1):absT.toFixed(2));
+    const fraction=((absT%1)+1)%1;
+    const isQB=Math.abs(fraction-0.25)<0.001||Math.abs(fraction-0.75)<0.001;
+    const lineType=threshold===0?'Level':isQB?'<span class="sig slight">QTR-BALL</span>':'<span class="sig fair">HALF</span>';
+    let bestSide='',bestSideColor='color:var(--muted)';
+    if(c.home>c.away+0.05){bestSide='Home '+homeLabel;bestSideColor='color:var(--green)';}
+    else if(c.away>c.home+0.05){bestSide='Away '+awayLabel;bestSideColor='color:var(--red)';}
+    else{bestSide='Even';bestSideColor='color:var(--muted)';}
+    html+='<tr>';
+    html+='<td style="text-align:left;font-weight:700;color:var(--green)">'+homeLabel+'</td>';
+    html+='<td style="text-align:left;font-weight:700;color:var(--red)">'+awayLabel+'</td>';
+    html+='<td style="color:var(--green)">'+fp(c.home)+'</td>';
+    html+='<td style="color:var(--red)">'+fp(c.away)+'</td>';
+    html+='<td style="color:var(--muted)">'+fp(c.push)+'</td>';
+    html+='<td style="font-size:11px">'+fo(c.home)+' / '+fo(c.away)+'</td>';
+    html+='<td>'+lineType+'</td>';
+    html+='<td><span style="font-weight:700;'+bestSideColor+'">'+bestSide+'</span></td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  html+='<div class="note" style="margin-top:10px"><strong>AH Convention:</strong> Negative handicap (−N) = that team gives N goals — they are the <em>favourite</em> and must win by more than N. Positive (+N) = that team receives N goals — they are the <em>underdog</em> and can draw or lose by up to N and still cover.</div>';
+  html+='</div>';
+  return html;
+}
 
 // ══════════════════════════════════════════════════════════════
-//  RENDER — SURPRISE TAB
-//  Finds outcomes where bookmaker undervalues a result vs model
+//  RENDER — RESULT ANALYSIS TAB (unified picks + BK + surprise)
 // ══════════════════════════════════════════════════════════════
-function renderSurpriseTab(mat, prbs, btts, xgResult, bkAnalysis) {
-  const xg = xgResult.homeXG, awayXG = xgResult.awayXG;
-  const totalXG = xg + awayXG;
-  const dq = xgResult.dataQualityScore / 100;
+function renderResultAnalysisTab(xgResult,mat,prbs,btts,ouData,bkAnalysis,sim){
+  const xg=xgResult.homeXG,awayXG=xgResult.awayXG;
+  const totalXG=xg+awayXG,dq=xgResult.dataQualityScore/100;
+  const hasBk=bkAnalysis&&bkAnalysis.items&&bkAnalysis.items.length>0;
+  let html='';
 
-  // ── Build full candidate pool across all markets ──────────────
-  const pool = [];
+  html+='<div class="summary-box" style="border-color:rgba(0,229,160,.15);background:rgba(0,229,160,.02)">';
+  html+='<strong style="color:var(--green)">📊 Tips</strong> — Unified picks combining Poisson + Dixon-Coles probabilities, 12,000-iteration Monte Carlo simulation';
+  if(hasBk)html+=', and bookmaker odds calibration (vig removed).';
+  else html+='.';
+  if(!hasBk)html+=' <span style="color:var(--muted2)">🔍 Enter bookmaker odds above to unlock market value analysis and surprise detection.</span>';
+  html+='</div>';
 
-  // Helper: add to pool
-  function addCandidate(market, cat, modelProb, bkOdds, bkImplied) {
-    if (modelProb <= 0.001 || modelProb >= 0.999) return;
-    const fairOdds = 1 / modelProb;
-    const edge = bkOdds != null && bkImplied != null ? modelProb - bkImplied : null;
-    // EV = model_prob * bk_odds - 1  (positive = profitable in expectation)
-    const ev = bkOdds != null ? modelProb * bkOdds - 1 : null;
-    // Surprise score: model strongly disagrees with market
-    // High bk_odds (market says unlikely) + high model_prob = surprise
-    const surpriseScore = bkOdds != null
-      ? (modelProb * Math.log(bkOdds + 1) * dq)   // recency-weighted log-odds divergence
-      : (modelProb * 0.5 * dq);                     // model-only fallback
-    pool.push({ market, cat, modelProb, fairOdds, bkOdds, bkImplied, edge, ev, surpriseScore });
+  // ══════════════════════════════════════════════════════
+  // POOL CONSTRUCTION (shared across all sections)
+  // ══════════════════════════════════════════════════════
+  const pool=[];
+  function addCandidate(market,cat,modelProb,bkOdds,bkImplied,simProb){
+    if(modelProb<=0.001||modelProb>=0.999)return;
+    const fairOdds=1/modelProb;
+    const edge=bkOdds!=null&&bkImplied!=null?modelProb-bkImplied:null;
+    const ev=bkOdds!=null?modelProb*bkOdds-1:null;
+    const surpriseScore=bkOdds!=null?(modelProb*Math.log(bkOdds+1)*dq):(modelProb*0.5*dq);
+    let combinedScore=Math.min(1,modelProb*dq*2);
+    pool.push({market,cat,modelProb,fairOdds,bkOdds,bkImplied,edge,ev,surpriseScore,combinedScore:Math.max(0,Math.min(1,combinedScore)),simProb});
   }
 
-  // 1×2
-  const ou25 = calcOU(mat, 2.5);
-  if (bkAnalysis && bkAnalysis.blend1x2) {
-    const b = bkAnalysis.blend1x2;
-    const items1x2 = bkAnalysis.items.filter(it => it.cat === '1X2');
-    items1x2.forEach(it => {
-      addCandidate(it.market, '1X2', it.modelProb, it.bkOdds, it.bkProb);
-    });
-  } else {
-    addCandidate('Home Win', '1X2', prbs.h, null, null);
-    addCandidate('Draw',     '1X2', prbs.d, null, null);
-    addCandidate('Away Win', '1X2', prbs.a, null, null);
+  // 1X2
+  if(hasBk&&bkAnalysis.blend1x2){
+    bkAnalysis.items.filter(it=>it.cat==='1X2').forEach(it=>addCandidate(it.market,'1X2',it.modelProb,it.bkOdds,it.bkProb,null));
+  }else{
+    addCandidate('Home Win','1X2',prbs.h,null,null,sim.homeWins);
+    addCandidate('Draw','1X2',prbs.d,null,null,sim.draws);
+    addCandidate('Away Win','1X2',prbs.a,null,null,sim.awayWins);
   }
-
   // BTTS
-  addCandidate('BTTS Yes', 'BTTS', btts, null, null);
-  addCandidate('BTTS No', 'BTTS', 1 - btts, null, null);
-
-  // O/U lines
-  const ouItems = bkAnalysis ? bkAnalysis.items.filter(it => it.cat === 'O/U') : [];
-  [0.5, 1.5, 2.5, 3.5, 4.5, 5.5].forEach(line => {
-    const ou = calcOU(mat, line);
-    const bkO = ouItems.find(it => it.market === 'Over '+line);
-    const bkU = ouItems.find(it => it.market === 'Under '+line);
-    addCandidate('Over '+line,  'O/U', ou.over,  bkO ? bkO.bkOdds : null, bkO ? bkO.bkProb : null);
-    addCandidate('Under '+line, 'O/U', ou.under, bkU ? bkU.bkOdds : null, bkU ? bkU.bkProb : null);
+  addCandidate('BTTS Yes','BTTS',btts,null,null,sim.bttsY);
+  addCandidate('BTTS No','BTTS',1-btts,null,null,1-sim.bttsY);
+  // O/U
+  const ouItems=hasBk?bkAnalysis.items.filter(it=>it.cat==='O/U'):[];
+  [0.5,1.5,2.5,3.5,4.5,5.5].forEach(line=>{
+    const ou=calcOU(mat,line);
+    const bkO=ouItems.find(it=>it.market==='Over '+line);
+    const bkU=ouItems.find(it=>it.market==='Under '+line);
+    const simOver=line===2.5?sim.over25:ou.over;
+    const simUnder=line===2.5?1-sim.over25:ou.under;
+    addCandidate('Over '+line,'O/U',ou.over,bkO?bkO.bkOdds:null,bkO?bkO.bkProb:null,simOver);
+    addCandidate('Under '+line,'O/U',ou.under,bkU?bkU.bkOdds:null,bkU?bkU.bkProb:null,simUnder);
+  });
+  // AH
+  const ahItems=hasBk?bkAnalysis.items.filter(it=>it.cat==='AH'):[];
+  [-2.5,-1.5,-0.5,0.0,0.5,1.5,2.5].forEach(threshold=>{
+    const c=calcAHCover(mat,threshold);
+    const absT=Math.abs(threshold);
+    const fmt=absT%1===0?absT.toFixed(1):absT.toFixed(2);
+    const hL=threshold===0?'0':(threshold<0?'−':'+')+fmt;
+    const aL=threshold===0?'0':(threshold<0?'+':'−')+fmt;
+    const bkH=ahItems.find(it=>it.market==='AH Home '+hL);
+    const bkA=ahItems.find(it=>it.market==='AH Away '+aL);
+    addCandidate('AH Home '+hL,'AH',c.home,bkH?bkH.bkOdds:null,bkH?bkH.bkProb:null,c.home);
+    addCandidate('AH Away '+aL,'AH',c.away,bkA?bkA.bkOdds:null,bkA?bkA.bkProb:null,c.away);
   });
 
-  // AH lines
-  const ahItems = bkAnalysis ? bkAnalysis.items.filter(it => it.cat === 'AH') : [];
-  [-2.5, -1.5, -0.5, 0.0, 0.5, 1.5, 2.5].forEach(threshold => {
-    const c = calcAHCover(mat, threshold);
-    const absT = Math.abs(threshold);
-    const fmt = absT % 1 === 0 ? absT.toFixed(1) : absT.toFixed(2);
-    const hL = threshold === 0 ? '0' : (threshold < 0 ? '−' : '+') + fmt;
-    const aL = threshold === 0 ? '0' : (threshold < 0 ? '+' : '−') + fmt;
-    const bkH = ahItems.find(it => it.market === 'AH Home '+hL);
-    const bkA = ahItems.find(it => it.market === 'AH Away '+aL);
-    addCandidate('AH Home '+hL, 'AH', c.home, bkH ? bkH.bkOdds : null, bkH ? bkH.bkProb : null);
-    addCandidate('AH Away '+aL, 'AH', c.away, bkA ? bkA.bkOdds : null, bkA ? bkA.bkProb : null);
-  });
-
-  // Top correct scores
-  const scores = [];
-  for (let i = 0; i <= 8; i++) for (let j = 0; j <= 8; j++) scores.push({ home: i, away: j, p: mat[i]?.[j] || 0 });
-  scores.sort((a, b) => b.p - a.p);
-  // Find surprising correct scores: not the top-5 most probable but have decent model prob
-  scores.slice(5, 30).forEach(s => {
-    if (s.p >= 0.025) {
-      addCandidate(s.home + '–' + s.away, 'CS', s.p, null, null);
-    }
-  });
-
-  // ── DIVERGENCE ANALYSIS ────────────────────────────────────────
-  // For candidates with bk odds: find where model and market disagree most
-  const withBk = pool.filter(c => c.bkOdds != null && c.edge !== null);
-  const modelOnly = pool.filter(c => c.bkOdds == null);
-
-  // Sort by: EV (bk candidates) or surpriseScore (model-only)
-  const topWithBk = [...withBk]
-    .filter(c => c.ev > 0.03 && c.modelProb >= 0.25)
-    .sort((a, b) => b.ev - a.ev)
-    .slice(0, 5);
-
-  const topModelOnly = [...modelOnly]
-    .filter(c => c.modelProb >= 0.30 && c.modelProb <= 0.72)
-    .sort((a, b) => b.surpriseScore - a.surpriseScore)
-    .slice(0, 4);
-
-  // ── Monte Carlo divergence test ─────────────────────────────────
-  // Run 3 xG perturbation scenarios and check stability of surprise picks
-  function perturbXG(hxg, axg, factor) {
-    const m = buildMatrix(hxg * factor, axg * (2 - factor), false);
-    return { mat: m, prbs: calc1x2(m), btts: calcBTTS(m) };
+  // Apply bk edge bonus to combinedScore
+  if(hasBk){
+    const bkLookup={};
+    bkAnalysis.items.forEach(it=>{bkLookup[it.market]=it;});
+    pool.forEach(c=>{
+      const bi=bkLookup[c.market];
+      if(bi&&bi.edge!==null){
+        const bonus=Math.max(-0.08,Math.min(0.08,bi.edge*0.4));
+        c.combinedScore=Math.max(0,Math.min(1,c.combinedScore+bonus));
+        c.bkEdge=bi.edge;c.bkOdds=bi.bkOdds;c.blendedProb=bi.blendedProb;
+      }
+    });
   }
-  const scenarios = [
-    perturbXG(xg, awayXG, 0.85),
-    perturbXG(xg, awayXG, 1.0),
-    perturbXG(xg, awayXG, 1.15),
-  ];
 
-  // Stability: how often does the model hold the same direction across scenarios
-  function getScenarioProb(scenario, market) {
-    if (market === 'Home Win') return scenario.prbs.h;
-    if (market === 'Draw')     return scenario.prbs.d;
-    if (market === 'Away Win') return scenario.prbs.a;
-    if (market === 'BTTS Yes') return scenario.btts;
-    if (market === 'BTTS No')  return 1 - scenario.btts;
-    if (market.startsWith('Over '))  return calcOU(scenario.mat, +market.slice(5)).over;
-    if (market.startsWith('Under ')) return calcOU(scenario.mat, +market.slice(6)).under;
+  // Scores for CS section
+  const scores=[];
+  for(let i=0;i<=8;i++)for(let j=0;j<=8;j++)scores.push({home:i,away:j,p:mat[i]?.[j]||0});
+  scores.sort((a,b)=>b.p-a.p);
+
+  // ── DIVERGENCE / SURPRISE helpers ──
+  function perturbXG(hxg,axg,factor){
+    const m=buildMatrix(hxg*factor,axg*(2-factor),false);
+    return{mat:m,prbs:calc1x2(m),btts:calcBTTS(m)};
+  }
+  const scenarios=[
+    perturbXG(xg,awayXG,0.85),
+    perturbXG(xg,awayXG,1.0),
+    perturbXG(xg,awayXG,1.15),
+  ];
+  function getScenarioProb(scenario,market){
+    if(market==='Home Win')return scenario.prbs.h;
+    if(market==='Draw')return scenario.prbs.d;
+    if(market==='Away Win')return scenario.prbs.a;
+    if(market==='BTTS Yes')return scenario.btts;
+    if(market==='BTTS No')return 1-scenario.btts;
+    if(market.startsWith('Over '))return calcOU(scenario.mat,+market.slice(5)).over;
+    if(market.startsWith('Under '))return calcOU(scenario.mat,+market.slice(6)).under;
     return null;
   }
-
-  function computeStability(market, baseProb) {
-    const scenProbs = scenarios.map(s => getScenarioProb(s, market)).filter(p => p != null);
-    if (scenProbs.length === 0) return { stable: true, variance: 0 };
-    const mean = scenProbs.reduce((a, b) => a + b, 0) / scenProbs.length;
-    const variance = scenProbs.reduce((a, b) => a + (b - mean) ** 2, 0) / scenProbs.length;
-    const allAbove = scenProbs.every(p => p > 0.45);
-    const allConsistent = Math.max(...scenProbs) - Math.min(...scenProbs) < 0.12;
-    return { stable: allConsistent, variance: +(variance * 100).toFixed(2), scenProbs };
+  function computeStability(market,baseProb){
+    const scenProbs=scenarios.map(s=>getScenarioProb(s,market)).filter(p=>p!=null);
+    if(scenProbs.length===0)return{stable:true,variance:0};
+    const mean=scenProbs.reduce((a,b)=>a+b,0)/scenProbs.length;
+    const variance=scenProbs.reduce((a,b)=>a+(b-mean)**2,0)/scenProbs.length;
+    const allAbove=scenProbs.every(p=>p>0.45);
+    const allConsistent=Math.max(...scenProbs)-Math.min(...scenProbs)<0.12;
+    return{stable:allConsistent&&allAbove,variance:+(variance*100).toFixed(2),scenProbs};
   }
 
-  // ── RENDER ─────────────────────────────────────────────────────
-  const hasBkData = withBk.length > 0;
-  let html = '';
+  // ══════════════════════════════════════════════════════
+  // SECTION 1: UNIFIED PICKS
+  // ══════════════════════════════════════════════════════
+  html+='<div class="card"><div class="card-title">🎯 Unified Picks — Top Recommendations <span style="font-size:9px;font-weight:400;color:var(--muted)">· Fair Odds &gt; 1.30 · Confidence &gt; 30% · Model Prob ≥ 60%</span></div>';
 
-  // Intro card
-  html += '<div class="summary-box" style="border-color:rgba(245,200,66,0.2);background:rgba(245,200,66,0.03)">';
-  html += '<strong style="color:var(--amber)">⚡ Surprise Intelligence Engine</strong> — This tab hunts outcomes the market undervalues. ';
-  html += 'The model compares its Poisson-derived probabilities against bookmaker implied odds, then stress-tests each candidate across ±15% xG perturbation scenarios. ';
-  html += 'High divergence + scenario stability = genuine surprise pick. ';
-  if (!hasBkData) html += '<span style="color:var(--muted)">🔍 Enter bookmaker 1X2/O/U/AH odds above to unlock deep market-vs-model divergence analysis.</span>';
-  html += '</div>';
+  const filtered=pool.filter(c=>c.fairOdds>1.30&&c.combinedScore>0.35&&c.modelProb>=0.60);
+  const ahHomeBest=filtered.filter(c=>c.cat==='AH'&&c.market.startsWith('AH Home')).sort((a,b)=>b.combinedScore-a.combinedScore)[0];
+  const ahAwayBest=filtered.filter(c=>c.cat==='AH'&&c.market.startsWith('AH Away')).sort((a,b)=>b.combinedScore-a.combinedScore)[0];
+  const nonAH=filtered.filter(c=>c.cat!=='AH');
+  const ahPicks=[];
+  if(ahHomeBest)ahPicks.push(ahHomeBest);
+  if(ahAwayBest)ahPicks.push(ahAwayBest);
+  const unified=[...nonAH,...ahPicks].sort((a,b)=>b.combinedScore-a.combinedScore).slice(0,5);
 
-  // ── Divergence heatmap ────────────────────────────────────────
-  html += '<div class="card"><div class="card-title">🌡️ Market Divergence Heatmap — Model vs Bookmaker</div>';
-  if (!hasBkData) {
-    html += '<div style="padding:18px;text-align:center;color:var(--muted);font-size:12px">Enter bookmaker odds to see where the model diverges from the market. The wider the gap, the bigger the potential surprise.</div>';
-  } else {
-    html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.6">Each cell shows <strong style="color:var(--text)">model probability</strong> vs bookmaker implied. <span style="color:var(--green)">Green = model rates higher than market (value)</span>. <span style="color:var(--red)">Red = market rates higher (overpriced)</span>.</div>';
-    html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:500px"><thead><tr><th style="text-align:left">Market</th><th>Model %</th><th>Bk Implied %</th><th>Bk Odds</th><th>Divergence</th><th>EV</th><th>Surprise?</th></tr></thead><tbody>';
-    [...withBk].sort((a, b) => Math.abs(b.edge) - Math.abs(a.edge)).slice(0, 10).forEach(c => {
-      const edgePct = (c.edge * 100).toFixed(1);
-      const evPct = (c.ev * 100).toFixed(1);
-      const barW = Math.min(100, Math.abs(c.edge) * 400);
-      const barColor = c.edge >= 0 ? 'var(--green)' : 'var(--red)';
-      const isSurprise = c.ev > 0.05 && c.modelProb >= 0.3;
-      html += '<tr>';
-      html += '<td style="text-align:left;font-weight:700">'+c.market+'</td>';
-      html += '<td style="color:var(--cyan)">'+fp(c.modelProb)+'</td>';
-      html += '<td style="color:var(--muted2)">'+fp(c.bkImplied)+'</td>';
-      html += '<td style="font-family:\'JetBrains Mono\',monospace;color:var(--amber)">'+c.bkOdds.toFixed(2)+'</td>';
-      html += '<td><div style="display:flex;align-items:center;gap:6px"><div style="width:70px;height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="width:'+barW+'%;height:100%;background:'+barColor+'"></div></div><span style="font-size:10px;font-family:\'JetBrains Mono\',monospace;color:'+barColor+'">'+(c.edge>=0?'+':'')+edgePct+'%</span></div></td>';
-      html += '<td style="font-family:\'JetBrains Mono\',monospace;color:'+(c.ev>0.05?'var(--green)':c.ev>0?'var(--amber)':'var(--red)')+';font-weight:700">'+(c.ev>=0?'+':'')+evPct+'%</td>';
-      html += '<td>'+(isSurprise?'<span class="sig val">⚡ YES</span>':'<span class="sig fair">—</span>')+'</td>';
-      html += '</tr>';
-    });
-    html += '</tbody></table></div></div>';
+  // Save to history
+  const hist=window._predictionHistory;
+  if(hist.length>0){
+    const last=hist[hist.length-1];
+    last.unifiedTips=unified.map(c=>({market:c.market,prob:c.modelProb}));
+    renderHistory();
   }
 
-  // ── Top Surprise Picks (with bk odds) ─────────────────────────
-  if (hasBkData && topWithBk.length > 0) {
-    html += '<div class="card" style="border-color:rgba(245,200,66,0.2);background:rgba(245,200,66,0.025)"><div class="card-title" style="color:var(--amber)">⚡ Top Surprise Picks — Market Undervalued Outcomes</div>';
-    html += '<div style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.6">Outcomes where the model assigns <em>significantly higher probability</em> than the bookmaker. Ranked by Expected Value (EV = model_prob × bk_odds − 1).</div>';
-    topWithBk.forEach((c, i) => {
-      const stab = computeStability(c.market, c.modelProb);
-      const evColor = c.ev >= 0.10 ? 'var(--green)' : c.ev >= 0.05 ? 'var(--amber)' : 'var(--muted2)';
-      const tag = c.ev >= 0.10 ? '🔥 HIGH EV SURPRISE' : c.ev >= 0.05 ? '⚡ SURPRISE PICK' : '💡 SLIGHT EDGE';
-      html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:8px;position:relative;overflow:hidden">';
-      html += '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amber),var(--cyan))"></div>';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">';
-      html += '<div style="display:flex;align-items:center;gap:10px">';
-      html += '<div style="width:28px;height:28px;border-radius:50%;background:rgba(245,200,66,0.12);border:1px solid rgba(245,200,66,0.35);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--amber)">'+(i+1)+'</div>';
-      html += '<div><div style="font-size:14px;font-weight:700;color:var(--text)">'+c.market+'</div><div style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase;margin-top:2px">'+c.cat+' · '+tag+'</div></div></div>';
-      html += '<div style="text-align:right"><div style="font-size:20px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--amber)">'+c.bkOdds.toFixed(2)+'</div><div style="font-size:9px;color:var(--muted)">Bookmaker Odds</div></div></div>';
-      html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">';
-      html += '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">Model <span style="color:var(--cyan);font-weight:700">'+fp(c.modelProb)+'</span></div>';
-      html += '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">Bk Implied <span style="color:var(--muted2);font-weight:700">'+fp(c.bkImplied)+'</span></div>';
-      html += '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">Fair Odds <span style="color:var(--text);font-weight:700">'+fo(c.modelProb)+'</span></div>';
-      html += '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">EV <span style="color:'+evColor+';font-weight:700">'+(c.ev>=0?'+':'')+((c.ev)*100).toFixed(1)+'%</span></div>';
-      if (stab.variance !== undefined) html += '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">Stability <span style="color:'+(stab.stable?'var(--green)':'var(--amber)')+';font-weight:700">'+(stab.stable?'✓ Stable':'⚠ Volatile')+'</span></div>';
-      html += '</div>';
-      // Scenario bar
-      if (stab.scenProbs) {
-        html += '<div style="margin-top:6px"><div style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-bottom:4px">SCENARIO TEST (xG −15% · Base · +15%)</div>';
-        html += '<div style="display:flex;gap:4px">';
-        const labels = ['Bear', 'Base', 'Bull'];
-        stab.scenProbs.forEach((p, si) => {
-          html += '<div style="flex:1;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0"><div style="font-size:10px;font-family:\'JetBrains Mono\',monospace;font-weight:700;color:'+(p>c.modelProb-0.05?'var(--green)':'var(--red)')+'">'+fp(p)+'</div><div style="font-size:8px;color:var(--muted)">'+labels[si]+'</div></div>';
-        });
-        html += '</div></div>';
+  function buildReasoning(c){
+    const lines=[];
+    if(c.cat==='1X2'){
+      if(c.market==='Home Win')lines.push('Home xG '+xg.toFixed(2)+' vs Away xG '+awayXG.toFixed(2)+' — model backs home');
+      else if(c.market==='Away Win')lines.push('Away xG '+awayXG.toFixed(2)+' vs Home xG '+xg.toFixed(2)+' — model backs away');
+      else lines.push('Home/Away xG balanced — draw probability elevated');
+    }else if(c.cat==='BTTS'){
+      if(c.market==='BTTS Yes')lines.push('Both teams xG sufficient — model expects both to score ('+fp(btts)+')');
+      else lines.push('Low xG suppresses BTTS probability — clean sheet likely');
+    }else if(c.cat==='O/U'){
+      lines.push('Total xG '+totalXG.toFixed(2)+' — model prob '+fp(c.modelProb));
+    }else if(c.cat==='AH'){
+      lines.push(c.market+' cover at '+fp(c.modelProb)+' based on xG differential');
+    }
+    return lines.join(' · ');
+  }
+
+  if(unified.length===0){
+    html+='<div style="padding:16px;color:var(--muted);font-size:13px">No predictions meet the criteria (fair odds &gt; 1.30, confidence &gt; 30%, model prob ≥ 60%).</div>';
+  }else{
+    unified.forEach((c,i)=>{
+      const rank=i<3?'r'+(i+1):'';
+      const reasoning=buildReasoning(c);
+      html+='<div class="pick '+(rank||'')+'" style="padding:14px 16px;margin-bottom:8px">';
+      html+='<div class="pick-hd"><div class="pick-rank '+(rank||'r3')+'">'+(i+1)+'</div>';
+      html+='<div class="pick-info"><div class="pick-market">'+c.market+'</div>';
+      html+='<div class="pick-cat">'+c.cat+' · Confidence: '+(c.combinedScore*100).toFixed(1)+'%</div></div>';
+      html+='<div class="pick-odds"><div class="pick-odds-val">'+c.fairOdds.toFixed(2)+'</div><div class="pick-odds-lbl">Fair Odds</div></div></div>';
+      html+='<div class="pick-stats">';
+      html+='<div class="pick-stat">Model <span>'+fp(c.modelProb)+'</span></div>';
+      html+='<div class="pick-stat">Fair Odds <span>'+c.fairOdds.toFixed(2)+'</span></div>';
+      html+='<div class="pick-stat">Confidence <span style="color:var(--green)">'+(c.combinedScore*100).toFixed(1)+'%</span></div>';
+      if(c.bkOdds!=null)html+='<div class="pick-stat">Bk Odds <span style="color:var(--amber)">'+c.bkOdds.toFixed(2)+'</span></div>';
+      if(c.blendedProb!=null)html+='<div class="pick-stat">Blended % <span style="color:var(--purple)">'+fp(c.blendedProb)+'</span></div>';
+      if(c.bkOdds==null){var sysStake=calcProbStake(c.modelProb);if(sysStake>0)html+='<div class="pick-stat">Stake <span style="color:var(--amber)">TZS '+sysStake.toLocaleString()+'</span></div>';}
+      html+='</div>';
+      if(c.bkEdge!=null){
+        html+='<div class="pick-edge">'+edgeBadge(c.bkEdge)+'<span style="font-size:10px;color:var(--muted)">vs bookmaker</span></div>';
       }
-      html += '</div>';
+      if(reasoning)html+='<div style="font-size:11px;color:var(--muted2);line-height:1.6;margin:6px 0 8px;padding:7px 10px;background:var(--surface2);border-radius:5px;border-left:2px solid var(--border2)">💡 '+reasoning+'</div>';
+      html+='<div class="pick-bar"><div class="pick-bar-lbl">CONFIDENCE</div>';
+      html+='<div class="pick-bar-track"><div class="pick-bar-fill" style="width:'+(c.combinedScore*100)+'%;background:var(--cyan)"></div></div>';
+      html+='<div class="pick-bar-pct" style="color:var(--cyan)">'+((c.combinedScore||0)*100).toFixed(1)+'%</div></div></div>';
     });
-    html += '</div>';
   }
+  html+='<div class="note" style="margin-top:8px"><strong>Top pick:</strong> '+(unified.length>0?unified[0].market+' (Confidence: '+fp(unified[0].combinedScore)+')':'None')+'. Showing '+unified.length+' safest picks with fair odds &gt; 1.30 and confidence &gt; 30%.</div>';
+  html+='</div>';
 
-  // ── Model-only surprise picks (no bk odds) ────────────────────
-  const modelSurprises = pool
-    .filter(c => c.bkOdds == null && c.cat === '1X2' && c.modelProb >= 0.20 && c.modelProb <= 0.50)
-    .sort((a, b) => {
-      // Surprise = where xG strongly suggests something non-obvious
-      const aContrarian = Math.abs(a.modelProb - 0.33);
-      const bContrarian = Math.abs(b.modelProb - 0.33);
-      return bContrarian - aContrarian;
+  // ══════════════════════════════════════════════════════
+  // SECTION 2: MARKET VALUE + SURPRISE (merged)
+  // ══════════════════════════════════════════════════════
+  if(hasBk){
+    html+=renderBkCompCard(bkAnalysis);
+    html+='<div class="card"><div class="card-title">📐 Kelly Criterion — Suggested Stakes</div>';
+    html+='<div style="font-size:11px;color:var(--muted2);margin-bottom:12px;line-height:1.6">Kelly fraction = (b·p − q) / b. Use ¼-Kelly for conservative staking.</div>';
+    html+='<div style="overflow-x:auto"><table class="tbl" style="min-width:440px">';
+    html+='<thead><tr><th style="text-align:left">Market</th><th>Bk Odds</th><th>Blended %</th><th>Full Kelly %</th><th>¼ Kelly %</th><th>Verdict</th></tr></thead><tbody>';
+    bkAnalysis.items.forEach(it=>{
+      const k=kellyC(it.blendedProb,it.bkOdds);
+      const fullK=k!==null?(k*100).toFixed(1)+'%':'—';
+      const qtrK=k!==null?((k/4)*100).toFixed(1)+'%':'—';
+      const verdict=k===null?'<span style="color:var(--muted)">—</span>':k<=0?'<span style="color:var(--red)">No bet</span>':k>=0.10?'<span style="color:var(--green);font-weight:700">✓ Bet</span>':'<span style="color:var(--amber)">✓ Small bet</span>';
+      const kColor=k===null||k<=0?'var(--muted)':k>=0.10?'var(--green)':'var(--amber)';
+      html+='<tr><td style="text-align:left;font-weight:700">'+it.market+'</td>';
+      html+='<td style="font-family:\'JetBrains Mono\',monospace;color:var(--amber)">'+it.bkOdds.toFixed(2)+'</td>';
+      html+='<td style="color:var(--purple)">'+fp(it.blendedProb)+'</td>';
+      html+='<td style="color:'+kColor+';font-family:\'JetBrains Mono\',monospace">'+fullK+'</td>';
+      html+='<td style="color:'+kColor+';font-family:\'JetBrains Mono\',monospace;font-weight:700">'+qtrK+'</td>';
+      html+='<td>'+verdict+'</td></tr>';
     });
+    html+='</tbody></table></div>';
+    html+='<div class="note" style="margin-top:8px">Kelly criterion assumes blended probability is accurate. Never bet more than ¼ Kelly without extreme confidence.</div>';
+    html+='</div>';
 
-  // Contrarian analysis: find if model disagrees with xG-implied "expected" winner
-  const modelWinner = prbs.h > prbs.a ? 'home' : prbs.a > prbs.h ? 'away' : 'draw';
-  const xgImpliesHighScoring = totalXG > 2.8;
-  const xgImpliesLowScoring  = totalXG < 1.8;
-  const defensiveMismatch = Math.abs(xgResult.homeDefenseStr - xgResult.awayDefenseStr) > 0.4;
-  const attackMismatch    = Math.abs(xgResult.homeAttackStr - xgResult.awayAttackStr) > 0.5;
-
-  html += '<div class="card"><div class="card-title">🔬 Deep Model Analysis — Why This Outcome Could Surprise</div>';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">';
-
-  // xG asymmetry card
-  const xgAsymmetry = Math.abs(xg - awayXG);
-  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px">';
-  html += '<div style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">XG ASYMMETRY</div>';
-  html += '<div style="font-size:20px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--cyan);margin-bottom:4px">'+(xg-awayXG>=0?'+':'')+(xg-awayXG).toFixed(2)+'</div>';
-  html += '<div style="font-size:11px;color:var(--muted2)">';
-  if (xgAsymmetry > 0.8) html += '<span style="color:var(--amber)">⚡ Strong lean</span> — one side dominates. Draw becomes a surprise value.';
-  else if (xgAsymmetry < 0.3) html += '<span style="color:var(--green)">⚖️ Balanced match</span> — favourite to win is uncertain. Upset risk elevated.';
-  else html += 'Moderate xG gap. Winner is probable but not certain.';
-  html += '</div></div>';
-
-  // Defence analysis
-  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px">';
-  html += '<div style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">ATTACK/DEFENCE GAP</div>';
-  html += '<div style="font-size:11px;color:var(--muted2)">';
-  if (attackMismatch && defensiveMismatch) html += '<span style="color:var(--amber)">⚡ Double mismatch</span> — large gaps in both attack and defence create volatile scoring. High O/U surprise potential.';
-  else if (xgImpliesLowScoring) html += '<span style="color:var(--purple)">🔒 Low-scoring match</span> likely. Under bets and clean-sheet scenarios become surprise plays.';
-  else if (xgImpliesHighScoring) html += '<span style="color:var(--over)">💥 High-scoring match</span> likely. BTTS Yes and Over lines become confident bets, not surprises.';
-  else html += 'Balanced profile. Watch for draw no-bet or AH lines near 0.';
-  html += '</div></div>';
-
-  // Skellam tails
-  let skellamHtml = '';
-  let skewH = 0, skewA = 0;
-  for (let k = 2; k <= 5; k++) {
-    let p = 0;
-    for (let i = 0; i <= 15; i++) for (let j = 0; j <= 15; j++) { if (i - j === k) p += mat[i]?.[j] || 0; }
-    skewH += p;
+    // Surprise picks
+    const withBk=pool.filter(c=>c.bkOdds!=null&&c.edge!==null);
+    const topWithBk=[...withBk].filter(c=>c.ev>0.03&&c.modelProb>=0.25).sort((a,b)=>b.ev-a.ev).slice(0,5);
+    if(topWithBk.length>0){
+      html+='<div class="card" style="border-color:rgba(245,200,66,0.2);background:rgba(245,200,66,0.025)"><div class="card-title" style="color:var(--amber)">⚡ Top Surprise Picks — Market Undervalued Outcomes</div>';
+      html+='<div style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.6">Outcomes where the model assigns <em>significantly higher probability</em> than the bookmaker. Ranked by EV. Each stress-tested across ±15% xG perturbations.</div>';
+      topWithBk.forEach((c,i)=>{
+        const stab=computeStability(c.market,c.modelProb);
+        const evColor=c.ev>=0.10?'var(--green)':c.ev>=0.05?'var(--amber)':'var(--muted2)';
+        const tag=c.ev>=0.10?'🔥 HIGH EV SURPRISE':c.ev>=0.05?'⚡ SURPRISE PICK':'💡 SLIGHT EDGE';
+        html+='<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:8px;position:relative;overflow:hidden">';
+        html+='<div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amber),var(--cyan))"></div>';
+        html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">';
+        html+='<div style="display:flex;align-items:center;gap:10px">';
+        html+='<div style="width:28px;height:28px;border-radius:50%;background:rgba(245,200,66,0.12);border:1px solid rgba(245,200,66,0.35);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--amber)">'+(i+1)+'</div>';
+        html+='<div><div style="font-size:14px;font-weight:700;color:var(--text)">'+c.market+'</div><div style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase;margin-top:2px">'+c.cat+' · '+tag+'</div></div></div>';
+        html+='<div style="text-align:right"><div style="font-size:20px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:var(--amber)">'+c.bkOdds.toFixed(2)+'</div><div style="font-size:9px;color:var(--muted)">Bookmaker Odds</div></div></div>';
+        html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">';
+        html+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">Model <span style="color:var(--cyan);font-weight:700">'+fp(c.modelProb)+'</span></div>';
+        html+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">Bk Implied <span style="color:var(--muted2);font-weight:700">'+fp(c.bkImplied)+'</span></div>';
+        html+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">EV <span style="color:'+evColor+';font-weight:700">'+(c.ev>=0?'+':'')+((c.ev)*100).toFixed(1)+'%</span></div>';
+        if(stab.variance!==undefined)html+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:11px;font-family:\'JetBrains Mono\',monospace;color:var(--muted2)">Stability <span style="color:'+(stab.stable?'var(--green)':'var(--amber)')+';font-weight:700">'+(stab.stable?'✓ Stable':'⚠ Volatile')+'</span></div>';
+        html+='</div>';
+        if(stab.scenProbs){
+          html+='<div style="margin-top:6px"><div style="font-size:9px;color:var(--muted);font-family:\'JetBrains Mono\',monospace;margin-bottom:4px">SCENARIO TEST (xG −15% · Base · +15%)</div>';
+          html+='<div style="display:flex;gap:4px">';
+          ['Bear','Base','Bull'].forEach((label,si)=>{
+            html+='<div style="flex:1;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 0"><div style="font-size:10px;font-family:\'JetBrains Mono\',monospace;font-weight:700;color:'+(stab.scenProbs[si]>c.modelProb-0.05?'var(--green)':'var(--red)')+'">'+fp(stab.scenProbs[si])+'</div><div style="font-size:8px;color:var(--muted)">'+label+'</div></div>';
+          });
+          html+='</div></div>';
+        }
+        html+='</div>';
+      });
+      html+='</div>';
+    }
   }
-  for (let k = -5; k <= -2; k++) {
-    let p = 0;
-    for (let i = 0; i <= 15; i++) for (let j = 0; j <= 15; j++) { if (i - j === k) p += mat[i]?.[j] || 0; }
-    skewA += p;
-  }
-  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px">';
-  html += '<div style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">HEAVY-WIN PROBABILITIES</div>';
-  html += '<div style="display:flex;gap:10px">';
-  html += '<div><div style="font-size:10px;color:var(--muted2)">Home Win 2+</div><div style="font-size:16px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--green)">'+fp(skewH)+'</div></div>';
-  html += '<div><div style="font-size:10px;color:var(--muted2)">Away Win 2+</div><div style="font-size:16px;font-weight:700;font-family:\'JetBrains Mono\',monospace;color:var(--red)">'+fp(skewA)+'</div></div>';
-  html += '</div><div style="font-size:10px;color:var(--muted2);margin-top:4px">High heavy-win % = AH −1.5 or better worth exploring.</div>';
-  html += '</div>';
-
-  // Score surprise — find the most "surprising" correct score (high model prob relative to its ordinal rank)
-  const rank1CS = scores[0];
-  const topNonObvious = scores.slice(3).find(s => s.p > scores[3].p * 0.7 && (s.home + s.away) !== (rank1CS.home + rank1CS.away));
-  html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px">';
-  html += '<div style="font-size:9px;font-weight:700;color:var(--muted);font-family:\'JetBrains Mono\',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">SURPRISE CORRECT SCORE</div>';
-  if (topNonObvious) {
-    const csColor = topNonObvious.home > topNonObvious.away ? 'var(--green)' : topNonObvious.home === topNonObvious.away ? 'var(--amber)' : 'var(--red)';
-    html += '<div style="font-size:20px;font-weight:800;font-family:\'JetBrains Mono\',monospace;color:'+csColor+'">'+topNonObvious.home+'–'+topNonObvious.away+'</div>';
-    html += '<div style="font-size:11px;color:var(--muted2);margin-top:3px">Model: '+fp(topNonObvious.p)+' · Fair: '+fo(topNonObvious.p)+'</div>';
-    html += '<div style="font-size:10px;color:var(--amber);margin-top:2px">Non-consensus but model-backed</div>';
-  } else {
-    html += '<div style="font-size:11px;color:var(--muted2)">Model distribution is concentrated — no strong surprise score detected.</div>';
-  }
-  html += '</div>';
-
-  html += '</div></div>';
-
-  // ── Probability mass shift analysis ────────────────────────────
-  html += '<div class="card"><div class="card-title">📐 Probability Mass Distribution — Where is the Hidden Value?</div>';
-  html += '<div style="overflow-x:auto"><table class="tbl" style="min-width:400px"><thead><tr><th>Outcome</th><th>Model Prob</th><th>Fair Odds</th><th>Mass Rank</th><th>Contrarian Signal</th></tr></thead><tbody>';
-  const massItems = [
-    { market: 'Home Win', prob: prbs.h },
-    { market: 'Draw',     prob: prbs.d },
-    { market: 'Away Win', prob: prbs.a },
-    { market: 'BTTS Yes', prob: btts },
-    { market: 'Over 2.5', prob: ou25.over },
-    { market: 'Under 2.5', prob: ou25.under },
-    { market: 'DC 1X', prob: prbs.h + prbs.d },
-    { market: 'DC X2', prob: prbs.d + prbs.a },
-  ];
-  massItems.sort((a, b) => a.prob - b.prob).forEach((it, i) => {
-    const isLong = it.prob < 0.30;
-    const signal = isLong
-      ? '<span class="sig slight">⚡ Surprise Zone</span>'
-      : it.prob < 0.45
-      ? '<span class="sig val">🎯 Value Zone</span>'
-      : '<span class="sig fair">Favoured</span>';
-    html += '<tr>';
-    html += '<td style="text-align:left;font-weight:700">'+it.market+'</td>';
-    html += '<td style="color:var(--cyan)">'+fp(it.prob)+'</td>';
-    html += '<td style="font-family:\'JetBrains Mono\',monospace">'+fo(it.prob)+'</td>';
-    html += '<td style="color:var(--muted2);font-family:\'JetBrains Mono\',monospace">'+(i+1)+' of '+massItems.length+'</td>';
-    html += '<td>'+signal+'</td>';
-    html += '</tr>';
-  });
-  html += '</tbody></table></div>';
-  html += '<div class="note" style="margin-top:8px">Outcomes ranked by model probability (lowest first). Low-probability outcomes that cross-validate with xG asymmetry, defence mismatches, or bookmaker divergence are the strongest surprise candidates. Never blindly back longshots — use this as a filter, not a guarantee.</div>';
-  html += '</div>';
 
   return html;
 }
@@ -1838,9 +1728,6 @@ window.runUnifiedTips=function(){
       candidates.push({market:'AH Away '+aL,prob:ah.away,cat:'AH',safeScore:ah.away,simProb:ah.away,ahThreshold:threshold,ahSide:'away'});
     });
 
-    // FIX: combinedScore = model agreement between analytical Poisson and Monte Carlo sim
-    // Higher when both methods agree; lower when they diverge (high divergence = uncertain match)
-    // Agreement = 1 - normalised absolute difference. Scale by raw probability for staking relevance.
     const dqFactor=snap.dataQualityScore/100;
     const bkAna = window._lastBkAnalysis;
     // Build bk lookup by market name for edge bonus
@@ -1850,10 +1737,8 @@ window.runUnifiedTips=function(){
 
     candidates.forEach(c=>{
       const modelProb=c.prob;
-      const simP=c.simProb!==undefined?c.simProb:modelProb;
-      const agreement=1-Math.min(1,Math.abs(modelProb-simP)/Math.max(0.01,modelProb));
-      // Base combinedScore: prob 40% + model agreement 35% + data quality 25%
-      let combinedScore=modelProb*0.40 + agreement*0.35 + dqFactor*0.25;
+      // combinedScore = modelProb × dataQuality × 2 — multiplicative penalty for poor data
+      let combinedScore=Math.min(1,modelProb*dqFactor*2);
       // Bookmaker edge bonus: if bk odds available, boost/penalise by edge
       if(hasBkOdds){
         const bkItem = bkEdgeLookup[c.market];
@@ -1874,7 +1759,7 @@ window.runUnifiedTips=function(){
     });
 
     const filtered=candidates.filter(c=>{
-      // fairOdds > 1.30 filters out near-certainties; combinedScore > 0.35 ensures both model agreement and data quality; prob >= 0.60 ensures model confidence
+      // fairOdds > 1.30 filters out near-certainties; combinedScore > 0.35 ensures prob × data quality is sufficient; prob >= 0.60 ensures model confidence
       return c.fairOdds>1.30 && c.combinedScore>0.35 && c.prob>=0.60;
     });
 
@@ -1893,7 +1778,7 @@ window.runUnifiedTips=function(){
       renderHistory();
     }
 
-    let html='<div class="summary-box">Unified Tips engine: Poisson + Dixon-Coles + 12,000-iteration Monte Carlo'+(hasBkOdds?' + Bookmaker Edge Calibration':'')+'. Picks ranked by <strong>model agreement score</strong> (Poisson ↔ MC convergence × data quality'+(hasBkOdds?' × bookmaker edge':'')+' × probability). AH signs: <strong>−N = Home gives goals (home fav), +N = Home receives goals (away fav)</strong>.'+(hasBkOdds?' <span style="color:var(--purple)">🏦 Bookmaker odds are boosting/penalising scores based on market edge.</span>':'')+'</div>';
+    let html='<div class="summary-box">Unified Tips engine: Poisson + Dixon-Coles + 12,000-iteration Monte Carlo'+(hasBkOdds?' + Bookmaker Edge Calibration':'')+'. Picks ranked by <strong>confidence score</strong> (Poisson ↔ MC convergence × data quality'+(hasBkOdds?' × bookmaker edge':'')+' × probability). AH signs: <strong>−N = Home gives goals (home fav), +N = Home receives goals (away fav)</strong>.'+(hasBkOdds?' <span style="color:var(--purple)">🏦 Bookmaker odds are boosting/penalising scores based on market edge.</span>':'')+'</div>';
 
     function buildReasoning(c,prbs,btts,homeXG,awayXG){
       const lines=[];
@@ -1980,34 +1865,26 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
   html+='<div class="ds-bar">◆ '+xgResult.dataSource+(useDC?' · DC ON (ρ='+dispRho+')':' · DC OFF')+' · Home Adv: +'+xgResult.homeAdv.toFixed(2)+' xG · '+xgResult.compType+(bkAnalysis?' · 🏦 BK ODDS':'')+'</div>';
 
   html+='<div class="tabs" id="resTabs">';
-  html+='<button class="tab-btn active" data-tab="tab-probs">📈 Probs</button>';
-  html+='<button class="tab-btn" data-tab="tab-unified">🎯 Unified Tips</button>';
-  if(bkAnalysis) html+='<button class="tab-btn" data-tab="tab-bk">🏦 Bk Analysis</button>';
-  html+='<button class="tab-btn" data-tab="tab-kelly">💰 Odds</button>';
+  html+='<button class="tab-btn active" data-tab="tab-sim">🎲 Dashboard</button>';
+  html+='<button class="tab-btn" data-tab="tab-result-analysis">📊 Tips</button>';
+  html+='<button class="tab-btn" data-tab="tab-probs">📈 Model Analysis</button>';
   html+='<button class="tab-btn" data-tab="tab-ou">📊 O/U</button>';
   html+='<button class="tab-btn" data-tab="tab-ah">⚖️ AH</button>';
-  html+='<button class="tab-btn" data-tab="tab-sim">🎲 Simulation</button>';
-  html+='<button class="tab-btn" style="border-color:rgba(245,200,66,0.3);color:var(--amber)" data-tab="tab-surprise">⚡ Surprise</button>';
   html+='</div>';
 
-  html+='<div class="tab-content active" id="tab-probs">'+renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goalDiff,homeCI,awayCI,fairValue,bkAnalysis)+'</div>';
+  html+='<div class="tab-content active" id="tab-sim">'+renderSimTab(sim,prbs,btts,totalXG,mat,xg)+'</div>';
 
-  html+='<div class="tab-content" id="tab-unified"><div id="unifiedBody">'+
-    '<div style="text-align:center;padding:32px 20px">'+
-    '<div style="font-size:32px;margin-bottom:12px">🎯</div>'+
-    '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Unified Tips Engine</div>'+
-    '<div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6">5 safest picks with &gt; 1.30 fair odds from 12,000-iteration Monte Carlo.'+(bkAnalysis?' Bookmaker edge scoring active.':'')+'</div>'+
-    '<button onclick="runUnifiedTips()" style="font-size:12px;color:var(--muted2);background:var(--surface2);border:1px solid var(--border);padding:8px 18px;border-radius:6px;cursor:pointer;font-family:\'Inter\',sans-serif;font-weight:700">▶ Run Unified Analysis</button>'+
-    '</div></div></div>';
+  html+='<div class="tab-content" id="tab-probs">'+renderProbsTab(xgResult,prbs,btts,mat,skellam,scores,ouData,totalXG,goalDiff,homeCI,awayCI,fairValue,bkAnalysis)+'</div>';
 
-  if(bkAnalysis) html+='<div class="tab-content" id="tab-bk">'+renderBkTab(bkAnalysis,prbs,btts,mat,xgResult)+'</div>';
-  html+='<div class="tab-content" id="tab-kelly">'+renderKellyTab(mat,prbs,btts)+'</div>';
-  html+='<div class="tab-content" id="tab-ou">'+renderOUTab(ouData,mat,bkAnalysis)+'</div>';
-  html+='<div class="tab-content" id="tab-ah">'+renderAHTab(mat,bkAnalysis)+'</div>';
-  html+='<div class="tab-content" id="tab-sim">'+renderSimTab(sim,prbs,btts,totalXG,mat)+'</div>';
-  html+='<div class="tab-content" id="tab-surprise">'+renderSurpriseTab(mat,prbs,btts,xgResult,bkAnalysis)+'</div>';
+  html+='<div class="tab-content" id="tab-result-analysis">'+renderResultAnalysisTab(xgResult,mat,prbs,btts,ouData,bkAnalysis,sim)+'</div>';
 
-  html+='<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. Attack/Defence strength model: λ₁ = Home_Attack × Away_Defence × league_avg × comp_mod · λ₂ = Away_Attack × Home_Defence × league_avg × comp_mod. Fixed external league reference (1.35 avg) for strength calculation. Context-aware home advantage (+'+xgResult.homeAdv.toFixed(2)+' xG for '+xgResult.compType+'). Last 6 GF/GA stats blended at 35–45% recency weight (venue 35–40%, combined 15–20%, last6 45–55%). Unified Tips ranked by model agreement (Poisson ↔ Monte Carlo convergence × data quality'+(bkAnalysis?' × bookmaker edge':'')+'). Monte Carlo: 12,000 iterations (log-uniform sampler — unbiased at all lambda). Skellam distribution for goal difference. Quarter-ball AH lines supported.'+(bkAnalysis?' Bookmaker vig removed via proportional scaling; model-bk blend weighted 60–75% model per data quality.':'')+'</div>';
+  html+='<div class="tab-content" id="tab-ou">'+renderOUTab(ouData,mat)+'</div>';
+  html+='<div class="tab-content" id="tab-ah">'+renderAHTab(mat)+'</div>';
+
+
+  var hb=xgResult.histBase;
+  var baseDesc=hb?'Historical baseline ('+hb.leagueBase.toFixed(2)+' avg xG, +'+hb.homeAdv.toFixed(2)+' HA from '+hb.matchCount+' matches'+(hb.usingActualGoals?', using actual scores':'')+')':'Fixed external league reference (1.30 avg)';
+  html+='<div class="note" style="margin-top:16px"><strong>Methodology:</strong> Poisson model'+(useDC?' with Dixon-Coles correction (dynamic ρ='+dispRho+')':'')+'. Attack/Defence strength model: λ₁ = Home_Attack × Away_Defence × league_avg × comp_mod · λ₂ = Away_Attack × Home_Defence × league_avg × comp_mod. '+baseDesc+'. Context-aware home advantage (+'+xgResult.homeAdv.toFixed(2)+' xG for '+xgResult.compType+'). Unified Tips ranked by confidence score (model probability × data quality'+(bkAnalysis?' × bookmaker edge':'')+'). Monte Carlo: 12,000 iterations (negative binomial sampler — NB2 dispersion 0.20 for overdispersed tails). Skellam distribution for goal difference. Quarter-ball AH lines supported.'+(bkAnalysis?' Bookmaker vig removed via proportional scaling; model-bk blend weighted 60–75% model per data quality.':'')+'</div>';
   html+='</div></div>';
 
   const rd=$('results');
@@ -2017,7 +1894,6 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
   window._lastMatrix=mat;window._lastPrbs=prbs;window._lastBTTS=btts;
   window._lastXG={home:xg,away:awayXG};
   window._lastSnapshot={homeXG:xg,awayXG:awayXG,prbs,btts,dataSource:xgResult.dataSource,dataQualityScore:xgResult.dataQualityScore,ciWidth:xgResult.ciWidth};
-  window._unifiedRun=false;
 
   document.querySelectorAll('#resTabs .tab-btn').forEach(btn=>{
     btn.addEventListener('click',function(){
@@ -2026,7 +1902,6 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
       this.classList.add('active');
       document.querySelectorAll('#results .tab-content').forEach(c=>c.classList.remove('active'));
       const tc=document.getElementById(tab);if(tc)tc.classList.add('active');
-      if(tab==='tab-unified'&&!window._unifiedRun){window._unifiedRun=true;window.runUnifiedTips();}
     });
   });
 
@@ -2038,13 +1913,13 @@ function renderResults(xgResult,mat,prbs,btts,scores,ouData,skellam,homeCI,awayC
 // ══════════════════════════════════════════════════════════════
 window.runAnalysis=function(overwriteIdx){
   const errBox=$('errBox');errBox.classList.remove('show');
-  const homeGF=getNum('homeGF'),homeGA=getNum('homeGA'),awayGF=getNum('awayGF'),awayGA=getNum('awayGA');
-  const homeGFAll=getNum('homeGFAll'),homeGAAll=getNum('homeGAAll'),awayGFAll=getNum('awayGFAll'),awayGAAll=getNum('awayGAAll');
+  const venueScope=$('venueScope').value;
+  let homeGF=getNum('homeGF'),homeGA=getNum('homeGA'),awayGF=getNum('awayGF'),awayGA=getNum('awayGA');
   let hasAny=false;
-  [homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awayGAAll].forEach(v=>{if(hv(v))hasAny=true;});
+  [homeGF,homeGA,awayGF,awayGA].forEach(v=>{if(hv(v))hasAny=true;});
   if(!hasAny){errBox.textContent='⚠️ Enter at least some team statistics to generate predictions.';errBox.classList.add('show');return;}
   try{
-    const xgResult=computeXG(homeGF,homeGA,awayGF,awayGA,homeGFAll,homeGAAll,awayGFAll,awayGAAll);
+    const xgResult=computeXG(homeGF,homeGA,awayGF,awayGA,venueScope);
     const totalXG=xgResult.homeXG+xgResult.awayXG,useDC=totalXG<2.8;
     const dcEl=$('dcIndicator');
     if(dcEl){
@@ -2069,31 +1944,54 @@ window.runAnalysis=function(overwriteIdx){
 
     const homeTeam=getStr('homeTeam')||'Home';
     const awayTeam=getStr('awayTeam')||'Away';
+    var resultVal=$('matchResult')?.value||'';
+    // Determine pick: highest model probability outcome
+    var pickSide=prbs.h>=prbs.d&&prbs.h>=prbs.a?'1':prbs.d>=prbs.a?'X':'2';
+    var pickProb=pickSide==='1'?prbs.h:pickSide==='X'?prbs.d:prbs.a;
+    var pickOdds=bkOdds?pickSide==='1'?bkOdds.h:pickSide==='X'?bkOdds.d:bkOdds.a:null;
+    var kellyPct=pickOdds?kellyVal(pickOdds,pickProb):0;
+    // MC fallback when no bookmaker odds
+    var mcPick1x2=[{s:'1',p:sim.homeWins},{s:'X',p:sim.draws},{s:'2',p:sim.awayWins}].reduce((a,b)=>a.p>b.p?a:b);
+    var stakeAmt=pickOdds&&(kellyPct>0||pickProb>=0.20)
+      ?calcStake(kellyPct,pickProb-(1/pickOdds))
+      :pickOdds?0
+      :calcProbStake(mcPick1x2.p);
+    var plAmt=0;
+    var usedPickSide=pickOdds?pickSide:mcPick1x2.s;
+    var usedPickProb=pickOdds?pickProb:mcPick1x2.p;
+    if(resultVal&&stakeAmt>0){
+      if(resultVal===usedPickSide){plAmt=pickOdds?Math.round(stakeAmt*(pickOdds-1)):Math.round(stakeAmt*((1/mcPick1x2.p)-1));}
+      else{plAmt=-stakeAmt;}
+    }
     const entry={
       date:new Date().toLocaleDateString('en-GB'),
       homeTeam,awayTeam,
+      result:resultVal,
+      pick:usedPickSide,
+      pickProb:usedPickProb,
+      pickOdds:pickOdds,
+      stake:stakeAmt,
+      pl:plAmt,
+      stakeSource:pickOdds?'bk':'mc',
       inputs:{
         homeTeam:$('homeTeam')?.value||'',awayTeam:$('awayTeam')?.value||'',
+        venueScope:$('venueScope')?.value||'all',
+
         homeGF:$('homeGF')?.value||'',homeGA:$('homeGA')?.value||'',
         awayGF:$('awayGF')?.value||'',awayGA:$('awayGA')?.value||'',
-        homeGFAll:$('homeGFAll')?.value||'',homeGAAll:$('homeGAAll')?.value||'',
-        awayGFAll:$('awayGFAll')?.value||'',awayGAAll:$('awayGAAll')?.value||'',
-        homeW:$('homeW')?.value||'',homeD:$('homeD')?.value||'',homeL:$('homeL')?.value||'',
-        awayW:$('awayW')?.value||'',awayD:$('awayD')?.value||'',awayL:$('awayL')?.value||'',
         homeWAll:$('homeWAll')?.value||'',homeDAll:$('homeDAll')?.value||'',homeLAll:$('homeLAll')?.value||'',
         awayWAll:$('awayWAll')?.value||'',awayDAll:$('awayDAll')?.value||'',awayLAll:$('awayLAll')?.value||'',
-        homeGFL6:$('homeGFL6')?.value||'',homeGAL6:$('homeGAL6')?.value||'',
-        awayGFL6:$('awayGFL6')?.value||'',awayGAL6:$('awayGAL6')?.value||'',
-        homeWL6:$('homeWL6')?.value||'',homeDL6:$('homeDL6')?.value||'',homeLL6:$('homeLL6')?.value||'',
-        awayWL6:$('awayWL6')?.value||'',awayDL6:$('awayDL6')?.value||'',awayLL6:$('awayLL6')?.value||'',
         homeForm:$('homeForm')?.value||'',awayForm:$('awayForm')?.value||'',
         compType:$('compType')?.value||'league',
         bkHome:$('bkHome')?.value||'',bkDraw:$('bkDraw')?.value||'',bkAway:$('bkAway')?.value||'',
-        bkOULine:$('bkOULine')?.value||'',bkOver:$('bkOver')?.value||'',bkUnder:$('bkUnder')?.value||'',
-        bkAHLine:$('bkAHLine')?.value||'',bkAHHome:$('bkAHHome')?.value||'',bkAHAway:$('bkAHAway')?.value||''
+        matchResult:$('matchResult')?.value||'',
+        homeGoals:$('homeGoals')?.value||'',awayGoals:$('awayGoals')?.value||''
       },
       prbs:{h:prbs.h,d:prbs.d,a:prbs.a},
-      unifiedTips:[]
+      mcPrbs:{h:sim.homeWins,d:sim.draws,a:sim.awayWins},
+      homeXG:xgResult.homeXG,awayXG:xgResult.awayXG,
+      unifiedTips:[],
+      topScores:getTopScores(mat,3).map(s => ({home:s.home,away:s.away}))
     };
     if(overwriteIdx!==undefined&&overwriteIdx>=0&&overwriteIdx<window._predictionHistory.length){
       window._predictionHistory[overwriteIdx]=entry;
@@ -2107,50 +2005,40 @@ window.runAnalysis=function(overwriteIdx){
     }
     saveHistoryToStorage();
     renderHistory();
+    window.renderProfitTracker();
   } catch(err){errBox.textContent='Analysis error: '+err.message;errBox.classList.add('show');console.error(err);}
 };
 
 window.clearAll=function(){
   ['homeTeam','awayTeam',
-   'homeGF','homeGA','awayGF','awayGA','homeGFAll','homeGAAll','awayGFAll','awayGAAll',
+   'homeGF','homeGA','awayGF','awayGA',
    'homeForm','awayForm',
-   'homeW','homeD','homeL','awayW','awayD','awayL',
    'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll',
-   'homeGFL6','homeGAL6','awayGFL6','awayGAL6',
-   'homeWL6','homeDL6','homeLL6','awayWL6','awayDL6','awayLL6',
-   'bkHome','bkDraw','bkAway','bkOver','bkUnder','bkAHHome','bkAHAway','bkOULine','bkAHLine'].forEach(id=>{
+   'bkHome','bkDraw','bkAway'].forEach(id=>{
     const el=$(id);if(el){el.value='';el.classList.remove('err','ok');}
   });
+  var vsEl=$('venueScope');if(vsEl)vsEl.value='all';
+  var mrEl=$('matchResult');if(mrEl)mrEl.value='';
+  var hgEl=$('homeGoals');if(hgEl)hgEl.value='';
+  var agEl=$('awayGoals');if(agEl)agEl.value='';
   const dcEl=$('dcIndicator');if(dcEl)dcEl.innerHTML='<span style="color:var(--muted)">DC: auto-detect</span>';
   $('results').style.display='none';$('errBox').classList.remove('show');
   window._lastSnapshot=null;window._lastMatrix=null;window._lastPrbs=null;window._lastBTTS=null;
-  window._lastXG=null;window._unifiedRun=false;window._lastBkAnalysis=null;
+  window._lastXG=null;window._lastBkAnalysis=null;
 };
 
 window.loadExample=function(){
+  var vsEl=$('venueScope');if(vsEl)vsEl.value='all';
   $('homeTeam').value='Arsenal';$('awayTeam').value='Chelsea';
-  $('homeGF').value='1.85';$('homeGA').value='0.80';$('awayGF').value='1.20';$('awayGA').value='1.15';
-  $('homeGFAll').value='1.65';$('homeGAAll').value='0.95';$('awayGFAll').value='1.30';$('awayGAAll').value='1.25';
-  $('homeW').value='3';$('homeD').value='3';$('homeL').value='4';
-  $('awayW').value='2';$('awayD').value='4';$('awayL').value='4';
+  $('homeGF').value='1.48';$('homeGA').value='1.10';$('awayGF').value='';$('awayGA').value='';
   $('homeWAll').value='12';$('homeDAll').value='7';$('homeLAll').value='3';
   $('awayWAll').value='10';$('awayDAll').value='9';$('awayLAll').value='1';
-  $('homeGFL6').value='1.85';$('homeGAL6').value='0.70';
-  $('awayGFL6').value='1.55';$('awayGAL6').value='1.05';
-  $('homeWL6').value='3';$('homeDL6').value='2';$('homeLL6').value='1';
-  $('awayWL6').value='2';$('awayDL6').value='3';$('awayLL6').value='1';
   $('homeForm').value='LWDWW';$('awayForm').value='DLLWW';
   $('compType').value='league';
-  // Example bookmaker odds (Arsenal vs Chelsea realistic market)
   $('bkHome').value='1.85';$('bkDraw').value='3.60';$('bkAway').value='4.50';
-  $('bkOULine').value='2.5';$('bkOver').value='1.88';$('bkUnder').value='1.95';
-  $('bkAHLine').value='-0.5';$('bkAHHome').value='1.95';$('bkAHAway').value='1.90';
-  ['homeGF','homeGA','awayGF','awayGA','homeGFAll','homeGAAll','awayGFAll','awayGAAll',
-   'homeW','homeD','homeL','awayW','awayD','awayL',
+  ['homeGF','homeGA',
    'homeWAll','homeDAll','homeLAll','awayWAll','awayDAll','awayLAll',
-   'homeGFL6','homeGAL6','awayGFL6','awayGAL6',
-   'homeWL6','homeDL6','homeLL6','awayWL6','awayDL6','awayLL6',
-   'bkHome','bkDraw','bkAway','bkOver','bkUnder','bkOULine','bkAHLine','bkAHHome','bkAHAway'].forEach(id=>{
+   'bkHome','bkDraw','bkAway'].forEach(id=>{
     const el=$(id);if(el){el.classList.remove('err');el.classList.add('ok');}
   });
   window.runAnalysis();
